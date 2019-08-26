@@ -13,8 +13,8 @@ headline = stars [s priority] [s comment-flag] s title [s tags] eol
 stars = #'\*+'
 priority = <"[#"> #"[A-Z]" <"]">
 comment-flag = <"COMMENT">
-title = !tags word {<whitespace+> !tags word}
-tags = <':'> { tag <':'> }
+title = !tags word {s !tags word}
+tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
 

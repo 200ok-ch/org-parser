@@ -31,4 +31,7 @@
              (parse "**** [#B] hello world :the:end:"))))
     (testing "with comment flag"
       (is (= [:headline [:stars "*****"] [:comment-flag] [:title "hello" "world"]]
-             (parse "***** COMMENT hello world"))))))
+             (parse "***** COMMENT hello world"))))
+    (testing "with crazy characters in title"
+      (is (= [:headline [:stars "*****"] [:title "hello" "world" ":"]]
+             (parse "***** hello world :"))))))
