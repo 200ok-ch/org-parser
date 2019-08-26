@@ -33,5 +33,5 @@
       (is (= [:headline [:stars "*****"] [:comment-flag] [:title "hello" "world"]]
              (parse "***** COMMENT hello world"))))
     (testing "with crazy characters in title"
-      (is (= [:headline [:stars "*****"] [:title "hello" "world" ":"]]
-             (parse "***** hello world :"))))))
+      (is (= [:headline [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
+             (parse "***** hello wörld⛄ :"))))))
