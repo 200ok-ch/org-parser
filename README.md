@@ -2,6 +2,9 @@
 
 A Clojure library designed to ... well, that part is up to you.
 
+
+And the existing libraries have different kinds of bugs. It would be nice to have a proper BNF based parser and a set of tests behind that. `org-parser`[1] strives to be that. Using instaparse is pretty sweet, too. From one side, because it has a great feature-set, from the other side because it will allow usage of the parser from the CLJ and CLJS eco-systems (which include JS and Java), so it could be re-used in various situations.
+
 ## Usage
 
 FIXME
