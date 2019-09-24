@@ -3,6 +3,21 @@
             #?(:clj [clojure.test :as t :refer :all]
                :cljs [cljs.test :as t :include-macros true])))
 
+
+;; if parse is successful it returns a vector otherwise a map
+
+
+(deftest word
+  (let [parse #(parser/org % :start :word)]
+    (testing "single"
+      (is (= ["a"]
+             (parse "a"))))
+    (testing "single with trailing space"
+      (is (map? (parse "ab "))))
+    (testing "single with trailing newline"
+      (is (map? (parse "a\n"))))))
+
+
 (deftest tags
   (let [parse #(parser/org % :start :tags)]
     (testing "single"
@@ -14,6 +29,7 @@
     (testing "with all edge characters"
       (is (= [:tags "az" "AZ" "09" "_@#%"]
              (parse ":az:AZ:09:_@#%:"))))))
+
 
 (deftest headline
   (let [parse #(parser/org % :start :headline)]
@@ -29,9 +45,46 @@
     (testing "with priority and tags"
       (is (= [:headline [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "**** [#B] hello world :the:end:"))))
+    (testing "title cannot have multiple lines"
+      (is (map? (parse "* a\nb"))))
     (testing "with comment flag"
       (is (= [:headline [:stars "*****"] [:comment-flag] [:title "hello" "world"]]
-             (parse "***** COMMENT hello world"))))
-    (testing "with crazy characters in title"
-      (is (= [:headline [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
-             (parse "***** hello wörld⛄ :"))))))
+             (parse "***** COMMENT hello world"))))))
+
+
+(deftest content
+  (let [parse #(parser/org % :start :content)]
+    (testing "boring"
+      (is (= [:content "anything" "goes"]
+             (parse "anything\ngoes"))))))
+
+
+(deftest sections
+  (let [parse #(parser/org % :start :sections)]
+    (testing "boring"
+      (is (= [:sections
+              [:section
+               [:headline [:stars "*"] [:title "hello" "world"]]
+               [:content "this is the first section"]]
+              [:section
+               [:headline [:stars "**"] [:title "and" "this"]]
+               [:content "is another section"]]]
+             (parse "* hello world
+this is the first section
+** and this
+is another section"))))
+    (testing "boring with empty lines"
+      (is (= [:sections
+              [:section
+               [:headline [:stars "*"] [:title "hello" "world"]]
+               [:content "this is the first section"]
+               [:emptyline]]
+              [:section
+               [:headline [:stars "**"] [:title "and" "this"]]
+               [:content [:emptyline] "is another section"]]]
+             (parse "* hello world
+this is the first section
+
+** and this
+
+is another section"))))))

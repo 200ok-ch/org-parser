@@ -1,13 +1,13 @@
 S = (headline|emptyline)*
 
-<s> = <#"\s+">
-whitespace = #'\s'
+<s> = <#"[ \t]+">
 endofline = #'$'
 newline = '\n'
 <eol> = <(newline|endofline)>
+(* <eol = #"(\R|$|\z)" *)
 <word> = #'[^\n\s]+'
 
-emptyline = whitespace* <(newline|endofline)>
+emptyline = [s] <(newline|endofline)>
 
 headline = stars [s priority] [s comment-flag] s title [s tags] eol
 stars = #'\*+'
@@ -18,6 +18,11 @@ tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
 
+<contentline> = #".*"
+content = {(emptyline|!headline contentline) eol}
+section = headline (content|epsilon)
+sections = {section}
+
 (* UNTESTED
 
 affiliated_keywords = "#+" (key | attr_backend) ": " value
@@ -27,10 +32,10 @@ key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ])
 attr_backend = "ATTR_" backend
 backend = #"[a-zA-Z0-9-_]+"
 
-greater_block = '#+BEGIN_' name [whitespace parameters] newline contents '#+END_' name
+greater_block = '#+BEGIN_' name [s parameters] newline contents '#+END_' name
 name = #'[^\s]+'
 parameters = #'[^\n]+'
 
-dynamic_block = '#+BEGIN:' whitespace name [whitespace parameters] contents '#+END:'
+dynamic_block = '#+BEGIN:' s name [s parameters] contents '#+END:'
 
 *)
