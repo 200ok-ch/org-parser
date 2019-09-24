@@ -1,0 +1,32 @@
+* org-parser
+
+=org-parser= is a parser for the [[https://orgmode.org/][Org mode]] markup language for Emacs.
+
+To our knowledge, there is no formal specification of Org. But there
+is a [[https://orgmode.org/worg/dev/org-syntax.html]['spec' written in prose]] which lead to the [[https://orgmode.org/worg/dev/org-element-api.html][reference
+implementation of Org in Emacs]].
+
+Working on our web-based Org implementation [[https://github.com/200ok-ch/organice/][organice]], we have seen how
+brittle existing libraries can be. It would be nice to have a proper
+BNF based parser and a set of tests behind that. =org-parser=
+strives to be that!
+
+=org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
+build parsers in Clojure. Apart from living up to this claim (and
+beyond the scope of just the one programming language), using
+instaparse is great for another reason: Instaparse works both on CLJ
+and CLJS. Therefore =org-parser= can be used from both ecosystems
+which, of course, include JavaScript and Java. Hence, it is possible
+to use it in various situations.
+
+** Usage
+
+FIXME
+
+** License
+
+Copyright © 2019 [[https://200ok.ch/][200ok llc]].
+
+This program and the accompanying materials are made available under the
+terms of the GNU Affero General Public License Version 3 which is made
+available at https://www.gnu.org/licenses/agpl-3.0.en.html.
