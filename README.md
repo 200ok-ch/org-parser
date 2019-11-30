@@ -1,6 +1,6 @@
 # org-parser
 
-A Clojure library designed to ... well, that part is up to you.
+An org reader (parser) -- and maybe sometime also a writer.
 
 ## Usage
 
@@ -8,12 +8,24 @@ FIXME
 
 ## References
 
+### Org's "Spec"
+
 - https://orgmode.org/worg/dev/org-syntax.html
 - https://orgmode.org/worg/dev/org-element-api.html
+
+### Used libraries
+
 - https://github.com/Engelberg/instaparse
+
+### Theory & concepts
+
 - https://en.wikipedia.org/wiki/Context-free_grammar
 - https://en.wikipedia.org/wiki/Parsing_expression_grammar
 - https://www.regular-expressions.info
+
+### Other org parsers
+
+- https://github.com/chaseadamsio/goorgeous/blob/master/goorgeous.go
 
 ## License
 
