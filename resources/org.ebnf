@@ -1,29 +1,25 @@
-S = (headline|emptyline)*
+S = line*
 
-<s> = <#"[ \t]+">
-endofline = #'$'
-newline = '\n'
-<eol> = <(newline|endofline)>
-(* <eol = #"(\R|$|\z)" *)
-<word> = #'[^\n\s]+'
+<line> = (empty-line / head-line / content-line) eol
 
-emptyline = [s] <(newline|endofline)>
+empty-line = "" | #"\s+"
 
-headline = stars [s priority] [s comment-flag] s title [s tags] eol
+content-line = #".*"
+
+<eol> = <#'\n|$'>
+
+head-line = stars [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
 priority = <"[#"> #"[A-Z]" <"]">
-comment-flag = <"COMMENT">
+comment-token = <"COMMENT">
 title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
+<s> = <#"[\t ]+">
+<word> = #"[^\r\n\s$]+"
 
-<contentline> = #".*"
-content = {(emptyline|!headline contentline) eol}
-section = headline (content|epsilon)
-sections = {section}
-
-(* UNTESTED
+(*
 
 affiliated_keywords = "#+" (key | attr_backend) ": " value
 optional = "[" value "]"

@@ -32,57 +32,55 @@
 
 
 (deftest headline
-  (let [parse #(parser/org % :start :headline)]
+  (let [parse #(parser/org % :start :head-line)]
     (testing "boring"
-      (is (= [:headline [:stars "*"] [:title "hello" "world"]]
+      (is (= [:head-line [:stars "*"] [:title "hello" "world"]]
              (parse "* hello world"))))
     (testing "with priority"
-      (is (= [:headline [:stars "**"] [:priority "A"] [:title "hello" "world"]]
+      (is (= [:head-line [:stars "**"] [:priority "A"] [:title "hello" "world"]]
              (parse "** [#A] hello world"))))
     (testing "with tags"
-      (is (= [:headline [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:head-line [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "*** hello world :the:end:"))))
     (testing "with priority and tags"
-      (is (= [:headline [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:head-line [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "**** [#B] hello world :the:end:"))))
     (testing "title cannot have multiple lines"
       (is (map? (parse "* a\nb"))))
     (testing "with comment flag"
-      (is (= [:headline [:stars "*****"] [:comment-flag] [:title "hello" "world"]]
+      (is (= [:head-line [:stars "*****"] [:comment-token] [:title "hello" "world"]]
              (parse "***** COMMENT hello world"))))))
 
 
-(deftest content
-  (let [parse #(parser/org % :start :content)]
-    (testing "boring"
-      (is (= [:content "anything" "goes"]
-             (parse "anything\ngoes"))))))
+;; (deftest content
+;;   (let [parse #(parser/org % :start :content-line)]
+;;     (testing "boring"
+;;       (is (= [[:content-line "anything"]
+;;               [:content-line "goes"]]
+;;              (parse "anything\ngoes"))))))
 
 
 (deftest sections
-  (let [parse #(parser/org % :start :sections)]
+  (let [parse parser/org]
     (testing "boring"
-      (is (= [:sections
-              [:section
-               [:headline [:stars "*"] [:title "hello" "world"]]
-               [:content "this is the first section"]]
-              [:section
-               [:headline [:stars "**"] [:title "and" "this"]]
-               [:content "is another section"]]]
+      (is (= [:S
+              [:head-line [:stars "*"] [:title "hello" "world"]]
+              [:content-line "this is the first section"]
+              [:head-line [:stars "**"] [:title "and" "this"]]
+              [:content-line "is another section"]]
              (parse "* hello world
 this is the first section
 ** and this
 is another section"))))
     (testing "boring with empty lines"
-      (is (= [:sections
-              [:section
-               [:headline [:stars "*"] [:title "hello" "world"]]
-               [:content "this is the first section"]
-               [:emptyline]]
-              [:section
-               [:headline [:stars "**"] [:title "and" "this"]]
-               [:content [:emptyline] "is another section"]]]
-             (parse "* hello world
+      (is (=[:S
+             [:head-line [:stars "*"] [:title "hello" "world"]]
+             [:content-line "this is the first section"]
+             [:empty-line]
+             [:head-line [:stars "**"] [:title "and" "this"]]
+             [:empty-line]
+             [:content-line "is another section"]]
+            (parse "* hello world
 this is the first section
 
 ** and this

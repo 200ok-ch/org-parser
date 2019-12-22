@@ -4,7 +4,7 @@
                :cljs [cljs.test :as t :include-macros true])))
 
 (deftest headline
-  (let [parse #(parser/org % :start :headline)]
+  (let [parse #(parser/org % :start :head-line)]
     (testing "with crazy characters in title"
-      (is (= [:headline [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
+      (is (= [:head-line [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
              (parse "***** hello wörld⛄ :"))))))
