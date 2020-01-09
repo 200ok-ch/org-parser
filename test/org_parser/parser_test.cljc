@@ -86,3 +86,33 @@ this is the first section
 ** and this
 
 is another section"))))))
+
+(deftest affiliated-keyword
+  (let [parse #(parser/org % :start :affiliated-keyword-line)]
+    (testing "header"
+      (is (= [:affiliated-keyword-line [:key "HEADER"] [:value "hello world"]]
+             (parse "#+HEADER: hello world"))))
+    (testing "name"
+      (is (= [:affiliated-keyword-line [:key "NAME"] [:value "hello world"]]
+             (parse "#+NAME: hello world"))))
+    (testing "PLOT"
+      (is (= [:affiliated-keyword-line [:key "PLOT"] [:value "hello world"]]
+             (parse "#+PLOT: hello world"))))
+    (testing "results"
+      (is (= [:affiliated-keyword-line [:key "RESULTS"] [:value "hello world"]]
+             (parse "#+RESULTS: hello world"))))
+    (testing "results"
+      (is (= [:affiliated-keyword-line [:key "RESULTS" [:optional "asdf"]] [:value "hello world"]]
+             (parse "#+RESULTS[asdf]: hello world"))))
+    (testing "caption"
+      (is (= [:affiliated-keyword-line [:key "CAPTION"] [:value "hello world"]]
+             (parse "#+CAPTION: hello world"))))
+    (testing "caption"
+      (is (= [:affiliated-keyword-line [:key "CAPTION" [:optional "qwerty"]] [:value "hello world"]]
+             (parse "#+CAPTION[qwerty]: hello world"))))))
+
+(deftest todo
+  (let [parse #(parser/org % :start :todo-line)]
+    (testing "todos"
+      (is (= [:todo-line [:states [:todo-state "TODO"] [:done-state "DONE"]]]
+             (parse "#+TODO: TODO | DONE"))))))

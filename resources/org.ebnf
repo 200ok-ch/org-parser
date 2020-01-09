@@ -1,12 +1,13 @@
 S = line*
 
-<line> = (empty-line / head-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / todo-line / content-line) eol
 
 empty-line = "" | #"\s+"
-
 content-line = #".*"
 
 <eol> = <#'\n|$'>
+<s> = <#"[\t ]+">
+<word> = #"[^\r\n\s$]+"
 
 head-line = stars [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
@@ -16,18 +17,20 @@ title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
-<s> = <#"[\t ]+">
-<word> = #"[^\r\n\s$]+"
-
-(*
-
-affiliated_keywords = "#+" (key | attr_backend) ": " value
-optional = "[" value "]"
-value =
-key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ])
-attr_backend = "ATTR_" backend
+affiliated-keyword-line = <"#+"> (key | attr) <": "> value
+optional = <"["> optional-value <"]">
+value = #"[^\]\n]+"
+<optional-value> = #"[^\]\n]+"
+key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ]) | "AUTHOR" | "DATE" | "TITLE"
+attr = <"ATTR_"> backend
 backend = #"[a-zA-Z0-9-_]+"
 
+todo-line = <"#+TODO: "> states
+states = todo-state {s todo-state} <s "|" s> done-state {s done-state}
+todo-state = #"[A-Z]+"
+done-state = #"[A-Z]+"
+
+(*
 greater_block = '#+BEGIN_' name [s parameters] newline contents '#+END_' name
 name = #'[^\s]+'
 parameters = #'[^\n]+'
