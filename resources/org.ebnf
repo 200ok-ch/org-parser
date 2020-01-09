@@ -26,9 +26,18 @@ attr = <"ATTR_"> backend
 backend = #"[a-zA-Z0-9-_]+"
 
 todo-line = <"#+TODO: "> states
-states = todo-state {s todo-state} <s "|" s> done-state {s done-state}
+<states> = todo-state {s todo-state} <s "|" s> done-state {s done-state}
 todo-state = #"[A-Z]+"
 done-state = #"[A-Z]+"
+
+greater-block-begin-line = <"#+BEGIN_"> greater-block-name [s greater-block-parameters]
+greater-block-name = anything-but-whitespace
+greater-block-parameters = anything-but-newline
+
+<anything-but-whitespace> = #"[^\r\n\s$]+"
+<anything-but-newline> = #"[^\n$]+"
+
+greater-block-end-line = <"#+END_"> greater-block-name
 
 (*
 greater_block = '#+BEGIN_' name [s parameters] newline contents '#+END_' name

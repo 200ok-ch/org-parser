@@ -87,6 +87,7 @@ this is the first section
 
 is another section"))))))
 
+
 (deftest affiliated-keyword
   (let [parse #(parser/org % :start :affiliated-keyword-line)]
     (testing "header"
@@ -111,8 +112,22 @@ is another section"))))))
       (is (= [:affiliated-keyword-line [:key "CAPTION" [:optional "qwerty"]] [:value "hello world"]]
              (parse "#+CAPTION[qwerty]: hello world"))))))
 
+
 (deftest todo
   (let [parse #(parser/org % :start :todo-line)]
     (testing "todos"
-      (is (= [:todo-line [:states [:todo-state "TODO"] [:done-state "DONE"]]]
+      (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
+
+
+(deftest greater-block-begin
+  (let [parse #(parser/org % :start :greater-block-begin-line)]
+    (testing "greater-block-begin"
+      (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
+             (parse "#+BEGIN_CENTER some params"))))))
+
+(deftest greater-block-end
+  (let [parse #(parser/org % :start :greater-block-end-line)]
+    (testing "greater-block-end"
+      (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
+             (parse "#+END_CENTER"))))))
