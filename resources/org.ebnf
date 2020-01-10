@@ -43,4 +43,8 @@ drawer-begin-line = <":"> drawer-name <":">
 drawer-name = #"[a-zA-Z0-9-_]+"
 drawer-end-line = <":END:">
 
-(* dynamic_block = '#+BEGIN:' s name [s parameters] contents '#+END:' *)
+dynamic-block-begin-line = <'#+BEGIN: '> dynamic-block-name [s dynamic-block-parameters]
+dynamic-block-end-line = <'#+END:'>
+
+dynamic-block-name = anything-but-whitespace
+dynamic-block-parameters = anything-but-newline

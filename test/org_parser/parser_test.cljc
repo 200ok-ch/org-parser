@@ -147,3 +147,17 @@ is another section"))))))
     (testing "drawer-end"
       (is (= [:drawer-end-line]
              (parse ":END:"))))))
+
+
+(deftest dynamic-block-begin
+  (let [parse #(parser/org % :start :dynamic-block-begin-line)]
+    (testing "dynamic-block-begin"
+      (is (= [:dynamic-block-begin-line [:dynamic-block-name "SOMENAME"] [:dynamic-block-parameters "some params"]]
+             (parse "#+BEGIN: SOMENAME some params"))))))
+
+
+(deftest dynamic-block-end
+  (let [parse #(parser/org % :start :dynamic-block-end-line)]
+    (testing "dynamic-block-end"
+      (is (= [:dynamic-block-end-line]
+             (parse "#+END:"))))))
