@@ -113,6 +113,7 @@ is another section"))))))
              (parse "#+CAPTION[qwerty]: hello world"))))))
 
 
+;; this is a special case of in-buffer-settings
 (deftest todo
   (let [parse #(parser/org % :start :todo-line)]
     (testing "todos"
@@ -126,8 +127,23 @@ is another section"))))))
       (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
 
+
 (deftest greater-block-end
   (let [parse #(parser/org % :start :greater-block-end-line)]
     (testing "greater-block-end"
       (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
+
+
+(deftest drawer-begin
+  (let [parse #(parser/org % :start :drawer-begin-line)]
+    (testing "drawer-begin"
+      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
+             (parse ":SOMENAME:"))))))
+
+
+(deftest drawer-end
+  (let [parse #(parser/org % :start :drawer-end-line)]
+    (testing "drawer-end"
+      (is (= [:drawer-end-line]
+             (parse ":END:"))))))

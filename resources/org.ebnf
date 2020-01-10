@@ -1,6 +1,6 @@
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / todo-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / content-line) eol
 
 empty-line = "" | #"\s+"
 content-line = #".*"
@@ -39,11 +39,8 @@ greater-block-parameters = anything-but-newline
 
 greater-block-end-line = <"#+END_"> greater-block-name
 
-(*
-greater_block = '#+BEGIN_' name [s parameters] newline contents '#+END_' name
-name = #'[^\s]+'
-parameters = #'[^\n]+'
+drawer-begin-line = <":"> drawer-name <":">
+drawer-name = #"[a-zA-Z0-9-_]+"
+drawer-end-line = <":END:">
 
-dynamic_block = '#+BEGIN:' s name [s parameters] contents '#+END:'
-
-*)
+(* dynamic_block = '#+BEGIN:' s name [s parameters] contents '#+END:' *)
