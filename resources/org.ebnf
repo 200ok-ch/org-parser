@@ -68,3 +68,8 @@ list-item-checkbox-state = #"[ \-X]"
 keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"
 keyword-value = anything-but-newline
+
+node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value]
+node-property-name = #"[^\s:+]+"
+node-property-plus = <"+">
+node-property-value = anything-but-newline

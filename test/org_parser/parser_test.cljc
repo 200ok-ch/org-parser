@@ -223,3 +223,25 @@ is another section"))))))
     (testing "keyword"
       (is (= [:keyword-line [:keyword-key "HELLO"] [:keyword-value "hello world"]]
              (parse "#+HELLO: hello world"))))))
+
+
+(deftest node-property
+  (let [parse #(parser/org % :start :node-property-line)]
+    (testing "node-property"
+      (is (= [:node-property-line [:node-property-name "HELLO"]]
+             (parse ":HELLO:"))))
+    (testing "node-property"
+      (is (= [:node-property-line [:node-property-name "HELLO"] [:node-property-plus]]
+             (parse ":HELLO+:"))))
+    (testing "node-property"
+      (is (= [:node-property-line
+              [:node-property-name "HELLO"]
+              [:node-property-value "hello world"]]
+             (parse ":HELLO: hello world"))))
+    (testing "node-property"
+      (is (= [:node-property-line
+              [:node-property-name "HELLO"]
+              [:node-property-plus]
+              [:node-property-value "hello world"]]
+             (parse ":HELLO+: hello world"))))
+    ))
