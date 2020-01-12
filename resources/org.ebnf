@@ -48,3 +48,9 @@ dynamic-block-end-line = <'#+END:'>
 
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
+
+footnote-line = <'['> footnote-label <'] '> footnote-contents
+footnote-label = (number | <'fn:'> footnote-word)
+<number> = #"\d+"
+<footnote-word> = #"[a-zA-Z0-9-_]+"
+footnote-contents = anything-but-newline

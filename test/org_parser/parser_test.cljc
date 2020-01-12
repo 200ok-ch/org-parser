@@ -161,3 +161,13 @@ is another section"))))))
     (testing "dynamic-block-end"
       (is (= [:dynamic-block-end-line]
              (parse "#+END:"))))))
+
+
+(deftest footnote
+  (let [parse #(parser/org % :start :footnote-line)]
+    (testing "footnote with fn label"
+      (is (= [:footnote-line [:footnote-label "some-label"] [:footnote-contents "some contents"]]
+             (parse "[fn:some-label] some contents"))))
+    (testing "footnote with number label"
+      (is (= [:footnote-line [:footnote-label "123"] [:footnote-contents "some contents"]]
+             (parse "[123] some contents"))))))
