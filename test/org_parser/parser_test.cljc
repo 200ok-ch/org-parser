@@ -171,3 +171,31 @@ is another section"))))))
     (testing "footnote with number label"
       (is (= [:footnote-line [:footnote-label "123"] [:footnote-contents "some contents"]]
              (parse "[123] some contents"))))))
+
+
+(deftest list-item-line
+  (let [parse #(parser/org % :start :list-item-line)]
+
+    (testing "list-item-line with asterisk"
+      (is (= [:list-item-line [:list-item-bullet "*"] [:list-item-contents "a simple list item"]]
+             (parse "* a simple list item"))))
+    (testing "list-item-line with hyphen"
+      (is (= [:list-item-line [:list-item-bullet "-"] [:list-item-contents "a simple list item"]]
+             (parse "- a simple list item"))))
+    (testing "list-item-line with plus sign"
+      (is (= [:list-item-line [:list-item-bullet "+"] [:list-item-contents "a simple list item"]]
+             (parse "+ a simple list item"))))
+    (testing "list-item-line with counter and dot"
+      (is (= [:list-item-line
+              [:list-item-counter "1"]
+              [:list-item-counter-suffix "."]
+              [:list-item-contents "a simple list item"]]
+             (parse "1. a simple list item"))))
+    (testing "list-item-line with counter and parentheses"
+      (is (= [:list-item-line
+              [:list-item-counter "1"]
+              [:list-item-counter-suffix ")"]
+              [:list-item-contents "a simple list item"]]
+             (parse "1) a simple list item"))))
+
+    ))
