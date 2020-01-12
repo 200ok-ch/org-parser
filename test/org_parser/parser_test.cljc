@@ -197,5 +197,23 @@ is another section"))))))
               [:list-item-counter-suffix ")"]
               [:list-item-contents "a simple list item"]]
              (parse "1) a simple list item"))))
+    (testing "list-item-line with alphabetical counter and parentheses"
+      (is (= [:list-item-line
+              [:list-item-counter "a"]
+              [:list-item-counter-suffix ")"]
+              [:list-item-contents "a simple list item"]]
+             (parse "a) a simple list item"))))
+    (testing "list-item-line with alphabetical counter and parentheses"
+      (is (= [:list-item-line
+              [:list-item-counter "A"]
+              [:list-item-counter-suffix ")"]
+              [:list-item-contents "a simple list item"]]
+             (parse "A) a simple list item"))))
+    (testing "list-item-line with checkbox"
+      (is (= [:list-item-line
+              [:list-item-bullet "-"]
+              [:list-item-checkbox [:list-item-checkbox-state "X"]]
+              [:list-item-contents "a simple list item"]]
+             (parse "- [X] a simple list item"))))
 
     ))

@@ -55,8 +55,10 @@ footnote-label = (number | <'fn:'> footnote-word)
 <footnote-word> = #"[a-zA-Z0-9-_]+"
 footnote-contents = anything-but-newline
 
-list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> list-item-contents
+list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> (list-item-checkbox <" "> list-item-contents / list-item-contents)
 list-item-bullet = #"[*\-+]"
 list-item-contents = anything-but-newline
-list-item-counter = #"\d+"
+list-item-counter = #"(\d+|[a-zA-Z])"
 list-item-counter-suffix = #"[.)]"
+list-item-checkbox = <"["> list-item-checkbox-state <"]">
+list-item-checkbox-state = #"[ \-X]"
