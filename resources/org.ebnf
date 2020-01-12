@@ -1,6 +1,6 @@
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / content-line) eol
 
 empty-line = "" | #"\s+"
 content-line = #".*"
@@ -61,4 +61,10 @@ list-item-contents = anything-but-newline
 list-item-counter = #"(\d+|[a-zA-Z])"
 list-item-counter-suffix = #"[.)]"
 list-item-checkbox = <"["> list-item-checkbox-state <"]">
+(* CHECK-BOX is either a single whitespace character, a “X” character
+or a hyphen, enclosed within square brackets. *)
 list-item-checkbox-state = #"[ \-X]"
+
+keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
+keyword-key = #"[^\s:]+"
+keyword-value = anything-but-newline

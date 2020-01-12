@@ -215,5 +215,11 @@ is another section"))))))
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:list-item-contents "a simple list item"]]
              (parse "- [X] a simple list item"))))
-
     ))
+
+
+(deftest keyword
+  (let [parse #(parser/org % :start :keyword-line)]
+    (testing "keyword"
+      (is (= [:keyword-line [:keyword-key "HELLO"] [:keyword-value "hello world"]]
+             (parse "#+HELLO: hello world"))))))
