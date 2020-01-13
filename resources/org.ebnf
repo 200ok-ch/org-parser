@@ -73,3 +73,41 @@ node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> 
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
 node-property-value = anything-but-newline
+
+
+(* timestamps *)
+
+(* TODO cite orgmode spec on timestamps *)
+(* TODO is it OK to omit leading zeros? *)
+(* TODO how is the time precision? *)
+
+timestamp = timestamp-active / timestamp-inactive
+
+timestamp-active   = <'<'> (timestamp-inner / timestamp-inner-span) <'>'> / <'<'> timestamp-inner <'>--<'> timespan-inner <'>'>
+
+timestamp-inactive = <'['> (timestamp-inner / timestamp-inner-span) <']'> / <'['> timestamp-inner <']--['> timespan-inner <']'>
+
+(* a single point in time *)
+timestamp-inner = timestamp-inner-w-time ts-modifiers / timestamp-inner-wo-time ts-modifiers
+
+(* a time span *)
+timestamp-inner-span = timestamp-inner-w-time <'-'> ts-time ts-modifiers
+
+(* TODO day name stuff and maybe more is missing *)
+(* TODO multiple space allowed inbetween? *)
+(* TODO make day optional? *)
+timestamp-inner-w-time  = ts-date <' '> ts-day <' '> ts-time
+timestamp-inner-wo-time = ts-date <' '> ts-day
+
+(* must be validated anyway *)
+ts-date = #"\d{4}-\d{2}-\d{2}"
+
+(* must be validated anyway *)
+ts-time = #"\d{2}:\d{2}:(\d{2})?"
+
+(* TODO is there a class for letters? *)
+(* TODO does \s match \n\r? if yes (like in JS), there is redundant \n\r in code above. *)
+ts-day = #"[^\d\s]+"
+
+(* TODO reapeaters and stuff *)
+ts-modifiers = <''>
