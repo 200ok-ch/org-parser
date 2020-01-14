@@ -11,6 +11,8 @@ brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
 strives to be that!
 
+** Development
+
 =org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
 build parsers in Clojure. Apart from living up to this claim (and
 beyond the scope of just the one programming language), using
@@ -19,13 +21,24 @@ and CLJS. Therefore =org-parser= can be used from both ecosystems
 which, of course, include JavaScript and Java. Hence, it is possible
 to use it in various situations.
 
-** Usage
+*** Prerequisites
 
-FIXME
+Please install [[https://clojure.org/guides/getting_started][Clojure]] and [[https://leiningen.org/][Leiningen]].
+
+There's no additional installation required. Leiningen will pull
+dependencies if required.
+
+*** Testing
+
+Running the tests:
+
+#+BEGIN_SRC shell
+lein test
+#+END_SRC
 
 ** License
 
-Copyright © 2019 [[https://200ok.ch/][200ok llc]].
+Copyright © 2020 [[https://200ok.ch/][200ok llc]].
 
 This program and the accompanying materials are made available under the
 terms of the GNU Affero General Public License Version 3 which is made
