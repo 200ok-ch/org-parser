@@ -96,8 +96,8 @@ ts-inner-span = ts-inner-w-time <'-'> ts-time ts-modifiers
 (* TODO day name stuff and maybe more is missing *)
 (* TODO multiple space allowed inbetween? *)
 (* TODO make day optional? *)
-ts-inner-w-time  = ts-date <' '> ts-day <' '> ts-time
-ts-inner-wo-time = ts-date / ts-date <' '> ts-day
+ts-inner-w-time  = ts-date [<' '> ts-day] <' '> ts-time
+ts-inner-wo-time = ts-date [<' '> ts-day]
 
 (* must be validated anyway *)
 ts-date = #"\d{4}-\d{2}-\d{2}"
