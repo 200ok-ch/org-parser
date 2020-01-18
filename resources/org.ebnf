@@ -118,10 +118,13 @@ ts-time = #"\d{2}:\d{2}(:\d{2})?"
 ts-day = #"[^\d\s>\]]+"
 
 (* reapeaters and stuff. cannot find spec on timestamps. this is just taken from organice. *)
-ts-modifiers = (<' '> ts-modifier)*
+ts-modifiers = Epsilon | (<' '> ts-repeater [<' '> ts-warning]) | (<' '> ts-warning [<' '> ts-repeater])
 
-ts-modifier = ts-mod-sign ts-mod-num ts-mod-unit
+ts-repeater = ts-repeater-type ts-mod-value ts-mod-unit
+ts-warning  = ts-warning-type  ts-mod-value ts-mod-unit
 
-ts-mod-sign = ('+'|'++'|'.+'|'-'|'--')
-ts-mod-num = #'\d+'
+ts-repeater-type = ('+'|'++'|'.+')
+ts-warning-type  = ('-'|'--')
+
+ts-mod-value = #'\d+'
 ts-mod-unit = #'[hdwmy]'
