@@ -249,15 +249,15 @@ is another section"))))))
 (deftest timestamp
   (let [parse #(parser/org % :start :timestamp)]
     (testing "date-only timestamp"
-      (is (= [:timestamp [:timestamp-active [:timestamp-inner [:timestamp-inner-wo-time [:ts-date "2020-01-18"]] [:ts-modifiers]]]]
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2020-01-18"]] [:ts-modifiers]]]]
              (parse "<2020-01-18>"))))
     (testing "date timestamp with day"
-      (is (= [:timestamp [:timestamp-active [:timestamp-inner [:timestamp-inner-wo-time [:ts-date "2020-01-18"] [:ts-day "Sat"]] [:ts-modifiers]]]]
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2020-01-18"] [:ts-day "Sat"]] [:ts-modifiers]]]]
              (parse "<2020-01-18 Sat>"))))
     (testing "date timestamp with day and time"
-      (is (= [:timestamp [:timestamp-active [:timestamp-inner [:timestamp-inner-w-time [:ts-date "2020-01-18"] [:ts-day "Sat"] [:ts-time "12:00"]] [:ts-modifiers]]]]
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-day "Sat"] [:ts-time "12:00"]] [:ts-modifiers]]]]
              (parse "<2020-01-18 Sat 12:00>"))))
     (testing "date timestamp with day and time with seconds"
-      (is (= [:timestamp [:timestamp-active [:timestamp-inner [:timestamp-inner-w-time [:ts-date "2020-01-18"] [:ts-day "Sat"] [:ts-time "12:00:00"]] [:ts-modifiers]]]]
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-day "Sat"] [:ts-time "12:00:00"]] [:ts-modifiers]]]]
              (parse "<2020-01-18 Sat 12:00:00>"))))
     ))
