@@ -109,5 +109,11 @@ ts-time = #"\d{2}:\d{2}(:\d{2})?"
 (* TODO does \s match \n\r? if yes (like in JS), there is redundant \n\r in code above. *)
 ts-day = #"[^\d\s>\]]+"
 
-(* TODO reapeaters and stuff *)
-ts-modifiers = <''>
+(* reapeaters and stuff. cannot find spec on timestamps. this is just taken from organice. *)
+ts-modifiers = (<' '> ts-modifier)*
+
+ts-modifier = ts-mod-sign ts-mod-num ts-mod-unit
+
+ts-mod-sign = ('+'|'++'|'.+'|'-'|'--')
+ts-mod-num = #'\d+'
+ts-mod-unit = #'[hdwmy]'
