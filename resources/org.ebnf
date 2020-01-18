@@ -75,11 +75,17 @@ node-property-plus = <"+">
 node-property-value = anything-but-newline
 
 
-(* timestamps *)
+(* timestamps
+   https://orgmode.org/worg/dev/org-element-api.html
 
-(* TODO cite orgmode spec on timestamps *)
-(* TODO is it OK to omit leading zeros? *)
-(* TODO how is the time precision? *)
+   We do not try to reproduce the same structure as in the spec because
+   - it's not possible, e.g. :raw-value cannot be preserved
+   - separating a date or time in its parts does not make much sense in
+     a high-level programming language
+   - e.g. values of :type, :repeater-type, :warning-type cannot be
+     constructed with instaparse
+
+   *)
 
 timestamp = timestamp-active / timestamp-inactive
 
@@ -102,6 +108,8 @@ ts-inner-wo-time = ts-date [<' '> ts-day]
 (* must be validated anyway *)
 ts-date = #"\d{4}-\d{2}-\d{2}"
 
+(* TODO is it OK to omit leading zeros in time? *)
+(* TODO how is the time precision? *)
 (* must be validated anyway *)
 ts-time = #"\d{2}:\d{2}(:\d{2})?"
 
