@@ -1,0 +1,302 @@
+#+TODO: TODO | DONE
+#+TODO: START INPROGRESS STALLED | FINISHED
+
+* This is an actual org file - feel free to play around with it! (Don't worry about messing it up - your changes won't be saved, so just refresh the page to reset it)
+* For starters, tap on the next header to open it
+This header has some description text and a couple subheaders. Look through the next few top level headers to learn more about organice.
+** This is a subheader
+** This is a subheader too!
+* Actions
+** Editing headers
+When you select a header the "header action drawer" appears. The first two icons in this drawer edit the header and description respectively. Try editing this header.
+** All icons in the header action bar
+
+1. Pen: Edit header title
+2. Pen in square: Edit header description
+3. Tags: [[https://orgmode.org/manual/Tags.html][Modify tags]]
+4. Properties: [[https://orgmode.org/manual/Properties-and-columns.html][Modify properties]]
+5. Expand: [[https://orgmode.org/manual/Structure-editing.html][Narrow to subtree]] (Focus on this header)
+6. Plus: Create new header below
+7. Mail: Share this header via email
+8. Calendar 1: [[https://orgmode.org/manual/Deadlines-and-scheduling.html][Set deadline datetime]]
+9. Calendar 2: [[https://orgmode.org/manual/Deadlines-and-scheduling.html][Set scheduled datetime]]
+10. Hourglass: [[https://orgmode.org/manual/Clocking-commands.html][Clock in and out (Start and stop the clock)]]
+11. File Export: [[https://orgmode.org/manual/Refile-and-copy.html][Refile this header to another header]]
+
+** Todos [1/4] [25%]
+This header has a few TODO items as subheaders.
+*** TODO Learn how to use TODOs in organice
+To advance the todo state of a header, swipe right on it until the background turns green.
+
+Try advancing the todo state of this header a few times!
+**** There's also a setting once you're signed in to enable tapping on the TODO label itself to advance the todo state. Its off by default because I thought the behavior would be confusing unless explained, but I recommend turning it on!
+*** DONE Check out organice
+*** START Investigate custom TODO states
+organice also supports [[http://orgmode.org/manual/Workflow-states.html#Workflow-states][custom todo states]] (if declared at the top of the file). Swipe right on this header a few times.
+
+Note that when the cycle restarts, it defaults to the first set of todo states. Manually edit the header to get back to a different todo state cycle (more on editing headers below!)
+*** FINISHED See that custom TODO states are colored correctly
+Custom =org-todo-keywords= keyword sequences can have finish states. They are colored appropriately. You can see that TODO and START headlines are colored red whereas DONE and FINISHED headlines are colored green.
+** Tags
+The next button in the header action drawer will bring up the tag editor.
+
+This editor lets you add, modify, and reorder tags, as well as giving you easy access to all tags in the file.
+
+Try it out on these headers:
+*** Dogs:
+**** Eloise                                         :cute:middleaged:tiny:
+**** Clooney                                             :cute:young:tiny:
+**** Murphy                                             :cute:young:small:
+**** Starla                                              :cute:old:medium:
+**** Rex                                                 :cute:old:medium:
+**** Maz                                           :cute:middleaged:large:
+** Focusing
+The next button in the header action drawer "focuses" on a header, hiding all others and promoting it to the top level. Press the button again to "unfocus".
+
+This is purely visual - your org file isn't affected under the hood.
+
+I find this useful for focusing on my "Groceries" list when I go to the grocery store. Give it a shot on this grocery list:
+*** Groceries
+- [ ] Mangoes
+- [ ] Dark chocolate
+- [ ] Carrots
+** Adding and removing headers
+To add a new header, press the + button in the header action drawer
+
+To remove a header, swipe left on the header until the background turns red.
+** Moving headers
+To move a header, click on the four-way arrows button at the bottom of the screen with a header selected. 6 buttons will appear for moving headers.
+
+The center 4 move the header up, down, left, and right. The 2 outermost buttons move the header and its entire nested subtree.
+
+Give them a try on these nested headers to get a feel for how they operate:
+*** A few of my favorite things:
+**** Food
+***** Chocolate
+****** Dark chocolate
+****** Milk chocolate
+****** Crispy chocolate
+***** Mangoes
+**** Text editors
+***** Emacs
+**** Mountain bikes
+***** Santa Cruz
+***** Trek
+***** Giant
+***** Specialized
+**** Dogs
+***** Eloise
+***** Maz
+***** Starla
+***** Rex
+***** Clooney
+** Syncing
+The "cloud" button in the lower left hand corner syncs changes to your
+chosen sync service (Dropbox, Google Drive or WebDAV).
+
+If there's a newer version on the server and no local changes, it'll pull.
+
+If there's no newer version on the server and there are local changes, it'll push.
+
+Otherwise, it'll ask what you want to do.
+
+This button isn't enabled in this demo :)
+
+If you'd like to automatically push changes as you make them, you can enable "Live sync" in settings.
+** Undo / Redo
+   When you're signed in, you'll have =undo= and =redo= buttons in the
+   headerbar.
+* Tables
+organice has native support for viewing and editing tables.
+
+Try playing around with this one by first clicking on a cell:
+
+| Dog name | Age | Weight (in lbs) | Parent   | Score (1-10) |
+|----------+-----+-----------------+----------+--------------|
+| Eloise   |   3 |             5.1 | Erin     |           15 |
+|----------+-----+-----------------+----------+--------------|
+| Starla   |  15 |              40 | Sarah S  |           15 |
+|----------+-----+-----------------+----------+--------------|
+| Rex      |  15 |              45 | Sarah S  |           15 |
+|----------+-----+-----------------+----------+--------------|
+| Maz      |   1 |              55 | Brittany |           15 |
+|----------+-----+-----------------+----------+--------------|
+| Clooney  | 0.1 |             4.8 | Sarah R  |           15 |
+|----------+-----+-----------------+----------+--------------|
+| Murphy   | 0.5 |              25 | Jordan   |           15 |
+
+** New action drawer items
+When a table cell is selected, a table-specific action drawer appears.
+
+The leftmost icon allows you to edit a cell.
+
+On the right side, the top two icons let you add and remove rows. The
+bottom two icons let you add and remove columns.
+
+** Moving rows and columns
+When a table cell is selected, the four-way arrow button at the bottom
+of the screen changes to manipulate tables.
+
+Press up and down to move rows, and left and right to move columns.
+* Lists and checkboxes
+organice has native support for displaying plain lists and checkboxes
+
+Plain:
+
+- plain list item 1
+- plain list item 2
+  - sub item 1
+- plain list item 3
+
+Ordered:
+
+1. Item 1
+2. Item 2
+20. [@20] Item 20
+21. Item 21
+
+Checkboxes:
+
+- [-] 1 [1/2]
+  - [ ] 1.1 [0%]
+    - [ ] 1.1.1
+  - [X] 1. 2
+- [X] 2
+
+Currently, plain lists are mostly display only (except that you can check/uncheck checkboxes). If native support for manipulating plain lists is important to you, please let me know by upvoting [[https://github.com/200ok-ch/organice/issues/26][the issue]] on Github
+* Timestamps
+organice has native support for displaying and editing timestamps.
+
+Try tapping on the timestamps below to get a feel for the editor:
+
+<2018-09-17 Sun>
+
+[2018-09-17 Sun]
+
+[2018-09-17 Sun +1d]
+
+[2018-09-17 Sun 10:00-11:30]
+
+<2018-09-17 Sun>--<2018-09-25 Tue>
+* Property lists
+organice has native support for viewing and editing [[https://orgmode.org/guide/Properties.html][property lists]]. To bring up an editor, expand the ~PROPERTIES~ drawer below and tap on any of the properties.
+** Example
+:PROPERTIES:
+:callsign: Maverick
+:eyewear: Aviators
+:launch-date: [1986-05-16 Fri]
+:END:
+* Planning
+organice has native support for adding and editing DEADLINE and SCHEDULED items. It also supports [[https://orgmode.org/manual/Repeated-tasks.html][repeaters]] and [[https://orgmode.org/manual/Deadlines-and-scheduling.html#Deadlines-and-scheduling][delays]]. Check out these examples:
+** An item with a deadline
+   DEADLINE: <2018-10-03 Wed>
+** An item that is scheduled
+   SCHEDULED: <2018-10-18 Thu>
+** An item with both
+   DEADLINE: <2018-10-05 Fri> SCHEDULED: <2018-10-04 Thu>
+** TODO An item with a repeater - try swiping right to advance to the DONE state
+   DEADLINE: <2019-01-03 Thu ++1w>
+   :PROPERTIES:
+   :LAST_REPEAT: [2019-12-08 Sun 11:19]
+   :END:
+   - State "DONE"       from "TODO"       [2019-12-08 Sun 11:19]
+* Capture
+organice supports something like org-capture in the form of customizable, quickly accessible buttons for creating new headers.
+
+Click the button in the bottom right corner of the screen to see some examples. The first button, the lemon, will create a new entry in the "Groceries" list below this. The second button adds an entry to a more deeply nested header.
+
+Once signed in, you can set up capture templates that specify header paths (and various other configurations). These capture templates can also sync between your devices (if you enable settings sync).
+** Groceries
+** Deeply
+*** Nested
+**** Headers
+***** Work
+****** Too!
+
+* Search / Task List
+
+Below, there is a button to open up a generic search and a task list.
+
+Tap a header in the view to jump to it.
+
+Using the filter input, you can search for headlines. Specifically, you can search for headline text, TODO keywords, tags, and [[https://orgmode.org/guide/Properties.html][orgmode properties]]. It also supports alternatives, and you can exclude headlines by negating a filter.
+
+** Differences Search and Task List
+
+- In the task list, you can tap on the date to switch to a more readable relative date format.
+- The task list shows only tasks - i.e. headlines with a TODO keyword are displayed.
+  - The tasks will be sorted by state and then date.
+
+** Examples for the search syntax
+
+You can simply search for
+
+=TODO check out organice|orgmode=
+
+to filter for tasks containing these words. The pipe symbol (|) is a logical /OR/. The filter is a smart-case search:
+
+- Lower-case words mean that the filter ignores the case.
+- If a word contains upper-case letters, the filter is case-sensitive.
+
+The following example searches for headlines containing *START* or *FINISHED* keywords and the string "states are". You can also use single-quotes.
+
+=START|FINISHED "states are"=
+
+The next example excludes *DONE* headlines but requires the tag *fun*.
+
+=-DONE  :fun=
+
+You can exclude text strings, tags, and properties as well by prepending the minus sign (-).
+
+Last but not least, you can search for headlines with defined properties:
+
+=TODO :blocked_by:  :assignee:nobody|none=
+
+This filters headlines having a property *blocked_by* (with any value) and a property *assignee* with a value containing =nobody= or =none=.
+
+** Auto-completion for filters
+
+You probably noticed that organice provides suggestions for your filter. After space, =-=, =:=, and =|= you can tap on the completion – no need to type the tag, property, etc.
+
+** TODO Example with properties							:fun:
+:PROPERTIES:
+:assignee: nobody
+:blocked_by: the others
+:END:
+
+* Agenda
+organice has a basic agenda view that you can access by tapping the calendar button at the bottom of the page.
+
+Tap a header in this view to jump to it, and tap on the date to switch to a more readable relative date format.
+
+These overdue items with deadlines should show up on today's entry:
+** TODO check out the organice agenda view
+DEADLINE: <2018-09-10 Mon>
+** TODO install organice to your phones homescreen
+SCHEDULED: <2018-09-17 Mon>
+* Syncing
+organice pulls down your org files from Dropbox, Google Drive or
+WebDAV. Click the "Sign in" button in the upper right hand corner to
+sign in with either of them and authenticate organice.
+
+** Backups
+The first time you push changes from organice back up to your chosen
+sync service, organice will make a backup of the original file first.
+It'll be named {your-file-name}.organice-bak. Dropbox and Google Drive
+also both keep a full version history of your files for you, but this
+is an additional precaution in case something goes wrong pushing the
+file back up.
+
+Generally, when working with distributed Org files, we're recommending
+to put them under version control and to check for bugs and racing
+conditions between clients.
+* organice operates completely client side
+You don't log in to organice directly because organice doesn't have a
+back end - it operates completely client side using Dropbox, Google
+Drive or WebDAV as back-ends.
+* Capture URL params and Siri support
+organice supports a flexible mechanism for capturing using URL parameters. This mechanism integrates very nicely with the new [[https://support.apple.com/guide/shortcuts/welcome/ios][Siri Shortcuts]] feature in iOS 12, allowing you to use Siri to execute capture templates.
+
+You can use [[https://www.icloud.com/shortcuts/14f91f8cf8f547a183a0734396240984][this sample Shortcut]] to get started with this right away in iOS 12. Open the link on your iOS device and click "Get Shortcut". Then open up the Shortcuts app and edit the template by following the directions in the comments. Then record a Siri trigger and you're good to go!
+
+Alternatively, you can take advantage of the URL parameters yourself to build your own custom capture mechanism. You can find more details about this in [[https://github.com/200ok-ch/organice/#capture-params-and-siri-support][the README file]].
