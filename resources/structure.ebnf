@@ -1,0 +1,33 @@
+document = (heading | section) node* | ''
+
+section = element+
+
+<element> = paragraph
+
+paragraph = empty-lines / content
+content = content-line content-line*
+empty-lines = empty-line empty-line*
+(* anything that doesn't start with a star *)
+<content-line> = #'^[^*\n]+' <eol>
+<empty-line> = #'\s+'? <eol>
+
+<node> = heading (node* | '')
+
+heading = headline section? node*
+
+<headline> = stars priority? comment-token? title? (<eol> | tags <eol>)
+
+stars = #'^\*+' <s>+
+priority = <"[#"> #"[A-Z]" <"]"> <s>
+comment-token = <"COMMENT"> <s>
+title =  #'.*' (* anything but newline *)
+tags = <':'> ( tag <':'> )+
+<tag> = #'[a-zA-Z0-9_@#%]+'
+
+<s> = #'\s+'
+<word> = letter+
+<number> = digit+
+<letter> = #'[a-zA-Z\-]+'
+<digit> = #'[0-9]'
+<newline> = '\n'
+<eol> = <#'\n|$'>

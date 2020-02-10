@@ -3,3 +3,5 @@
 
 
 (def org (insta/parser (clojure.java.io/resource "org.ebnf")))
+
+(def structure (insta/parser (clojure.java.io/resource "structure.ebnf")))
