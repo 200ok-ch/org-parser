@@ -79,15 +79,24 @@ node-property-value = anything-but-newline
    https://orgmode.org/worg/dev/org-element-api.html
 
    We do not try to reproduce the same structure as in the spec because
-   - it's not possible, e.g. :raw-value cannot be preserved
-   - separating a date or time in its parts does not make much sense in
+
+   - it's not possible, e.g. :raw-value cannot be preserved with
+     instaparse (to my understanding)
+   - split up a date or time in its parts does not make much sense in
      a high-level programming language
    - e.g. values of :type, :repeater-type, :warning-type cannot be
-     constructed with instaparse
+     constructed with instaparse (to my understanding)
+
+   Currently not supported: diary format from the Emacs Calendar package
+   https://orgmode.org/manual/Timestamps.html
 
    *)
 
+
 timestamp = timestamp-active / timestamp-inactive
+
+(* TODO How does that work out: :ts-inner appearing two times in :timestamp-active.
+        And if it works in clojure, does it also work in JS hashes (parse result)? *)
 
 timestamp-active   = <'<'> (ts-inner / ts-inner-span) <'>'> / <'<'> ts-inner <'>--<'> ts-inner <'>'>
 
@@ -100,10 +109,8 @@ ts-inner = ts-inner-w-time ts-modifiers / ts-inner-wo-time ts-modifiers
 ts-inner-span = ts-inner-w-time <'-'> ts-time ts-modifiers
 
 (* TODO day name stuff and maybe more is missing *)
-(* TODO multiple space allowed inbetween? *)
-(* TODO make day optional? *)
-ts-inner-w-time  = ts-date [<' '> ts-day] <' '> ts-time
-ts-inner-wo-time = ts-date [<' '> ts-day]
+ts-inner-w-time  = ts-date [<' '+> ts-day] <' '+> ts-time
+ts-inner-wo-time = ts-date [<' '+> ts-day]
 
 (* must be validated anyway *)
 ts-date = #"\d{4}-\d{2}-\d{2}"
@@ -113,12 +120,12 @@ ts-date = #"\d{4}-\d{2}-\d{2}"
 (* must be validated anyway *)
 ts-time = #"\d{2}:\d{2}(:\d{2})?"
 
-(* TODO is there a class for letters? *)
-(* TODO does \s match \n\r? if yes (like in JS), there is redundant \n\r in code above. *)
+(* TODO Is there a class for letters? *)
+(* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
 ts-day = #"[^\d\s>\]]+"
 
-(* reapeaters and stuff. cannot find spec on timestamps. this is just taken from organice. *)
-ts-modifiers = Epsilon | (<' '> ts-repeater [<' '> ts-warning]) | (<' '> ts-warning [<' '> ts-repeater])
+(* reapeaters and warning *)
+ts-modifiers = Epsilon | (<' '+> ts-repeater [<' '+> ts-warning]) | (<' '+> ts-warning [<' '+> ts-repeater])
 
 ts-repeater = ts-repeater-type ts-mod-value ts-mod-unit
 ts-warning  = ts-warning-type  ts-mod-value ts-mod-unit
