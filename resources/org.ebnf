@@ -130,7 +130,8 @@ ts-time = #"\d{2}:\d{2}(:\d{2})?"
 (* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
 ts-day = #"[^\d\s>\]]+"
 
-(* reapeaters and warning *)
+(* Reapeaters and warnings are described here:
+   https://orgmode.org/manual/Repeated-tasks.html *)
 ts-modifiers = Epsilon | (<' '+> ts-repeater [<' '+> ts-warning]) | (<' '+> ts-warning [<' '+> ts-repeater])
 
 ts-repeater = ts-repeater-type ts-mod-value ts-mod-unit [<'/'> ts-mod-at-least]
