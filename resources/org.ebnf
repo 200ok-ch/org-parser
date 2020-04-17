@@ -127,8 +127,11 @@ ts-day = #"[^\d\s>\]]+"
 (* reapeaters and warning *)
 ts-modifiers = Epsilon | (<' '+> ts-repeater [<' '+> ts-warning]) | (<' '+> ts-warning [<' '+> ts-repeater])
 
-ts-repeater = ts-repeater-type ts-mod-value ts-mod-unit
+ts-repeater = ts-repeater-type ts-mod-value ts-mod-unit [<'/'> ts-mod-at-least]
 ts-warning  = ts-warning-type  ts-mod-value ts-mod-unit
+
+(* See https://orgmode.org/manual/Tracking-your-habits.html *)
+ts-mod-at-least = ts-mod-value ts-mod-unit
 
 ts-repeater-type = ('+'|'++'|'.+')
 ts-warning-type  = ('-'|'--')
