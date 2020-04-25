@@ -3,6 +3,7 @@ S = line*
 <line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / content-line) eol
 
 empty-line = "" | #"\s+"
+(* TODO same as title text below. *)
 content-line = #".*"
 
 <eol> = <#'\n|$'>
@@ -13,6 +14,7 @@ head-line = stars [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
+(* TODO title text is more than just words; e.g. formatting and timestamps are allowed. -> generic text? *)
 title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
