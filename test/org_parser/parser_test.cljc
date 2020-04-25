@@ -1,5 +1,6 @@
 (ns org-parser.parser-test
   (:require [org-parser.parser :as parser]
+            [instaparse.core :as insta]
             #?(:clj [clojure.test :as t :refer :all]
                :cljs [cljs.test :as t :include-macros true])))
 
@@ -257,6 +258,9 @@ is another section"))))))
     (testing "date timestamp with day in other language"
       (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2020-01-21"] [:ts-day "Di"]] [:ts-modifiers]]]]
              (parse "<2020-01-21 Di>"))))
+    (testing "date timestamp with day containing umlauts"
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2020-01-21"] [:ts-day "Dönerstag"]] [:ts-modifiers]]]]
+             (parse "<2020-01-21 Dönerstag>"))))
     (testing "date timestamp without day and time"
       (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "12:00"]] [:ts-modifiers]]]]
              (parse "<2020-01-18 12:00>"))))
@@ -289,4 +293,66 @@ is another section"))))))
                                              [:ts-modifiers [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
                                               [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
              (parse "<2020-01-18 -2d +1w>"))))
-    ))
+    (testing "timestamp with time and both warning and repeater"
+      (is (= [:timestamp [:timestamp-active [:ts-inner
+	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	     [:ts-modifiers
+	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+             (parse "<2020-01-18 18:00 -2d +1w>"))))
+
+    (testing "timestamp with time span and both warning and repeater"
+      (is (= [:timestamp [:timestamp-active [:ts-inner-span
+	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	     [:ts-time "20:00"]
+	     [:ts-modifiers
+	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+             (parse "<2020-01-18 18:00-20:00 -2d +1w>"))))
+
+    (testing "more than one space between parts of timestamp does not matter"
+      (is (= [:timestamp [:timestamp-active [:ts-inner
+	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	     [:ts-modifiers
+	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+             (parse "<2020-01-18    18:00    -2d    +1w>"))))
+
+    (testing "timestamp ranges"
+      (is (= [:timestamp [:timestamp-active
+	     [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-25"]] [:ts-modifiers]]
+	     [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-28"]] [:ts-modifiers]]]]
+             (parse "<2020-04-25>--<2020-04-28>"))))
+    (testing "timestamp ranges with times"
+      (is (= [:timestamp [:timestamp-active
+	     [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-25"] [:ts-time "08:00"]] [:ts-modifiers]]
+	     [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-28"] [:ts-time "16:00"]] [:ts-modifiers]]]]
+             (parse "<2020-04-25 08:00>--<2020-04-28 16:00>"))))
+
+    (testing "inactive timestamps"
+      (is (= [:timestamp [:timestamp-inactive [:ts-inner-span
+	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	     [:ts-time "20:00"]
+	     [:ts-modifiers
+	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+             (parse "[2020-01-18 18:00-20:00 -2d +1w]"))))
+
+    (testing "syntactically wrong timestamp"
+      (is (insta/failure? (parse "<2020-04-25 day wrong>"))))
+
+    (testing "at-least modifier for habits"
+      (is (= [:timestamp [:timestamp-active [:ts-inner
+	     [:ts-inner-wo-time [:ts-date "2009-10-17"] [:ts-day "Sat"]]
+	     [:ts-modifiers [:ts-repeater
+	       [:ts-repeater-type ".+"] [:ts-mod-value "2"] [:ts-mod-unit "d"]
+	       [:ts-mod-at-least [:ts-mod-value "4"] [:ts-mod-unit "d"]]]]]]]
+             (parse "<2009-10-17 Sat .+2d/4d>"))))
+
+    (testing "newlines are not recognized as space \\s"
+      ;; http://xahlee.info/clojure/clojure_instaparse.html
+      (is (insta/failure? (parse "<2020-04-17 F\nri>"))))))
+
+(def pars #(parser/org % :start :timestamp))
+
+;; (pars "<2020-04-17 F\nri>")
