@@ -349,10 +349,16 @@ is another section"))))))
 	       [:ts-mod-at-least [:ts-mod-value "4"] [:ts-mod-unit "d"]]]]]]]
              (parse "<2009-10-17 Sat .+2d/4d>"))))
 
+    (testing "accept seconds in time"
+      (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-w-time
+	      [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "15:30:55"]] [:ts-modifiers]]]]
+             (parse "<2009-10-17 Sat 15:30:55>"))))
+
+    (testing "missing leading zeros in time are no problem"
+      (is (= [:timestamp [:timestamp-active [:ts-inner
+	     [:ts-inner-w-time [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "8:00"]] [:ts-modifiers]]]]
+             (parse "<2009-10-17 Sat 8:00>"))))
+
     (testing "newlines are not recognized as space \\s"
       ;; http://xahlee.info/clojure/clojure_instaparse.html
       (is (insta/failure? (parse "<2020-04-17 F\nri>"))))))
-
-(def pars #(parser/org % :start :timestamp))
-
-;; (pars "<2020-04-17 F\nri>")
