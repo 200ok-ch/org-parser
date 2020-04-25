@@ -362,3 +362,13 @@ is another section"))))))
     (testing "newlines are not recognized as space \\s"
       ;; http://xahlee.info/clojure/clojure_instaparse.html
       (is (insta/failure? (parse "<2020-04-17 F\nri>"))))))
+
+
+(deftest literal-line
+  (let [parse #(parser/org % :start :literal-line)]
+    (testing "parse literal line starting with colon"
+      (is (= [:literal-line [:ll-leading-space ""] [:ll-text "literal text"]]
+             (parse ":literal text"))))
+    (testing "parse literal line starting with spaces"
+      (is (= [:literal-line [:ll-leading-space "  "] [:ll-text " literal text "]]
+             (parse "  : literal text "))))))

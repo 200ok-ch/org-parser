@@ -1,12 +1,14 @@
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / literal-line / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
 content-line = #".*"
+(* content-line = text *)
 
 <eol> = <#'\n|$'>
+(* TODO remove <> to enable use where the spaces are actual needed *)
 <s> = <#"[\t ]+">
 <word> = #"[^\r\n\s$]+"
 
@@ -14,10 +16,16 @@ head-line = stars [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
-(* TODO title text is more than just words; e.g. formatting and timestamps are allowed. -> generic text? *)
+(* TODO title text is more than just words; e.g. formatting and timestamps are allowed. *)
 title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
+
+(* https://orgmode.org/manual/Literal-Examples.html *)
+(* TODO need to preserve leading space? *)
+literal-line = ll-leading-space <':'> ll-text
+ll-leading-space = #"[\t ]*"
+ll-text = #".*"
 
 affiliated-keyword-line = <"#+"> (key | attr) <": "> value
 optional = <"["> optional-value <"]">
@@ -55,6 +63,7 @@ footnote-line = <'['> footnote-label <'] '> footnote-contents
 footnote-label = (number | <'fn:'> footnote-word)
 <number> = #"\d+"
 <footnote-word> = #"[a-zA-Z0-9-_]+"
+(* TODO footnote-context should be text *)
 footnote-contents = anything-but-newline
 
 list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> (list-item-checkbox <" "> list-item-contents / list-item-contents)
@@ -74,6 +83,7 @@ keyword-value = anything-but-newline
 node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value]
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
+(* TODO footnote-context should be text *)
 node-property-value = anything-but-newline
 
 
@@ -142,3 +152,33 @@ ts-warning-type  = ('-'|'--')
 
 ts-mod-value = #'\d+'
 ts-mod-unit = #'[hdwmy]'
+
+
+
+
+
+(* text is any orgmode text that can contain markup, links, footnotes, timestamps, ...
+
+   It can be a full line or part of a line (e.g. in title, lists, property values, tables, ...)
+
+ *)
+
+text = #".*" / link
+
+(* Hyperlinks
+   https://orgmode.org/guide/Hyperlinks.html
+ *)
+
+link = <'[['> link-uri <']]'> / <'[['> link-uri <']['> link-description <']]'>
+link-uri = #"[]]*"
+(* TODO do description must support markup? *)
+link-description = #"[]]*"
+
+(* External Links
+   https://orgmode.org/manual/External-Links.html
+   TODO reuse orgmode source/regexes?
+ *)
+
+(* Internal Links
+   https://orgmode.org/manual/Internal-Links.html
+ *)
