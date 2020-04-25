@@ -114,17 +114,12 @@ ts-inner = ts-inner-w-time ts-modifiers / ts-inner-wo-time ts-modifiers
 (* a time span *)
 ts-inner-span = ts-inner-w-time <'-'> ts-time ts-modifiers
 
-(* TODO day name stuff and maybe more is missing *)
 ts-inner-w-time  = ts-date [<' '+> ts-day] <' '+> ts-time
 ts-inner-wo-time = ts-date [<' '+> ts-day]
 
-(* must be validated anyway *)
 ts-date = #"\d{4}-\d{2}-\d{2}"
 
-(* TODO is it OK to omit leading zeros in time? *)
-(* TODO how is the time precision? *)
-(* must be validated anyway *)
-ts-time = #"\d{1,2}:\d{2}(:\d{2})?"
+ts-time = #"\d{1-2}:\d{2}(:\d{2})?"
 
 (* TODO Is there a class for letters? *)
 (* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
