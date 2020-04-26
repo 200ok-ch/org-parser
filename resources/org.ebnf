@@ -163,22 +163,51 @@ ts-mod-unit = #'[hdwmy]'
 
  *)
 
+(* TODO footnote must come before link *)
 text = #".*" / link
 
 (* Hyperlinks
    https://orgmode.org/guide/Hyperlinks.html
+   https://orgmode.org/manual/Link-Format.html
+
+   URIs in text, optionally wrapped in <>, are recognized as links.
+   The general link format is [[]] and [[][]].
  *)
 
-link = <'[['> link-uri <']]'> / <'[['> link-uri <']['> link-description <']]'>
-link-uri = #"[]]*"
+<link-inside> = #"[^]]*"
+
+link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
+(* TODO link and description must support backslash escape for ], [, (and \) *)
+link = link-ext / link-int
 (* TODO do description must support markup? *)
-link-description = #"[]]*"
+link-description = link-inside
 
 (* External Links
    https://orgmode.org/manual/External-Links.html
-   TODO reuse orgmode source/regexes?
+   TODO compare with orgmode source/regexes?
  *)
+link-ext = link-ext-file / link-ext-other / link-ext-web
+
+(* TODO backslash escapes, ssh support *)
+(* TODO link-text-file-location parsed? no because link-inside is
+        greedy. temporary fix: parse filenames without colon: *)
+<link-inside-filename> = #"[^]:]*"
+link-ext-file = ( <'file:'> | & #"\.?/" ) link-inside-filename [ link-ext-file-location ]
+<link-ext-file-location> = <'::'> ( link-file-loc-lnum / link-file-loc-headline / link-file-loc-customid / link-file-loc-string )
+link-file-loc-lnum = #"\d+"
+link-file-loc-headline = <'*'> link-inside
+link-file-loc-customid = <'#'> link-inside
+link-file-loc-string = link-inside
+
+link-ext-other = link-url-scheme <':'> link-url-rest
+link-url-scheme = #"[a-z]+"
+link-url-rest = link-inside
+
+(* Web address without http(s) protocol
+   from https://stackoverflow.com/a/3809435 *)
+link-ext-web = #"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
 
 (* Internal Links
    https://orgmode.org/manual/Internal-Links.html
  *)
+link-int = #"[^]]*"

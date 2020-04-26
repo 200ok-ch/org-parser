@@ -372,3 +372,71 @@ is another section"))))))
     (testing "parse literal line starting with spaces"
       (is (= [:literal-line [:ll-leading-space "  "] [:ll-text " literal text "]]
              (parse "  : literal text "))))))
+
+(deftest links
+  (let [parse #(parser/org % :start :link-format)]
+    (testing "parse simple link"
+      (is (= [:link-format [:link [:link-ext [:link-ext-other
+	      [:link-url-scheme "https"]
+	      [:link-url-rest "//example.com"]]]]]
+             (parse "[[https://example.com]]"))))
+    (testing "parse simple link without protocol"
+      (is (= [:link-format [:link [:link-ext [:link-ext-web "www.example.com"]]]]
+             (parse "[[www.example.com]]"))))
+    (testing "parse link with description"
+      (is (= [:link-format [:link [:link-ext [:link-ext-other
+	      [:link-url-scheme "https"]
+	      [:link-url-rest "//example.com"]]]]
+	     [:link-description "description words"]]
+             (parse "[[https://example.com][description words]]"))))))
+
+(deftest links-external-file
+  (let [parse #(parser/org % :start :link-ext-file)]
+    (testing "parse file link"
+      (is (= [:link-ext-file "folder/file.txt"]
+             (parse "file:folder/file.txt"))))
+    (testing "parse file link"
+      (is (= [:link-ext-file "~/folder/file.txt"]
+             (parse "file:~/folder/file.txt"))))
+    (testing "parse relative file link"
+      (is (= [:link-ext-file "./folder/file.txt"]
+             (parse "./folder/file.txt"))))
+    (testing "parse absolute file link"
+      (is (= [:link-ext-file "/folder/file.txt"]
+             (parse "/folder/file.txt"))))
+    (testing "parse file link with line number"
+      (is (= [:link-ext-file "./file.org" [:link-file-loc-lnum "15"]]
+             (parse "./file.org::15"))))
+    (testing "parse file link with text search string"
+      (is (= [:link-ext-file "./file.org" [:link-file-loc-string "foo bar"]]
+             (parse "./file.org::foo bar"))))
+    (testing "parse file link with headline"
+      (is (= [:link-ext-file "./file.org" [:link-file-loc-headline "header1: test"]]
+             (parse "./file.org::*header1: test"))))
+    (testing "parse file link with custom id"
+      (is (= [:link-ext-file "./file.org" [:link-file-loc-customid "custom-id"]]
+             (parse "./file.org::#custom-id"))))))
+
+(deftest links-external-other-url
+  (let [parse #(parser/org % :start :link-ext-other)]
+    (testing "parse other http link"
+      (is (= [:link-ext-other [:link-url-scheme "https"] [:link-url-rest "//example.com"]]
+             (parse "https://example.com"))))
+    (testing "parse other mailto link"
+      (is (= [:link-ext-other [:link-url-scheme "mailto"] [:link-url-rest "info@example.com"]]
+             (parse "mailto:info@example.com"))))
+    (testing "parse other link with uncommon scheme"
+      (is (= [:link-ext-other [:link-url-scheme "zyx"] [:link-url-rest "rest-of uri ..."]]
+             (parse "zyx:rest-of uri ..."))))))
+
+(deftest links-external-web-address
+  (let [parse #(parser/org % :start :link-ext-web)]
+    (testing "parse web address without scheme"
+      (is (= [:link-ext-web "www.example.com"]
+             (parse "www.example.com"))))
+    (testing "parse web address without scheme"
+      (is (= [:link-ext-web "a.subdomain.example.com"]
+             (parse "a.subdomain.example.com"))))
+    (testing "parse web address without scheme"
+      (is (= [:link-ext-web "example.com/list?filter=abc&sort=Desc"]
+             (parse "example.com/list?filter=abc&sort=Desc"))))))
