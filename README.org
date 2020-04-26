@@ -2,6 +2,8 @@
 
 =org-parser= is a parser for the [[https://orgmode.org/][Org mode]] markup language for Emacs.
 
+It can be used from JavaScript, Java, and Clojure!
+
 To our knowledge, there is no formal specification of Org. But there
 is a [[https://orgmode.org/worg/dev/org-syntax.html]['spec' written in prose]] which lead to the [[https://orgmode.org/worg/dev/org-element-api.html][reference
 implementation of Org in Emacs]].
@@ -10,6 +12,36 @@ Working on our web-based Org implementation [[https://github.com/200ok-ch/organi
 brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
 strives to be that!
+
+** Project State
+
+This project is work-in-progress. It is not ready for production yet.
+
+The biggest milestones are:
+
+- [-] Finish [EBNF parser](http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html) to support most orgmode syntax
+      - [X] Headlines and orgmode `#+*` stuff
+      - [X] More features
+      - [X] Footnotes (?)
+      - [X] Timestamps
+      - [X] Links
+      - [ ] Markup
+      - [ ] Text that can contain markup, links, footnotes, timestamps, ...
+
+- [ ] Setup basic [instaparse transformations](http://xahlee.info/clojure/clojure_instaparse_transform.html) from the parse tree to a
+      higher-level structure.
+
+- [ ] Transformations to higher-level structure: catch up with orgmode
+      features supported already by the EBNF parser
+
+Not ready for production yet, *but it can already be useful* for you:
+E.g. if your script needs to parse parts of orgmode features, our EBNF
+parser probably already supports that. Do not underestimate
+e.g. timestamps. Use our well-tested parser to disassemble it in its
+parts, instead of trying to write a poor and ugly regex that is only
+capable of a subset of orgmode's timestamps ;)
+
+Don't hesitate to contribute!
 
 ** Development
 
