@@ -166,29 +166,37 @@ ts-mod-unit = #'[hdwmy]'
 (* TODO footnote must come before link *)
 text = #".*" / link
 
+
+
+
 (* Hyperlinks
    https://orgmode.org/guide/Hyperlinks.html
    https://orgmode.org/manual/Link-Format.html
 
    URIs in text, optionally wrapped in <>, are recognized as links.
    The general link format is [[]] and [[][]].
+
  *)
 
+(* Any text inside link brackets [...] *)
+(* TODO link and description must support backslash escape for ], [, (and \) *)
 <link-inside> = #"[^]]*"
 
 link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
-(* TODO link and description must support backslash escape for ], [, (and \) *)
+
+(* > If the link does not look like a URL, it is considered to be internal in the current file.
+   - from orgmode guide. Hence the ordered alternatives: *)
 link = link-ext / link-int
-(* TODO do description must support markup? *)
+(* TODO does description must support markup? *)
 link-description = link-inside
 
 (* External Links
    https://orgmode.org/manual/External-Links.html
-   TODO compare with orgmode source/regexes?
+   TODO compare to orgmode source/regexes?
  *)
 link-ext = link-ext-file / link-ext-other / link-ext-web
 
-(* TODO backslash escapes, ssh support *)
+(* TODO missing: backslash escapes, ssh support *)
 (* TODO link-text-file-location parsed? no because link-inside is
         greedy. temporary fix: parse filenames without colon: *)
 <link-inside-filename> = #"[^]:]*"
@@ -209,5 +217,8 @@ link-ext-web = #"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9
 
 (* Internal Links
    https://orgmode.org/manual/Internal-Links.html
+
+   Here, link-file-loc-string works different than in link-ext-file:
+   It is not text search but a link to <<id>> or #+NAME: id. See manual.
  *)
-link-int = #"[^]]*"
+link-int = link-file-loc-headline / link-file-loc-customid / link-file-loc-string

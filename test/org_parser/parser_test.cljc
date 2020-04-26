@@ -388,7 +388,16 @@ is another section"))))))
 	      [:link-url-scheme "https"]
 	      [:link-url-rest "//example.com"]]]]
 	     [:link-description "description words"]]
-             (parse "[[https://example.com][description words]]"))))))
+             (parse "[[https://example.com][description words]]"))))
+    (testing "parse interal * link"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-customid "my-custom-id"]]]]
+             (parse "[[#my-custom-id]]"))))
+    (testing "parse interal # link"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-headline "My Header"]]]]
+             (parse "[[*My Header]]"))))
+    (testing "parse interal link"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-string "A Name"]]]]
+             (parse "[[A Name]]"))))))
 
 (deftest links-external-file
   (let [parse #(parser/org % :start :link-ext-file)]
