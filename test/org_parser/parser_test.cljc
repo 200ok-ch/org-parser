@@ -361,7 +361,29 @@ is another section"))))))
 
     (testing "newlines are not recognized as space \\s"
       ;; http://xahlee.info/clojure/clojure_instaparse.html
-      (is (insta/failure? (parse "<2020-04-17 F\nri>"))))))
+      (is (insta/failure? (parse "<2020-04-17 F\nri>"))))
+    (testing "newlines are not recognized as space"
+      ;; http://xahlee.info/clojure/clojure_instaparse.html
+      (is (insta/failure? (parse "<2020-04-17\nFri>"))))))
+
+(deftest timestamp
+  (let [parse #(parser/org % :start :ts-time)]
+    (testing "parse time"
+      (is (= [:ts-time "08:00"]
+             (parse "08:00"))))
+    (testing "parse time without leading zero"
+      (is (= [:ts-time "8:00"]
+             (parse "8:00"))))
+    (testing "parse time with seconds"
+      (is (= [:ts-time "08:00:00"]
+             (parse "08:00:00"))))
+    (testing "parse time a.m."
+      (is (= [:ts-time "8:00AM"]
+             (parse "8:00AM"))))
+    (testing "parse time p.m."
+      (is (= [:ts-time "08:00pm"]
+             (parse "08:00pm"))))))
+
 
 
 (deftest literal-line

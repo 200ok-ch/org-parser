@@ -131,7 +131,12 @@ ts-inner-wo-time = ts-date [<' '+> ts-day]
 
 ts-date = #"\d{4}-\d{2}-\d{2}"
 
-ts-time = #"\d{1,2}:\d{2}(:\d{2})?"
+(* It is possible to implement stricter rules, e.g. regex [012]?\d for hours.
+   However, it would add complexity and date/time must be validated at
+   a higher level anyway. Additionally, orgmode C-c C-c seems to add
+   date and time; if time is "too big" and points to the next day, the
+   timestamp date is updated accordingly. *)
+ts-time = #"\d{1,2}:\d{2}(:\d{2})?([AaPp][Mm])?"
 
 (* TODO Is there a class for letters? *)
 (* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
