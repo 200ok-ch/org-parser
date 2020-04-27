@@ -262,13 +262,13 @@ is another section"))))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
-              [:node-property-value "hello world"]]
+              [:node-property-value [:text [:text-normal "hello world"]]]]
              (parse ":HELLO: hello world"))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
               [:node-property-plus]
-              [:node-property-value "hello world"]]
+              [:node-property-value [:text [:text-normal "hello world"]]]]
              (parse ":HELLO+: hello world"))))
     ))
 
