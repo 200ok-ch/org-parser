@@ -523,10 +523,12 @@ is another section"))))))
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "*bold text*"))))
     (testing "parse styled text followed by normal text"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]] [:text-normal " normal text"]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+              [:text-normal " normal text"]]
              (parse "*bold text* normal text"))))
     (testing "parse normal text followed by styled text"
-      (is (= [:text [:text-normal "normal text "] [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
+      (is (= [:text [:text-normal "normal text "]
+              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "normal text *bold text*"))))
     (testing "parse styled text surrounded by normal text"
       (is (= [:text
