@@ -237,11 +237,9 @@ link-description = link-inside
  *)
 link-ext = link-ext-file / link-ext-other
 
-(* TODO missing: backslash escapes, ssh support *)
-(* TODO link-text-file-location parsed? no because link-inside is
-        greedy. temporary fix: parse filenames without colon: *)
-<link-inside-filename> = #"[^]:]*"
+(* TODO missing: ssh support *)
 link-ext-file = ( <'file:'> | & #"\.?/" ) link-inside-filename [ link-ext-file-location ]
+<link-inside-filename> = #"(\\\[|\\\]|\\\\|:(?!:)|[^:\[\]])*"
 <link-ext-file-location> = <'::'> ( link-file-loc-lnum / link-file-loc-headline / link-file-loc-customid / link-file-loc-string )
 link-file-loc-lnum = #"\d+"
 link-file-loc-headline = <'*'> link-inside

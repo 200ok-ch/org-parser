@@ -450,6 +450,9 @@ is another section"))))))
     (testing "parse file link"
       (is (= [:link-ext-file "~/folder/file.txt"]
              (parse "file:~/folder/file.txt"))))
+    (testing "parse file link containing single colons"
+      (is (= [:link-ext-file "~/fol:der/fi:le.txt"]
+             (parse "file:~/fol:der/fi:le.txt"))))
     (testing "parse relative file link"
       (is (= [:link-ext-file "./folder/file.txt"]
              (parse "./folder/file.txt"))))
@@ -462,6 +465,10 @@ is another section"))))))
     (testing "parse file link with text search string"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-string "foo bar"]]
              (parse "./file.org::foo bar"))))
+    (testing "parse file link with text search string containing ::"
+      ;; this matches orgmode behavior
+      (is (= [:link-ext-file "./file.org" [:link-file-loc-string "foo::bar"]]
+             (parse "./file.org::foo::bar"))))
     (testing "parse file link with headline"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-headline "header1: test"]]
              (parse "./file.org::*header1: test"))))
