@@ -235,7 +235,7 @@ link-description = link-inside
    https://orgmode.org/manual/External-Links.html
    TODO compare to orgmode source/regexes?
  *)
-link-ext = link-ext-file / link-ext-other / link-ext-web
+link-ext = link-ext-file / link-ext-other
 
 (* TODO missing: backslash escapes, ssh support *)
 (* TODO link-text-file-location parsed? no because link-inside is
@@ -251,10 +251,6 @@ link-file-loc-string = link-inside
 link-ext-other = link-url-scheme <':'> link-url-rest
 link-url-scheme = #"[a-z]+"
 link-url-rest = link-inside
-
-(* Web address without http(s) protocol
-   from https://stackoverflow.com/a/3809435 *)
-link-ext-web = #"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
 
 (* Internal Links
    https://orgmode.org/manual/Internal-Links.html
