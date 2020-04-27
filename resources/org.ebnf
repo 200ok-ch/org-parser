@@ -1,3 +1,9 @@
+
+(* Main sources:
+   - Org Mode Manual: https://www.gnu.org/software/emacs/manual/html_mono/org.html
+   - Org Mode Compact Guide: https://orgmode.org/guide/
+*)
+
 S = line*
 
 <line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / literal-line / content-line) eol
@@ -168,9 +174,38 @@ ts-mod-unit = #'[hdwmy]'
 
  *)
 
-(* TODO footnote must come before link *)
-text = #".*" / link
+(* TODO handle latex code? *)
+(* TODO missing: footnotes; footnote must come before link *)
+text = ( link-format / text-link / text-styled / text-normal )*
 
+(* Emphasis and Monospace (font style markup)
+   https://orgmode.org/manual/Emphasis-and-Monospace.html
+   "Text in the code and verbatim string is not processed for Org specific syntax;"
+   Implies that the rest can be nested.
+ *)
+text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-verbatim / text-sty-code / text-sty-strikethrough
+
+(* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
+text-sty-bold          = <'*'> #"[^*]+" <'*'>
+text-sty-italic        = <'/'> #"[^/]+" <'/'>
+text-sty-underlined    = <'_'> #"[^_]+" <'_'>
+text-sty-verbatim      = <'='> #"[^=]+" <'='>
+text-sty-code          = <'~'> #"[^~]+" <'~'>
+text-sty-strikethrough = <'+'> #"[^+]+" <'+'>
+
+(* TODO compare with org mode regexes; support more protocols *)
+text-link = text-link-angled / text-link-normal
+text-link-angled = <'<'> text-link-url <'>'>
+text-link-normal = text-link-url
+<text-link-url> = #"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
+(* regex taken from: https://stackoverflow.com/a/3809435 *)
+
+(* TODO how to prevent greedyness? e.g. not parse text-link-normal (-> look-ahead?) *)
+(* Simple work-around: parse characters as long there are no style delimiters – but always parse one character.
+   This works because when parsing, text-normal is tried last.
+   It can result in multiple subsequent text-normal which will be concated in a later transform step.
+ *)
+text-normal = #".[^*/_=~+\[<]*"
 
 
 
@@ -189,7 +224,7 @@ text = #".*" / link
 
 link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
 
-(* > If the link does not look like a URL, it is considered to be internal in the current file.
+(* "If the link does not look like a URL, it is considered to be internal in the current file."
    - from orgmode guide. Hence the ordered alternatives: *)
 link = link-ext / link-int
 (* TODO does description must support markup? *)

@@ -471,3 +471,76 @@ is another section"))))))
     (testing "parse web address without scheme"
       (is (= [:link-ext-web "example.com/list?filter=abc&sort=Desc"]
              (parse "example.com/list?filter=abc&sort=Desc"))))))
+
+
+
+
+(deftest text-styled
+  (let [parse #(parser/org % :start :text-styled)]
+    (testing "parse bold text"
+      (is (= [:text-styled [:text-sty-bold "bold text"]]
+             (parse "*bold text*"))))
+    (testing "parse italic text"
+      (is (= [:text-styled [:text-sty-italic "italic text"]]
+             (parse "/italic text/"))))
+    (testing "parse underlined text"
+      (is (= [:text-styled [:text-sty-underlined "underlined text"]]
+             (parse "_underlined text_"))))
+    (testing "parse verbatim text"
+      (is (= [:text-styled [:text-sty-verbatim "verbatim text"]]
+             (parse "=verbatim text="))))
+    (testing "parse code text"
+      (is (= [:text-styled [:text-sty-code "code text"]]
+             (parse "~code text~"))))
+    (testing "parse strike-through text"
+      (is (= [:text-styled [:text-sty-strikethrough "strike-through text"]]
+             (parse "+strike-through text+"))))
+    ))
+
+(deftest text-link
+  (let [parse #(parser/org % :start :text-link)]
+    (testing "parse angled link"
+      (is (= [:text-link [:text-link-angled "http://example.com/foo?bar=baz&baz=bar"]]
+             (parse "<http://example.com/foo?bar=baz&baz=bar>"))))
+    (testing "parse normal link"
+      (is (= [:text-link [:text-link-normal "http://example.com/foo?bar=baz&baz=bar"]]
+             (parse "http://example.com/foo?bar=baz&baz=bar"))))
+    ))
+
+(deftest text
+  (let [parse #(parser/org % :start :text)]
+    (testing "parse styled text alone"
+      (is (= [:text [:text-styled [:text-sty-bold "bold text"]]]
+             (parse "*bold text*"))))
+    (testing "parse styled text followed by normal text"
+      (is (= [:text [:text-styled [:text-sty-bold "bold text"]] [:text-normal " normal text"]]
+             (parse "*bold text* normal text"))))
+    (testing "parse normal text followed by styled text"
+      (is (= [:text [:text-normal "normal text "] [:text-styled [:text-sty-bold "bold text"]]]
+             (parse "normal text *bold text*"))))
+    (testing "parse styled text surrounded by normal text"
+      (is (= [:text
+              [:text-normal "normal text "]
+              [:text-styled [:text-sty-bold "bold text"]]
+              [:text-normal " more text"]]
+             (parse "normal text *bold text* more text"))))
+    (testing "parse angled text link surrounded by normal text"
+      (is (= [:text
+              [:text-normal "normal text "]
+              [:text-link [:text-link-angled "http://example.com"]]
+              [:text-normal " more text"]]
+             (parse "normal text <http://example.com> more text"))))
+    ;; TODO (testing "parse normal text link surrounded by normal text"
+    ;;   (is (= [:text
+    ;;           [:text-normal "normal text "]
+    ;;           [:text-link [:text-link-normal "http://example.com"]]
+    ;;           [:text-normal " more text"]]
+    ;;          (parse "normal text http://example.com more text"))))
+    (testing "parse link surrounded by normal text"
+      (is (= [:text
+              [:text-normal "normal text "]
+              [:link-format [:link [:link-ext [:link-ext-other
+                                        [:link-url-scheme "http"] [:link-url-rest "//example.com"]]]]]
+              [:text-normal " more text"]]
+             (parse "normal text [[http://example.com]] more text"))))
+    ))
