@@ -183,15 +183,15 @@ text = ( link-format / text-link / text-styled / text-normal )*
    "Text in the code and verbatim string is not processed for Org specific syntax;"
    Implies that the rest can be nested.
  *)
-text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-verbatim / text-sty-code / text-sty-strikethrough
+text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
 
 (* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
-text-sty-bold          = <'*'> #"[^*]+" <'*'>
-text-sty-italic        = <'/'> #"[^/]+" <'/'>
-text-sty-underlined    = <'_'> #"[^_]+" <'_'>
+text-sty-bold          = <'*'> text <'*'>
+text-sty-italic        = <'/'> text <'/'>
+text-sty-underlined    = <'_'> text <'_'>
+text-sty-strikethrough = <'+'> text <'+'>
 text-sty-verbatim      = <'='> #"[^=]+" <'='>
 text-sty-code          = <'~'> #"[^~]+" <'~'>
-text-sty-strikethrough = <'+'> #"[^+]+" <'+'>
 
 (* TODO compare with org mode regexes; support more protocols *)
 text-link = text-link-angled / text-link-normal

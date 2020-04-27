@@ -499,22 +499,22 @@ is another section"))))))
 (deftest text-styled
   (let [parse #(parser/org % :start :text-styled)]
     (testing "parse bold text"
-      (is (= [:text-styled [:text-sty-bold "bold text"]]
+      (is (= [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
              (parse "*bold text*"))))
     (testing "parse italic text"
-      (is (= [:text-styled [:text-sty-italic "italic text"]]
+      (is (= [:text-styled [:text-sty-italic [:text [:text-normal "italic text"]]]]
              (parse "/italic text/"))))
     (testing "parse underlined text"
-      (is (= [:text-styled [:text-sty-underlined "underlined text"]]
+      (is (= [:text-styled [:text-sty-underlined [:text [:text-normal "underlined text"]]]]
              (parse "_underlined text_"))))
     (testing "parse verbatim text"
-      (is (= [:text-styled [:text-sty-verbatim "verbatim text"]]
-             (parse "=verbatim text="))))
+      (is (= [:text-styled [:text-sty-verbatim "verbatim /abc/ text"]]
+             (parse "=verbatim /abc/ text="))))
     (testing "parse code text"
-      (is (= [:text-styled [:text-sty-code "code text"]]
-             (parse "~code text~"))))
+      (is (= [:text-styled [:text-sty-code "code *abc* text"]]
+             (parse "~code *abc* text~"))))
     (testing "parse strike-through text"
-      (is (= [:text-styled [:text-sty-strikethrough "strike-through text"]]
+      (is (= [:text-styled [:text-sty-strikethrough [:text [:text-normal "strike-through text"]]]]
              (parse "+strike-through text+"))))
     ))
 
@@ -531,18 +531,18 @@ is another section"))))))
 (deftest text
   (let [parse #(parser/org % :start :text)]
     (testing "parse styled text alone"
-      (is (= [:text [:text-styled [:text-sty-bold "bold text"]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "*bold text*"))))
     (testing "parse styled text followed by normal text"
-      (is (= [:text [:text-styled [:text-sty-bold "bold text"]] [:text-normal " normal text"]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]] [:text-normal " normal text"]]
              (parse "*bold text* normal text"))))
     (testing "parse normal text followed by styled text"
-      (is (= [:text [:text-normal "normal text "] [:text-styled [:text-sty-bold "bold text"]]]
+      (is (= [:text [:text-normal "normal text "] [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "normal text *bold text*"))))
     (testing "parse styled text surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold "bold text"]]
+              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
               [:text-normal " more text"]]
              (parse "normal text *bold text* more text"))))
     (testing "parse angled text link surrounded by normal text"
