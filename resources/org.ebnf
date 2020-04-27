@@ -65,12 +65,14 @@ dynamic-block-end-line = <'#+END:'>
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
 
-footnote-line = <'['> footnote-label <'] '> footnote-contents
-footnote-label = (number | <'fn:'> footnote-word)
-<number> = #"\d+"
-<footnote-word> = #"[a-zA-Z0-9-_]+"
-(* TODO footnote-context should be text *)
-footnote-contents = anything-but-newline
+(* Footnotes
+   https://www.gnu.org/software/emacs/manual/html_node/org/Footnotes.html
+ *)
+footnote-link = <'[fn:'> [ fn-label ] <':'> fn-text-inline <']'> / <'[fn:'> fn-label <']'>
+footnote-line = <'[fn:'> fn-label <'] '> fn-text
+fn-label = #"[a-zA-Z0-9-_]+"
+<fn-text> = text
+<fn-text-inline> = #"[^\[\]]*"
 
 list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> (list-item-checkbox <" "> list-item-contents / list-item-contents)
 list-item-bullet = #"[*\-+]"
@@ -175,8 +177,7 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-(* TODO missing: footnotes; footnote must come before link *)
-text = ( link-format / text-link / text-styled / text-normal )*
+text = ( link-format / footnote-link / text-link / text-styled / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html

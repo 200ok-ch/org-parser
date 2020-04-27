@@ -164,14 +164,39 @@ is another section"))))))
              (parse "#+END:"))))))
 
 
-(deftest footnote
+(deftest footnote-line
   (let [parse #(parser/org % :start :footnote-line)]
     (testing "footnote with fn label"
-      (is (= [:footnote-line [:footnote-label "some-label"] [:footnote-contents "some contents"]]
+      (is (= [:footnote-line [:fn-label "some-label"] [:text [:text-normal "some contents"]]]
              (parse "[fn:some-label] some contents"))))
     (testing "footnote with number label"
-      (is (= [:footnote-line [:footnote-label "123"] [:footnote-contents "some contents"]]
-             (parse "[123] some contents"))))))
+      (is (= [:footnote-line [:fn-label "123"] [:text [:text-normal "some contents"]]]
+             (parse "[fn:123] some contents"))))
+    (testing "invalid footnote with only a number; sorry, this is not a footnote in orgmode"
+      (is (insta/failure? (parse "[123] some contents"))))
+    ))
+
+(deftest footnote-link
+  (let [parse #(parser/org % :start :footnote-link)]
+    ;; TODO styled text inside footnote-link is not yet possible because text parses the closing bracket ]
+    (testing "footnote link with label"
+      (is (= [:footnote-link [:fn-label "123"]]
+             (parse "[fn:123]"))))
+    (testing "footnote link with label"
+      (is (= [:footnote-link "some contents"]
+             (parse "[fn::some contents]"))))
+    (testing "footnote link with label and text"
+      (is (= [:footnote-link [:fn-label "some-label"] "some contents"]
+             (parse "[fn:some-label:some contents]"))))
+    (testing "footnote link with number and text"
+      (is (= [:footnote-link [:fn-label "123"] "some contents"]
+             (parse "[fn:123:some contents]"))))
+    (testing "footnote link with label and invalid text"
+      (is (insta/failure? (parse "[fn:some-label:some [contents]"))))
+    (testing "footnote link with label and invalid text"
+      (is (insta/failure? (parse "[fn:some-label:some ]contents]"))))
+    ))
+
 
 
 (deftest list-item-line
@@ -562,4 +587,12 @@ is another section"))))))
                                         [:link-url-scheme "http"] [:link-url-rest "//example.com"]]]]]
               [:text-normal " more text"]]
              (parse "normal text [[http://example.com]] more text"))))
+    (testing "parse link followed by footnote"
+      (is (= [:text
+              [:text-normal "normal text "]
+              [:link-format [:link [:link-ext [:link-ext-other
+	       [:link-url-scheme "http"]
+	       [:link-url-rest "//example.com"]]]]]
+	      [:footnote-link "reserved"]]
+             (parse "normal text [[http://example.com]][fn::reserved]"))))
     ))
