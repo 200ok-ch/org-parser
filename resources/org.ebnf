@@ -218,9 +218,10 @@ text-normal = #".[^*/_=~+\[<]*"
 
  *)
 
-(* Any text inside link brackets [...] *)
-(* TODO link and description must support backslash escape for ], [, (and \) *)
-<link-inside> = #"[^]]*"
+(* Any text inside link brackets [[...][...]].
+   Backslash is the escape character for itself and opening/closing brackets.
+ *)
+<link-inside> = #"(\\\[|\\\]|\\\\|[^]\[])*"
 
 link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
 

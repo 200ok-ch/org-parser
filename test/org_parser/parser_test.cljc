@@ -421,6 +421,27 @@ is another section"))))))
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "A Name"]]]]
              (parse "[[A Name]]"))))))
 
+(deftest links-with-escapse
+  (let [parse #(parser/org % :start :link-format)]
+    ;; remember that "\\" is one backslash!
+    (testing "parse link with just one literal backslash"
+      (is (insta/failure? (parse "[[\\]]"))))
+    (testing "parse link with escaped backslash"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\\\"]]]]
+             (parse "[[\\\\]]"))))
+    (testing "parse link with unescaped backslash"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\a"]]]]
+             (parse "[[\\a]]"))))
+    (testing "parse link with unescaped opening bracket"
+      (is (insta/failure? (parse "[[a[b]]"))))
+    (testing "parse link with escaped opening bracket"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\["]]]]
+             (parse "[[\\[]]"))))
+    (testing "parse link with escaped closing bracket"
+      (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\]"]]]]
+             (parse "[[\\]]]"))))
+    ))
+
 (deftest links-external-file
   (let [parse #(parser/org % :start :link-ext-file)]
     (testing "parse file link"
