@@ -19,7 +19,7 @@ This project is work-in-progress. It is not ready for production yet.
 
 The biggest milestones are:
 
-- [-] Finish [EBNF parser](http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html) to support most orgmode syntax
+- [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most orgmode syntax
       - [X] Headlines and orgmode `#+*` stuff
       - [X] More features
       - [X] Footnotes (?)
@@ -29,7 +29,7 @@ The biggest milestones are:
       - [-] Styled text
       - [-] Text that can contain style, links, footnotes, timestamps, ...
 
-- [ ] Setup basic [instaparse transformations](http://xahlee.info/clojure/clojure_instaparse_transform.html) from the parse tree to a
+- [ ] Setup basic [[http://xahlee.info/clojure/clojure_instaparse_transform.html][instaparse transformations]] from the parse tree to a
       higher-level structure.
 
 - [ ] Transformations to higher-level structure: catch up with orgmode
