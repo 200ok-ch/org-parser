@@ -612,4 +612,33 @@ is another section"))))))
 	       [:link-url-rest "//example.com"]]]]]
 	      [:footnote-link "reserved"]]
              (parse "normal text [[http://example.com]][fn::reserved]"))))
+    (testing "parse subscript"
+      (is (= [:text [:text-normal "text"] [:text-sub [:text-subsup-word "abc"]]]
+             (parse "text_abc"))))
+    (testing "parse superscript"
+      (is (= [:text [:text-normal "text"] [:text-sup [:text-subsup-word "123"]]]
+             (parse "text^123"))))
+    (testing "parse sub- and superscript"
+      (is (= [:text [:text-normal "text"]
+              [:text-sup [:text-subsup-word "abc"]]
+              [:text-sub [:text-subsup-curly "123"]]]
+             (parse "text^abc_{123}"))))
+    ))
+
+(deftest text-subscript
+  (let [parse #(parser/org % :start :text-sub)]
+    (testing "parse subscript word"
+      (is (= [:text-sub [:text-subsup-word "abc"]]
+             (parse "_abc"))))
+    (testing "parse subscript number"
+      (is (= [:text-sub [:text-subsup-word "123"]]
+             (parse "_123"))))
+    (testing "parse subscript word/number mixed"
+      (is (= [:text-sub [:text-subsup-word "1a2b"]]
+             (parse "_1a2b"))))
+    (testing "parse subscript in curly braces"
+      (is (= [:text-sub [:text-subsup-curly ".,-123abc!"]]
+             (parse "_{.,-123abc!}"))))
+    (testing "curly braces inside braced subscript are not allowed"
+      (is (insta/failure? (parse "text_{{}"))))
     ))

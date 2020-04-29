@@ -176,7 +176,7 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( link-format / footnote-link / text-link / text-styled / text-normal )*
+text = ( link-format / footnote-link / text-link / text-styled / text-sub / text-sup / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html
@@ -205,8 +205,15 @@ text-link-normal = text-link-url
    This works because when parsing, text-normal is tried last.
    It can result in multiple subsequent text-normal which will be concated in a later transform step.
  *)
-text-normal = #".[^*/_=~+\[<]*"
+text-normal = #".[^*/_=~+\[<^]*"
 
+(* Superscript and subscript
+   https://orgmode.org/manual/Subscripts-and-Superscripts.html *)
+text-sub = <'_'> ( text-subsup-curly | text-subsup-word )
+text-sup = <'^'> ( text-subsup-curly | text-subsup-word )
+(* TODO word should match any unicode letter or digit but not "_" *)
+text-subsup-word = #"[a-zA-Z0-9]+"
+text-subsup-curly = <'{'> #"[^{}]*" <'}'>
 
 
 (* Hyperlinks
