@@ -537,6 +537,9 @@ is another section"))))))
     (testing "parse strike-through text"
       (is (= [:text-styled [:text-sty-strikethrough [:text [:text-normal "strike-through text"]]]]
              (parse "+strike-through text+"))))
+    ;; parse reluctant
+    (testing "parse text-styled alone is not reluctant"
+      (is (not (insta/failure? (parse "/italic/ italic/")))))
     ))
 
 (deftest text-link
@@ -551,9 +554,18 @@ is another section"))))))
 
 (deftest text
   (let [parse #(parser/org % :start :text)]
+    (testing "parse text that contains style delimiter"
+      (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
+             (parse "a/b"))))
+    (testing "parse text that contains style delimiter"
+      (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
+             (parse "a /b"))))
     (testing "parse styled text alone"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "*bold text*"))))
+    (testing "if given multi-line text, parse bold text" ;; normally, parsing text is line-based
+      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "a\nb"]]]]]
+             (parse "*a\nb*"))))
     (testing "parse styled text followed by normal text"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
               [:text-normal " normal text"]]
@@ -568,6 +580,11 @@ is another section"))))))
               [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
               [:text-normal " more text"]]
              (parse "normal text *bold text* more text"))))
+    (testing "parse styled text reluctant"
+      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+              [:text-normal " text"]
+              [:text-normal "*"]]
+             (parse "*bold text* text*"))))
     (testing "parse angled text link surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]

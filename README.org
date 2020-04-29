@@ -27,7 +27,7 @@ The biggest milestones are:
       - [X] Links
       - [-] Text links
       - [-] Styled text
-      - [ ] Text that can contain style, links, footnotes, timestamps, ...
+      - [-] Text that can contain style, links, footnotes, timestamps, ...
 
 - [ ] Setup basic [instaparse transformations](http://xahlee.info/clojure/clojure_instaparse_transform.html) from the parse tree to a
       higher-level structure.
