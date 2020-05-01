@@ -445,6 +445,9 @@ is another section"))))))
 	      [:link-url-rest "//example.com"]]]]
 	     [:link-description "description words"]]
              (parse "[[https://example.com][description words]]"))))
+    (testing "parse id link"
+      (is (= [:link-format [:link [:link-ext [:link-ext-id "abc-123"]]]]
+             (parse "[[id:abc-123]]"))))
     (testing "parse internal * link"
       (is (= [:link-format [:link [:link-int [:link-file-loc-customid "my-custom-id"]]]]
              (parse "[[#my-custom-id]]"))))
@@ -453,7 +456,16 @@ is another section"))))))
              (parse "[[*My Header]]"))))
     (testing "parse internal link"
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "A Name"]]]]
-             (parse "[[A Name]]"))))))
+             (parse "[[A Name]]"))))
+    ))
+
+(deftest id-links
+  (let [parse #(parser/org % :start :link-ext-id)]
+    (testing "invalid id link"
+      (is (insta/failure? (parse "[[id:]]"))))
+    (testing "invalid id link"
+      (is (insta/failure? (parse "[[id:z]]"))))
+    ))
 
 (deftest links-with-escapse
   (let [parse #(parser/org % :start :link-format)]

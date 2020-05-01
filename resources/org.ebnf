@@ -243,7 +243,7 @@ text-target-name = #"[^<>\n\s][^<>\n]*[^<>\n\s]" | #"[^<>\n\s]"
 (* TODO for now, don't allow text objects *)
 text-radio-target = <'<<<'> text-target-name <'>>>'>
 
-(* Hyperlinks
+(* Hyperlinks (regular links)
    https://orgmode.org/guide/Hyperlinks.html
    https://orgmode.org/manual/Link-Format.html
 
@@ -255,7 +255,7 @@ text-radio-target = <'<<<'> text-target-name <'>>>'>
 (* Any text inside link brackets [[...][...]].
    Backslash is the escape character for itself and opening/closing brackets.
  *)
-<link-inside> = #"(\\\[|\\\]|\\\\|[^]\[])*"
+<link-inside> = #"(\\\[|\\\]|\\\\|[^\[\]])+"
 
 link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
 
@@ -267,18 +267,19 @@ link-description = link-inside
 
 (* External Links
    https://orgmode.org/manual/External-Links.html
-   TODO compare to orgmode source/regexes?
- *)
-link-ext = link-ext-file / link-ext-other
+   https://orgmode.org/worg/dev/org-syntax.html#Links *)
+link-ext = link-ext-file / link-ext-id / link-ext-other
 
 (* TODO missing: ssh support *)
 link-ext-file = ( <'file:'> | & #"\.?/" ) link-inside-filename [ link-ext-file-location ]
-<link-inside-filename> = #"(\\\[|\\\]|\\\\|:(?!:)|[^:\[\]])*"
+<link-inside-filename> = #"(\\\[|\\\]|\\\\|:(?!:)|[^:\[\]])+"
 <link-ext-file-location> = <'::'> ( link-file-loc-lnum / link-file-loc-headline / link-file-loc-customid / link-file-loc-string )
 link-file-loc-lnum = #"\d+"
 link-file-loc-headline = <'*'> link-inside
 link-file-loc-customid = <'#'> link-inside
 link-file-loc-string = link-inside
+
+link-ext-id = <"id:"> #"[0-9a-fA-F-]+"
 
 link-ext-other = link-url-scheme <':'> link-url-rest
 (* see org-link-types-re *)
