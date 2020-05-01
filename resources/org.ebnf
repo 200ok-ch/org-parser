@@ -248,7 +248,7 @@ text-macro = <'{{{'> macro-name <'('> macro-args <')'> <'}}}'>
 macro-name = #"[a-zA-Z][-\w]*"
 macro-args = <''> | macro-arg ( <','> macro-arg )*
 (* "ARGUMENTS can contain anything but “}}}” string."
-   Comma must be escaped; ")" is only allowed when not followed by "}}}".
+   Comma must be escaped; ")" is only allowed when not followed by "}}}". *)
 <macro-arg> = #"(\\,|[^)},]|\}(?!\}\})|\)(?!\}\}\}))*"
 
 (* Entities and LaTeX Fragments
