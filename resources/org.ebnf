@@ -7,7 +7,7 @@
 
 S = line*
 
-<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / content-line) eol
+<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
@@ -43,6 +43,9 @@ value = #"[^\]\n]+"
 key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ]) | "AUTHOR" | "DATE" | "TITLE"
 attr = <"ATTR_"> backend
 backend = #"[a-zA-Z0-9-_]+"
+
+(* https://orgmode.org/worg/dev/org-syntax.html#Horizontal_Rules *)
+horizontal-rule = #"\s*-----+"
 
 (* TODO add equivalent TODO keyword specifiers
         and allow more than [A-Z] in todo keyword names, esp. the shorthand definitions(d)

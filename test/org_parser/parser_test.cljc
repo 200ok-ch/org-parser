@@ -61,6 +61,24 @@
     ))
 
 
+(deftest line
+  (let [parse #(parser/org % :start :line)]
+    (testing "horizontal rule"
+      (is (= [[:horizontal-rule "-----"]]
+             (parse "-----"))))
+    (testing "horizontal rule space-indented"
+      (is (= [[:horizontal-rule " --------"]]
+             (parse " --------"))))
+    ))
+
+;; (deftest content
+;;   (let [parse #(parser/org % :start :content-line)]
+;;     (testing "boring"
+;;       (is (= [[:content-line "anything"]
+;;               [:content-line "goes"]]
+;;              (parse "anything\ngoes"))))))
+
+
 (deftest sections
   (let [parse parser/org]
     (testing "boring"
