@@ -193,17 +193,37 @@ text-sty-strikethrough = <'+'> text <'+'>
 text-sty-verbatim      = <'='> #"[^=]+" <'='>
 text-sty-code          = <'~'> #"[^~]+" <'~'>
 
-(* TODO compare with org mode regexes; support more protocols *)
-text-link = text-link-angled / text-link-normal
-text-link-angled = <'<'> text-link-url <'>'>
-text-link-normal = text-link-url
-<text-link-url> = #"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
-(* regex taken from: https://stackoverflow.com/a/3809435 *)
+(* taken from org-emph-re/org-verbatim-re *)
+before-sty = #"[- ('\"{]|"
 
-(* TODO how to prevent greedyness? e.g. not parse text-link-normal (-> look-ahead?) *)
-(* Simple work-around: parse characters as long there are no style delimiters – but always parse one character.
-   This works because when parsing, text-normal is tried last.
-   It can result in multiple subsequent text-normal which will be concated in a later transform step.
+(* first and last character must not be whitespace. that's why it's not just text *)
+text-inside-sty = ( link-format / footnote-link / text-link / text-styled / text-inside-sty-normal )*
+(* TODO space works? includes newline? *)
+text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=\*([- .,:!?;'\")}\[]|$))"
+
+(* There are 4 types of links: radio link (not subject to this
+   parser), angle link, plain link, and regular link
+
+   https://orgmode.org/worg/dev/org-syntax.html#Links
+
+   Plain links are defined here but probably never matched because
+   they have no characteristic start delimiter.
+
+   Protocol must match org-link-types-re but are here defined more
+   open. We can't rely on variable org settings.
+ *)
+text-link = text-link-angle / text-link-plain
+text-link-angle = <'<'> link-url-scheme <':'> text-link-angle-path <'>'>
+text-link-angle-path = #"[^\]<>\n]+"
+text-link-plain = link-url-scheme <':'> text-link-plain-path
+text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
+
+(* TODO how to prevent greedyness? e.g. not parse text-link-plain (-> look-ahead?) *)
+(* Simple work-around: parse characters as long there is no
+   characteristic delimiter – but always parse at least one character.
+   This works so far because when parsing, text-normal is tried last.
+   It can result in multiple subsequent text-normal which will be
+   concated in a later transform step.
  *)
 text-normal = #".[^*/_=~+\[<^]*"
 
@@ -254,7 +274,8 @@ link-file-loc-customid = <'#'> link-inside
 link-file-loc-string = link-inside
 
 link-ext-other = link-url-scheme <':'> link-url-rest
-link-url-scheme = #"[a-z]+"
+(* see org-link-types-re *)
+link-url-scheme = #"[a-z][a-z0-9]+"
 link-url-rest = link-inside
 
 (* Internal Links

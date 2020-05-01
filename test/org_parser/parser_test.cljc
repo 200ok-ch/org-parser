@@ -545,10 +545,14 @@ is another section"))))))
 (deftest text-link
   (let [parse #(parser/org % :start :text-link)]
     (testing "parse angled link"
-      (is (= [:text-link [:text-link-angled "http://example.com/foo?bar=baz&baz=bar"]]
+      (is (= [:text-link [:text-link-angle
+                          [:link-url-scheme "http"]
+                          [:text-link-angle-path "//example.com/foo?bar=baz&baz=bar"]]]
              (parse "<http://example.com/foo?bar=baz&baz=bar>"))))
-    (testing "parse normal link"
-      (is (= [:text-link [:text-link-normal "http://example.com/foo?bar=baz&baz=bar"]]
+    (testing "parse plain link"
+      (is (= [:text-link [:text-link-plain
+                          [:link-url-scheme "http"]
+                          [:text-link-plain-path "//example.com/foo?bar=baz&baz=bar"]]]
              (parse "http://example.com/foo?bar=baz&baz=bar"))))
     ))
 
@@ -588,13 +592,15 @@ is another section"))))))
     (testing "parse angled text link surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
-              [:text-link [:text-link-angled "http://example.com"]]
+              [:text-link [:text-link-angle
+                           [:link-url-scheme "http"]
+                           [:text-link-angle-path "//example.com"]]]
               [:text-normal " more text"]]
              (parse "normal text <http://example.com> more text"))))
     ;; TODO (testing "parse normal text link surrounded by normal text"
     ;;   (is (= [:text
     ;;           [:text-normal "normal text "]
-    ;;           [:text-link [:text-link-normal "http://example.com"]]
+    ;;           [:text-link [:text-link-plain "http://example.com"]]
     ;;           [:text-normal " more text"]]
     ;;          (parse "normal text http://example.com more text"))))
     (testing "parse link surrounded by normal text"
