@@ -589,6 +589,11 @@ is another section"))))))
               [:text-normal " text"]
               [:text-normal "*"]]
              (parse "*bold text* text*"))))
+    ;; TODO parse only when "surrounded" by delimiter
+    ;; (testing "parse italic text"
+    ;;   (is (= [:text [:text-styled [:text-sty-italic
+    ;;                         [:text [:text-normal "italic "] [:text-normal "/ text"]]]]]
+    ;;          (parse "/italic / text/"))))
     (testing "parse angled text link surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
@@ -618,6 +623,10 @@ is another section"))))))
 	       [:link-url-rest "//example.com"]]]]]
 	      [:footnote-link "reserved"]]
              (parse "normal text [[http://example.com]][fn::reserved]"))))
+    ;; TODO this is not a subscript (space before)
+    ;; (testing "parse non-subscript"
+    ;;   (is (= [:text [:text-normal "text _abc"]]
+    ;;          (parse "text _abc"))))
     (testing "parse subscript"
       (is (= [:text [:text-normal "text"] [:text-sub [:text-subsup-word "abc"]]]
              (parse "text_abc"))))
