@@ -6,7 +6,7 @@
 
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / literal-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / fixed-width-line / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
@@ -27,11 +27,12 @@ title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
-(* https://orgmode.org/manual/Literal-Examples.html *)
-(* TODO need to preserve leading space? *)
-literal-line = ll-leading-space <':'> ll-text
-ll-leading-space = #"[\t ]*"
-ll-text = #".*"
+(* Fixed Width Areas
+   https://orgmode.org/worg/dev/org-syntax.html#Fixed_Width_Areas
+   https://orgmode.org/manual/Literal-Examples.html *)
+fixed-width-line = fw-head fw-rest
+fw-head = #"\s*:(?= |$)"
+fw-rest = #".*"
 
 affiliated-keyword-line = <"#+"> (key | attr) <": "> value
 optional = <"["> optional-value <"]">

@@ -412,13 +412,22 @@ is another section"))))))
 
 
 (deftest literal-line
-  (let [parse #(parser/org % :start :literal-line)]
-    (testing "parse literal line starting with colon"
-      (is (= [:literal-line [:ll-leading-space ""] [:ll-text "literal text"]]
-             (parse ":literal text"))))
-    (testing "parse literal line starting with spaces"
-      (is (= [:literal-line [:ll-leading-space "  "] [:ll-text " literal text "]]
-             (parse "  : literal text "))))))
+  (let [parse #(parser/org % :start :fixed-width-line)]
+    (testing "parse fixed-width line starting with colon"
+      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " "]]
+             (parse ": "))))
+    (testing "parse fixed-width line starting with colon"
+      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest ""]]
+             (parse ":"))))
+    (testing "parse fixed-width line starting with colon"
+      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " literal text"]]
+             (parse ": literal text"))))
+    (testing "parse fixed-width line starting with spaces"
+      (is (= [:fixed-width-line [:fw-head "  :"] [:fw-rest " literal text "]]
+             (parse "  : literal text "))))
+    (testing "parse fixed-width line starting with colon"
+      (is (insta/failure? (parse ":literal text"))))
+    ))
 
 (deftest links
   (let [parse #(parser/org % :start :link-format)]
