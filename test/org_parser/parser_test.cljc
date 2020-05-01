@@ -638,6 +638,31 @@ is another section"))))))
               [:text-sup [:text-subsup-word "abc"]]
               [:text-sub [:text-subsup-curly "123"]]]
              (parse "text^abc_{123}"))))
+
+    ;; targets and radio targets
+    (testing "parse target"
+      (is (= [:text [:text-normal "text"] [:text-target [:text-target-name "my target"]]]
+             (parse "text<<my target>>"))))
+    (testing "parse radio target"
+      (is (= [:text [:text-normal "text"] [:text-radio-target [:text-target-name "my target"]]]
+             (parse "text<<<my target>>>"))))
+    ))
+
+
+(deftest text-targets
+  (let [parse #(parser/org % :start :text-target)]
+    (testing "parse target"
+      (is (= [:text-target [:text-target-name "t"]]
+             (parse "<<t>>"))))
+    (testing "parse invalid target"
+      (is (insta/failure?
+             (parse "<< t>>"))))
+    (testing "parse invalid target"
+      (is (insta/failure?
+             (parse "<<t >>"))))
+    (testing "parse invalid target"
+      (is (insta/failure?
+             (parse "<< >>"))))
     ))
 
 (deftest text-subscript
