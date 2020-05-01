@@ -7,12 +7,18 @@
 
 S = line*
 
-<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / content-line) eol
+<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
 content-line = #".*"
 (* content-line = text *)
+
+(* "Comments consist of one or more consecutive comment lines."
+   https://orgmode.org/worg/dev/org-syntax.html#Comments *)
+comment-line = comment-line-head comment-line-rest
+comment-line-head = #"\s*#(?= |$)"
+comment-line-rest = #".*"
 
 <eol> = <#'\n|$'>
 (* TODO remove <> to enable use where the spaces are actual needed *)

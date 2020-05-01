@@ -69,6 +69,29 @@
     (testing "horizontal rule space-indented"
       (is (= [[:horizontal-rule " --------"]]
              (parse " --------"))))
+
+    (testing "keyword line"
+      (is (= [[:keyword-line [:keyword-key "KEY"] [:keyword-value "VALUE"]]]
+             (parse "#+KEY: VALUE"))))
+
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest ""]]]
+             (parse "#"))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest " "]]]
+             (parse "# "))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest " comment"]]]
+             (parse "# comment"))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "\t#"] [:comment-line-rest " comment"]]]
+             (parse "\t# comment"))))
+    (testing "no valid comment line"
+      (is (= [[:content-line "#comment"]]
+             (parse "#comment"))))
+    (testing "no valid comment line"
+      (is (= [[:content-line "#\tcomment"]]
+             (parse "#\tcomment"))))
     ))
 
 ;; (deftest content
