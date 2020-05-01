@@ -228,11 +228,12 @@ text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
 text-normal = #".[^*/_=~+\[<^]*"
 
 (* Superscript and subscript
+   https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript
    https://orgmode.org/manual/Subscripts-and-Superscripts.html *)
 text-sub = <'_'> ( text-subsup-curly | text-subsup-word )
 text-sup = <'^'> ( text-subsup-curly | text-subsup-word )
 (* TODO word should match any unicode letter or digit but not "_" *)
-text-subsup-word = #"[a-zA-Z0-9]+"
+text-subsup-word = #"\*|[+-]?[a-zA-Z0-9,.\\]*[a-zA-Z0-9]"
 text-subsup-curly = <'{'> #"[^{}]*" <'}'>
 
 (* https://orgmode.org/worg/dev/org-syntax.html#Targets_and_Radio_Targets *)

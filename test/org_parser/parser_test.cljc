@@ -667,6 +667,7 @@ is another section"))))))
 
 (deftest text-subscript
   (let [parse #(parser/org % :start :text-sub)]
+    ;; TODO make sure preceeding character is non-whitespace
     (testing "parse subscript word"
       (is (= [:text-sub [:text-subsup-word "abc"]]
              (parse "_abc"))))
@@ -676,6 +677,18 @@ is another section"))))))
     (testing "parse subscript word/number mixed"
       (is (= [:text-sub [:text-subsup-word "1a2b"]]
              (parse "_1a2b"))))
+    (testing "parse subscript star"
+      (is (= [:text-sub [:text-subsup-word "*"]]
+             (parse "_*"))))
+    (testing "parse subscript special"
+      (is (= [:text-sub [:text-subsup-word ".,\\a"]]
+             (parse "_.,\\a"))))
+    (testing "parse subscript special"
+      (is (= [:text-sub [:text-subsup-word "-.,\\a"]]
+             (parse "_-.,\\a"))))
+    (testing "parse subscript special"
+      (is (= [:text-sub [:text-subsup-word "+.,\\a"]]
+             (parse "_+.,\\a"))))
     (testing "parse subscript in curly braces"
       (is (= [:text-sub [:text-subsup-curly ".,-123abc!"]]
              (parse "_{.,-123abc!}"))))
