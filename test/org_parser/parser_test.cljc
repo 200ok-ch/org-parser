@@ -15,9 +15,9 @@
       (is (= ["a"]
              (parse "a"))))
     (testing "single with trailing space"
-      (is (map? (parse "ab "))))
+      (is (insta/failure? (parse "ab "))))
     (testing "single with trailing newline"
-      (is (map? (parse "a\n"))))))
+      (is (insta/failure? (parse "a\n"))))))
 
 
 (deftest tags
@@ -34,33 +34,40 @@
 
 
 (deftest headline
-  (let [parse #(parser/org % :start :head-line)]
+  (let [parse #(parser/org % :start :headline)]
     (testing "boring"
-      (is (= [:head-line [:stars "*"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*"] [:title "hello" "world"]]
              (parse "* hello world"))))
     (testing "with priority"
-      (is (= [:head-line [:stars "**"] [:priority "A"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "**"] [:priority "A"] [:title "hello" "world"]]
              (parse "** [#A] hello world"))))
     (testing "with tags"
-      (is (= [:head-line [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "*** hello world :the:end:"))))
     (testing "with priority and tags"
-      (is (= [:head-line [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "**** [#B] hello world :the:end:"))))
     (testing "title cannot have multiple lines"
-      (is (map? (parse "* a\nb"))))
-    (testing "with comment flag"
-      (is (= [:head-line [:stars "*****"] [:comment-token] [:title "hello" "world"]]
-             (parse "***** COMMENT hello world"))))))
+      (is (insta/failure? (parse "* a\nb"))))
+    (testing "with todo keyword"
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:title "hello" "world"]]
+             (parse "* TODO hello world"))))
+    (testing "with todo keyword and comment flag"
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:comment-token] [:title "hello" "world"]]
+             (parse "* TODO COMMENT hello world"))))
+    (testing "with comment flag but without todo keyword or prio: interpret COMMENT as keyword"
+      (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:title "hello" "world"]]
+             (parse "***** COMMENT hello world"))))
+    ))
 
 
 (deftest sections
   (let [parse parser/org]
     (testing "boring"
       (is (= [:S
-              [:head-line [:stars "*"] [:title "hello" "world"]]
+              [:headline [:stars "*"] [:title "hello" "world"]]
               [:content-line "this is the first section"]
-              [:head-line [:stars "**"] [:title "and" "this"]]
+              [:headline [:stars "**"] [:title "and" "this"]]
               [:content-line "is another section"]]
              (parse "* hello world
 this is the first section
@@ -68,10 +75,10 @@ this is the first section
 is another section"))))
     (testing "boring with empty lines"
       (is (=[:S
-             [:head-line [:stars "*"] [:title "hello" "world"]]
+             [:headline [:stars "*"] [:title "hello" "world"]]
              [:content-line "this is the first section"]
              [:empty-line]
-             [:head-line [:stars "**"] [:title "and" "this"]]
+             [:headline [:stars "**"] [:title "and" "this"]]
              [:empty-line]
              [:content-line "is another section"]]
             (parse "* hello world

@@ -6,5 +6,5 @@
 (deftest headline
   (let [parse #(parser/org % :start :head-line)]
     (testing "with crazy characters in title"
-      (is (= [:head-line [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
+      (is (= [:headline [:stars "*****"] [:title "hello" "wörld⛄" ":"]]
              (parse "***** hello wörld⛄ :"))))))
