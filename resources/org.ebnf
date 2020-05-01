@@ -177,7 +177,7 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-macro / text-styled / text-sub / text-sup / text-normal )*
+text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html
@@ -226,7 +226,7 @@ text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
    It can result in multiple subsequent text-normal which will be
    concated in a later transform step.
  *)
-text-normal = #".[^*/_=~+\[<{^]*"
+text-normal = #".[^*/_=~+\[<{^\\]*"
 
 (* Superscript and subscript
    https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript
@@ -250,6 +250,20 @@ macro-args = <''> | macro-arg ( <','> macro-arg )*
 (* "ARGUMENTS can contain anything but “}}}” string."
    Comma must be escaped; ")" is only allowed when not followed by "}}}".
 <macro-arg> = #"(\\,|[^)},]|\}(?!\}\})|\)(?!\}\}\}))*"
+
+(* Entities and LaTeX Fragments
+   https://orgmode.org/worg/dev/org-syntax.html#Entities_and_LaTeX_Fragments
+   https://orgmode.org/manual/LaTeX-fragments.html#LaTeX-fragments
+   https://orgmode.org/manual/LaTeX-fragments.html#LaTeX-fragments
+   The entity name must be in org-entities or org-entities-user. As
+   this is configurable, we parse any name that looks valid.
+
+   C-c C-x \ (org-toggle-pretty-entities)
+ *)
+text-entity = ""
+text-entity = <'\\'> entity-name ( entity-braces | ε & <#"[^a-zA-Z]|$"> )
+entity-name = #"[a-zA-Z]+"
+entity-braces = <'{}'>
 
 (* Hyperlinks (regular links)
    https://orgmode.org/guide/Hyperlinks.html

@@ -674,6 +674,19 @@ is another section"))))))
     (testing "parse radio target"
       (is (= [:text [:text-normal "text"] [:text-radio-target [:text-target-name "my target"]]]
              (parse "text<<<my target>>>"))))
+
+    ;; entities
+    (testing "parse entity"
+      (is (= [:text [:text-normal "text"]
+              [:text-entity [:entity-name "Alpha"]]
+              [:text-normal "-followed"]]
+             (parse "text\\Alpha-followed"))))
+    (testing "parse entity"
+      (is (= [:text [:text-normal "text "]
+              [:text-entity [:entity-name "Alpha"] [:entity-braces]]
+              [:text-normal "followed"]]
+             (parse "text \\Alpha{}followed"))))
+
     ))
 
 
@@ -688,6 +701,16 @@ is another section"))))))
     (testing "parse macro"
       (is (= [:text-macro [:macro-name "my_macro5"] [:macro-args "x\\,y" " (0)", "'{abc}'"]]
              (parse "{{{my_macro5(x\\,y, (0),'{abc}')}}}"))))
+    ))
+
+(deftest text-entities
+  (let [parse #(parser/org % :start :text-entity)]
+    (testing "parse entity"
+      (is (= [:text-entity [:entity-name "Alpha"]]
+             (parse "\\Alpha"))))
+    (testing "parse entity"
+      (is (= [:text-entity [:entity-name "Alpha"] [:entity-braces]]
+             (parse "\\Alpha{}"))))
     ))
 
 (deftest text-targets
