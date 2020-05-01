@@ -259,6 +259,10 @@ macro-args = <''> | macro-arg ( <','> macro-arg )*
    this is configurable, we parse any name that looks valid.
 
    C-c C-x \ (org-toggle-pretty-entities)
+
+   TODO Implement other latex syntax:
+        \command[x]{y}{z}, \( \), \[ \], $$ $$, $ $
+	text-entity must be edited to also match \command[]{}s
  *)
 text-entity = ""
 text-entity = <'\\'> entity-name ( entity-braces | ε & <#"[^a-zA-Z]|$"> )
