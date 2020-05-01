@@ -660,6 +660,13 @@ is another section"))))))
               [:text-sub [:text-subsup-curly "123"]]]
              (parse "text^abc_{123}"))))
 
+    ;; macros
+    (testing "parse macro"
+      (is (= [:text [:text-normal "text"] [:text-macro
+                                           [:macro-name "my_macro5"]
+                                           [:macro-args "0" "'{abc}'"]]]
+             (parse "text{{{my_macro5(0,'{abc}')}}}"))))
+
     ;; targets and radio targets
     (testing "parse target"
       (is (= [:text [:text-normal "text"] [:text-target [:text-target-name "my target"]]]
@@ -669,6 +676,19 @@ is another section"))))))
              (parse "text<<<my target>>>"))))
     ))
 
+
+(deftest text-macros
+  (let [parse #(parser/org % :start :text-macro)]
+    (testing "parse macro without args"
+      (is (= [:text-macro [:macro-name "my_macro5"] [:macro-args ""]]
+             (parse "{{{my_macro5()}}}"))))
+    (testing "parse macro with arg"
+      (is (= [:text-macro [:macro-name "my_macro5"] [:macro-args "arg"]]
+             (parse "{{{my_macro5(arg)}}}"))))
+    (testing "parse macro"
+      (is (= [:text-macro [:macro-name "my_macro5"] [:macro-args "x\\,y" " (0)", "'{abc}'"]]
+             (parse "{{{my_macro5(x\\,y, (0),'{abc}')}}}"))))
+    ))
 
 (deftest text-targets
   (let [parse #(parser/org % :start :text-target)]
