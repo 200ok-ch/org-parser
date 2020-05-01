@@ -20,7 +20,7 @@ This project is work-in-progress. It is not ready for production yet.
 The biggest milestones are:
 
 - [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most orgmode syntax
-      - [X] Headlines and orgmode `#+*` stuff
+      - [X] Headlines and orgmode =#+*= stuff
       - [X] More features
       - [X] Footnotes (?)
       - [X] Timestamps
