@@ -162,6 +162,38 @@ is another section"))))))
       (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
 
+(deftest greater-blocks
+  (let [parse #(parser/org % :start :greater-block)]
+    (testing "no content"
+      (is (= [:greater-block
+              [:greater-block-begin-line [:greater-block-name "center"] [:greater-block-parameters "params! "]]]
+             (parse "#+BEGIN_center params! \n#+end_center\n"))))
+    (testing "one line of content"
+      (is (= [:greater-block [:greater-block-begin-line [:greater-block-name "center"]]
+              [:content-line "content"]]
+             (parse "#+BEGIN_center \ncontent\n#+end_center \n"))))
+    (testing "more lines of content"
+      (is (= [:greater-block [:greater-block-begin-line [:greater-block-name "center"]]
+              [:content-line "my"] [:content-line "content"]]
+             (parse "#+BEGIN_center\nmy\ncontent\n#+end_center\n"))))
+    ;; TODO this is a problem:
+    ;; (testing "fail if block name not matching"
+    ;;   (is (insta/failure? (parse "#+BEGIN_one\n#+end_other\n"))))
+    ))
+
+(deftest block-noparse
+  (let [parse #(parser/org % :start :block-noparse)]
+    (testing "no content"
+      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "example"]] [:block-content]]
+             (parse "#+BEGIN_example\n#+end_example\n"))))
+    (testing "one line of content"
+      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "example"]] [:block-content "content\n"]]
+             (parse "#+BEGIN_example \ncontent\n#+end_example\n"))))
+    (testing "content"
+      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "SRC"] [:block-data "some useless data"]]
+              [:block-content "multi\nline\ncontent\n"]]
+             (parse "#+begin_SRC some useless data\nmulti\nline\ncontent\n#+end_SRC \n"))))))
+
 
 (deftest greater-block-begin
   (let [parse #(parser/org % :start :greater-block-begin-line)]
@@ -169,12 +201,33 @@ is another section"))))))
       (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
 
-
 (deftest greater-block-end
   (let [parse #(parser/org % :start :greater-block-end-line)]
     (testing "greater-block-end"
       (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
+
+(deftest dynamic-block
+  (let [parse #(parser/org % :start :dynamic-block)]
+    (testing "no content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line
+                              [:dynamic-block-name "na.me"]
+                              [:dynamic-block-parameters "pa rams "]]]
+             (parse "#+BEGIN: na.me pa rams \n#+end:\n"))))
+    (testing "one line of content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "name"]]
+              [:content-line "text"]]
+             (parse "#+BEGIN: name \ntext\n#+end: \n"))))
+    ;; TODO doesn't work yet :(
+    ;; (testing "parse reluctantly"
+    ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:\n"))))
+    (testing "content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
+	      [:content-line "multi"]
+	      [:content-line "line"]
+	      [:content-line "content"]]
+             (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: \n"))))))
+
 
 
 (deftest drawer-begin

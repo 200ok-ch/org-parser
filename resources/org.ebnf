@@ -23,7 +23,7 @@ comment-line-rest = #".*"
 <eol> = <#'\n|$'>
 (* TODO remove <> to enable use where the spaces are actual needed *)
 <s> = <#"[\t ]+">
-<word> = #"[^\r\n\s$]+"
+<word> = #"[^\r\n\s]+"
 
 headline = stars [s keyword] [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
@@ -61,24 +61,64 @@ todo-line = <"#+TODO: "> states
 todo-state = #"[A-Z]+"
 done-state = #"[A-Z]+"
 
-greater-block-begin-line = <"#+BEGIN_"> greater-block-name [s greater-block-parameters]
-greater-block-name = anything-but-whitespace
+(* TODO blocks - see greater-block for why this is faulty *)
+block = block-noparse | greater-block
+
+(* Greater Blocks - can contain Blocks
+   https://orgmode.org/worg/dev/org-syntax.html#Greater_Blocks
+
+   TODO currently blocks have many problems:
+   - content is parsed greedy
+   - content cannot contain blocks
+   - name is not matched in #+end_name
+   - everything beside block is parsed as greater block (i.e. VERSE)
+ *)
+greater-block = greater-block-begin-line line* <greater-block-end-line>
+greater-block-begin-line = <#"#\+(BEGIN|begin)_"> greater-block-name [s greater-block-parameters] [s] <eol>
+greater-block-name = #"\S+"
 greater-block-parameters = anything-but-newline
+greater-block-end-line = <#"#\+(END|end)_"> greater-block-name [s] <eol>
 
-<anything-but-whitespace> = #"[^\r\n\s$]+"
-<anything-but-newline> = #"[^\n$]+"
+(* Blocks
+   https://orgmode.org/worg/dev/org-syntax.html#Blocks
+   VERSE block content is parsed, every other block is not.
+   block-data is mandatory for SRC and EXPORT.
+   Blocks where content is NOT parsed:
+ *)
+block-noparse = block-begin-line block-content <block-end-line>
+block-begin-line = <#"#\+(BEGIN_|begin_)"> block-name-noparse [s block-data] [s] <eol>
+block-data = anything-but-newline
+block-content = #"(.|\n)*?\n(?=#\+(END_|end_))" | ε
+block-end-line =             #"#\+(END_|end_)" block-name-noparse [s] <eol>
 
-greater-block-end-line = <"#+END_"> greater-block-name
+(* TODO for later: *)
+block-export-data = #"\w+"
+block-src-data = block-src-lang (* [block-src-switches] [block-src-args] *)
+block-src-lang = #"\S+"
+
+(* Mostly unused: block types. Everything beside block-name-noparse is
+   parsed as greater-block. *)
+block-name-noparse = #"COMMENT|comment|EXAMPLE|example|EXPORT|export|SRC|src"
+block-name-verse = #"VERSE|verse"
+block-name-greater = #"CENTER|center|QUOTE|quote"
+block-name-special = #"\S+"
+
+<anything-but-whitespace> = #"\S+"
+<anything-but-newline> = #"[^\n]+"
 
 drawer-begin-line = <":"> drawer-name <":">
 drawer-name = #"[a-zA-Z0-9-_]+"
 drawer-end-line = <":END:">
 
-dynamic-block-begin-line = <'#+BEGIN: '> dynamic-block-name [s dynamic-block-parameters]
-dynamic-block-end-line = <'#+END:'>
-
+(* Dynamic Blocks
+   https://orgmode.org/manual/Dynamic-Blocks.html
+   https://orgmode.org/worg/dev/org-syntax.html#Dynamic_Blocks
+ *)
+dynamic-block = dynamic-block-begin-line line* <dynamic-block-end-line>
+dynamic-block-begin-line = <#"#\+(BEGIN|begin):"> s dynamic-block-name [s dynamic-block-parameters] [s] <eol>
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
+dynamic-block-end-line = <#"#\+(END|end):"> [s] <eol>
 
 (* Footnotes
    https://www.gnu.org/software/emacs/manual/html_node/org/Footnotes.html
