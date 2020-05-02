@@ -274,6 +274,9 @@ is another section"))))))
 
 (deftest timestamp
   (let [parse #(parser/org % :start :timestamp)]
+    (testing "diary timestamp"
+      (is (= [:timestamp [:timestamp-diary ""]]
+             (parse "<%%(( <(sexp)().))>"))))
     (testing "date timestamp without day"
       (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2020-01-18"]] [:ts-modifiers]]]]
              (parse "<2020-01-18>"))))
