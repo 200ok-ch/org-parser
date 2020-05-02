@@ -663,6 +663,14 @@ is another section"))))))
               [:text-sub [:text-subsup-curly "123"]]]
              (parse "text^abc_{123}"))))
 
+    ;; line breaks
+    (testing "parse text followed by line break"
+      (is (= [:text [:text-normal "abc "] [:text-linebreak [:text-linebreak-after "  "]]]
+             (parse "abc \\\\  "))))
+    (testing "parse text followed by line break"
+      (is (= [:text [:text-normal "abc "] [:text-normal "\\"] [:text-normal "\\ xyz"]]
+             (parse "abc \\\\ xyz"))))
+
     ;; macros
     (testing "parse macro"
       (is (= [:text [:text-normal "text"] [:text-macro

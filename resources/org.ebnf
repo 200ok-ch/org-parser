@@ -179,7 +179,7 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-normal )*
+text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html
@@ -270,6 +270,9 @@ text-entity = ""
 text-entity = <'\\'> entity-name ( entity-braces | ε & <#"[^a-zA-Z]|$"> )
 entity-name = #"[a-zA-Z]+"
 entity-braces = <'{}'>
+
+text-linebreak = <'\\\\'> text-linebreak-after
+text-linebreak-after = #"\s*$"
 
 (* Hyperlinks (regular links)
    https://orgmode.org/guide/Hyperlinks.html
