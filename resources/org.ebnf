@@ -1,5 +1,6 @@
 
 (* Main sources:
+   - Org Mode Spec: https://orgmode.org/worg/dev/org-syntax.html
    - Org Mode Manual: https://www.gnu.org/software/emacs/manual/html_mono/org.html
    - Org Mode Compact Guide: https://orgmode.org/guide/
 *)
