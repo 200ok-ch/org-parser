@@ -562,8 +562,27 @@ is another section"))))))
       (is (= [:text-styled [:text-sty-strikethrough [:text [:text-normal "strike-through text"]]]]
              (parse "+strike-through text+"))))
     ;; parse reluctant
-    (testing "parse text-styled alone is not reluctant"
-      (is (not (insta/failure? (parse "/italic/ italic/")))))
+    ;; (testing "parse text-styled alone is not reluctant"
+    ;;   (is (not (insta/failure? (parse "/italic/ italic/")))))
+    (testing "parse verbatim text reluctantly"
+      (is (insta/failure? (parse "=verbatim= text="))))
+
+    ;; parse special cases
+    (testing "not parse empty verbatim text"
+      (is (insta/failure? (parse "=="))))
+    (testing "not parse verbatim text with space around"
+      (is (insta/failure? (parse "=verbatim ="))))
+    (testing "not parse verbatim text with space around"
+      (is (insta/failure? (parse "= verbatim="))))
+    (testing "parse verbatim text"
+      (is (= [:text-styled [:text-sty-verbatim "verbatim = text"]]
+             (parse "=verbatim = text="))))
+    (testing "parse verbatim text"
+      (is (= [:text-styled [:text-sty-verbatim "="]]
+             (parse "==="))))
+    (testing "parse verbatim text"
+      (is (= [:text-styled [:text-sty-verbatim "a"]]
+             (parse "=a="))))
     ))
 
 (deftest text-link

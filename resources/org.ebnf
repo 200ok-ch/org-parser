@@ -193,8 +193,10 @@ text-sty-bold          = <'*'> text <'*'>
 text-sty-italic        = <'/'> text <'/'>
 text-sty-underlined    = <'_'> text <'_'>
 text-sty-strikethrough = <'+'> text <'+'>
-text-sty-verbatim      = <'='> #"[^=]+" <'='>
-text-sty-code          = <'~'> #"[^~]+" <'~'>
+(* https://orgmode.org/worg/dev/org-syntax.html#Emphasis_Markers is wrong at this point:
+   The BORDER character in =BxB= must not be whitespace but can be [,'"]. *)
+text-sty-verbatim      = <'='> #"([^\s]|[^\s].*?[^\s])(?==($|[- \t.,:!?;'\")}\[]))" <'='>
+text-sty-code          = <'~'> #"([^\s]|[^\s].*?[^\s])(?=~($|[- \t.,:!?;'\")}\[]))" <'~'>
 
 (* taken from org-emph-re/org-verbatim-re *)
 before-sty = #"[- ('\"{]|"
