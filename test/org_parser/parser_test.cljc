@@ -233,9 +233,8 @@ is another section"))))))
 (deftest drawer-begin
   (let [parse #(parser/org % :start :drawer-begin-line)]
     (testing "drawer-begin"
-      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
+      (is (= [[:drawer-name "SOMENAME"]]
              (parse ":SOMENAME:"))))))
-
 
 (deftest drawer-end
   (let [parse #(parser/org % :start :drawer-end-line)]
@@ -243,6 +242,7 @@ is another section"))))))
       (is (= [:drawer-end-line]
              (parse ":END:"))))))
 
+;; TODO: merge tests for drawer and drawers?
 (deftest drawer
   (testing "simple"
     (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
@@ -254,6 +254,38 @@ is another section"))))))
             [:content-line ":foo: bar"]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
+
+(deftest drawers
+  (let [parse #(parser/org % :start :drawer)]
+    (testing "drawer"
+      (is (= [:drawer [:drawer-name "MYDRAWER"]
+              [:content-line "any"] [:content-line "text"]]
+             (parse ":MYDRAWER:\nany\ntext\n:END:"))))))
+
+(deftest property-drawers
+  (let [parse #(parser/org % :start :property-drawer)]
+    (testing "no properties"
+      (is (= [:property-drawer]
+             (parse ":PROPERTIES:\n:END:"))))
+    (testing "one property"
+      (is (= [:property-drawer [:node-property-line
+                                [:node-property-name "text"]
+                                [:node-property-plus]
+                                [:node-property-value "my value"]]]
+             (parse ":PROPERTIES:\n:text+: my value\n:END:"))))
+    (testing "more properties"
+      (is (= [:property-drawer
+	      [:node-property-line
+	       [:node-property-name "text"]
+	       [:node-property-plus]
+	       [:node-property-value "my value"]]
+	      [:node-property-line
+	       [:node-property-name "PRO"]
+	       [:node-property-value "abc"]]]
+             (parse ":PROPERTIES:\n:text+: my value\n:PRO: abc\n:END:"))))
+    (testing "can only contain properties"
+      (is (insta/failure? (parse ":PROPERTIES:\ntext\n:END:"))))
+    ))
 
 (deftest dynamic-block-begin
   (let [parse #(parser/org % :start :dynamic-block-begin-line)]

@@ -106,9 +106,18 @@ block-name-special = #"\S+"
 <anything-but-whitespace> = #"\S+"
 <anything-but-newline> = #"[^\n]+"
 
-drawer-begin-line = <":"> drawer-name <":">
-drawer-name = #"[a-zA-Z0-9-_]+"
-drawer-end-line = <":END:">
+(* Drawers
+   https://orgmode.org/manual/Drawers.html
+   https://orgmode.org/worg/dev/org-syntax.html#Drawers
+   https://orgmode.org/worg/dev/org-syntax.html#Property_Drawers
+ *)
+drawer = drawer-begin-line line* <drawer-end-line>
+<drawer-begin-line> = <':'> drawer-name <':'> [s] <eol>
+drawer-name = #"[-\w]+"
+drawer-end-line = <':END:'> [s] <eol>
+
+property-drawer = <property-drawer-begin-line> node-property-line* <drawer-end-line>
+property-drawer-begin-line = <':PROPERTIES:'> [s] <eol>
 
 (* Dynamic Blocks
    https://orgmode.org/manual/Dynamic-Blocks.html
@@ -143,7 +152,7 @@ keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"
 keyword-value = anything-but-newline
 
-node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value]
+node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value] <eol>
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
 node-property-value = text
