@@ -1,8 +1,16 @@
-* org-parser
+* General
+
+Tests: [[https://circleci.com/gh/200ok-ch/org-parser.svg?style=svg]]
+
+Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
+
+** What does this project do?
 
 =org-parser= is a parser for the [[https://orgmode.org/][Org mode]] markup language for Emacs.
 
-It can be used from JavaScript, Java, and Clojure!
+It can be used from JavaScript, Java, Clojure and ClojureScript!
+
+** Why is this project useful
 
 To our knowledge, there is no formal specification of Org. But there
 is a [[https://orgmode.org/worg/dev/org-syntax.html]['spec' written in prose]] which lead to the [[https://orgmode.org/worg/dev/org-element-api.html][reference
@@ -13,7 +21,7 @@ brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
 strives to be that!
 
-** Project State
+* Project State
 
 This project is work-in-progress. It is not ready for production yet.
 
@@ -44,7 +52,7 @@ capable of a subset of Org mode's timestamps ;)
 
 Don't hesitate to contribute!
 
-** Development
+* Development
 
 =org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
 build parsers in Clojure. Apart from living up to this claim (and
@@ -54,14 +62,14 @@ and CLJS. Therefore =org-parser= can be used from both ecosystems
 which, of course, include JavaScript and Java. Hence, it is possible
 to use it in various situations.
 
-*** Prerequisites
+** Prerequisites
 
 Please install [[https://clojure.org/guides/getting_started][Clojure]] and [[https://leiningen.org/][Leiningen]].
 
 There's no additional installation required. Leiningen will pull
 dependencies if required.
 
-*** Testing
+** Testing
 
 Running the tests:
 
@@ -80,10 +88,4 @@ a Lisp before.
 
 You can watch it here: https://youtu.be/o2MLHFGUkoQ
 
-** License
-
-Copyright © 2020 [[https://200ok.ch/][200ok llc]].
-
-This program and the accompanying materials are made available under the
-terms of the GNU Affero General Public License Version 3 which is made
-available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+* License
