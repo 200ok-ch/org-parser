@@ -1,11 +1,21 @@
+
+(* Main sources:
+   - Org Mode Spec: https://orgmode.org/worg/dev/org-syntax.html
+   - Org Mode Manual: https://www.gnu.org/software/emacs/manual/html_mono/org.html
+   - Org Mode Compact Guide: https://orgmode.org/guide/
+*)
+
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / content-line) eol
+<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-begin-line / drawer-end-line / list-item-line / footnote-line / fixed-width-line / content-line) eol
 
 empty-line = "" | #"\s+"
+(* TODO same as title text below. *)
 content-line = #".*"
+(* content-line = text *)
 
 <eol> = <#'\n|$'>
+(* TODO remove <> to enable use where the spaces are actual needed *)
 <s> = <#"[\t ]+">
 <word> = #"[^\r\n\s$]+"
 
@@ -13,9 +23,17 @@ head-line = stars [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
+(* TODO title text is more than just words; e.g. formatting and timestamps are allowed. *)
 title = !tags word {s !tags word}
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
+
+(* Fixed Width Areas
+   https://orgmode.org/worg/dev/org-syntax.html#Fixed_Width_Areas
+   https://orgmode.org/manual/Literal-Examples.html *)
+fixed-width-line = fw-head fw-rest
+fw-head = #"\s*:(?= |$)"
+fw-rest = #".*"
 
 affiliated-keyword-line = <"#+"> (key | attr) <": "> value
 optional = <"["> optional-value <"]">
@@ -49,11 +67,14 @@ dynamic-block-end-line = <'#+END:'>
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
 
-footnote-line = <'['> footnote-label <'] '> footnote-contents
-footnote-label = (number | <'fn:'> footnote-word)
-<number> = #"\d+"
-<footnote-word> = #"[a-zA-Z0-9-_]+"
-footnote-contents = anything-but-newline
+(* Footnotes
+   https://www.gnu.org/software/emacs/manual/html_node/org/Footnotes.html
+ *)
+footnote-link = <'[fn:'> [ fn-label ] <':'> fn-text-inline <']'> / <'[fn:'> fn-label <']'>
+footnote-line = <'[fn:'> fn-label <'] '> fn-text
+fn-label = #"[a-zA-Z0-9-_]+"
+<fn-text> = text
+<fn-text-inline> = #"[^\[\]]*"
 
 list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> (list-item-checkbox <" "> list-item-contents / list-item-contents)
 list-item-bullet = #"[*\-+]"
@@ -72,11 +93,13 @@ keyword-value = anything-but-newline
 node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value]
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
-node-property-value = anything-but-newline
+node-property-value = text
 
 
 (* timestamps
    https://orgmode.org/worg/dev/org-element-api.html
+   https://orgmode.org/worg/dev/org-syntax.html#Timestamp
+   https://orgmode.org/manual/Timestamps.html
 
    The symbol names are carefully chosen as a trade-off between
    shortness and consistency. They have a prefix, e.g. ts-mod-* for
@@ -93,13 +116,12 @@ node-property-value = anything-but-newline
    - e.g. values of :type, :repeater-type, :warning-type cannot be
      constructed with instaparse (to my understanding)
 
-   Currently not supported: diary format from the Emacs Calendar package
-   https://orgmode.org/manual/Timestamps.html
-
    *)
 
+timestamp = timestamp-diary / timestamp-active / timestamp-inactive
 
-timestamp = timestamp-active / timestamp-inactive
+timestamp-diary = <'<%%('> ts-diary-sexp <')>'>
+<ts-diary-sexp> = #"(\)(?!>)|[^)>\n])*"
 
 (* TODO How does that work out: :ts-inner appearing two times in :timestamp-active.
         And if it works in clojure, does it also work in JS hashes (parse result)? *)
@@ -119,7 +141,12 @@ ts-inner-wo-time = ts-date [<' '+> ts-day]
 
 ts-date = #"\d{4}-\d{2}-\d{2}"
 
-ts-time = #"\d{1,2}:\d{2}(:\d{2})?"
+(* It is possible to implement stricter rules, e.g. regex [012]?\d for hours.
+   However, it would add complexity and date/time must be validated at
+   a higher level anyway. Additionally, orgmode C-c C-c seems to add
+   date and time; if time is "too big" and points to the next day, the
+   timestamp date is updated accordingly. *)
+ts-time = #"\d{1,2}:\d{2}(:\d{2})?([AaPp][Mm])?"
 
 (* TODO Is there a class for letters? *)
 (* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
@@ -140,3 +167,162 @@ ts-warning-type  = ('-'|'--')
 
 ts-mod-value = #'\d+'
 ts-mod-unit = #'[hdwmy]'
+
+
+
+
+
+(* text is any orgmode text that can contain markup, links, footnotes, timestamps, ...
+
+   It can be a full line or part of a line (e.g. in title, lists, property values, tables, ...)
+
+ *)
+
+(* TODO handle latex code? *)
+text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
+
+(* Emphasis and Monospace (font style markup)
+   https://orgmode.org/manual/Emphasis-and-Monospace.html
+   "Text in the code and verbatim string is not processed for Org specific syntax;"
+   Implies that the rest can be nested.
+ *)
+text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
+
+(* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
+text-sty-bold          = <'*'> text <'*'>
+text-sty-italic        = <'/'> text <'/'>
+text-sty-underlined    = <'_'> text <'_'>
+text-sty-strikethrough = <'+'> text <'+'>
+(* https://orgmode.org/worg/dev/org-syntax.html#Emphasis_Markers is wrong at this point:
+   The BORDER character in =BxB= must not be whitespace but can be [,'"]. *)
+text-sty-verbatim      = <'='> #"([^\s]|[^\s].*?[^\s])(?==($|[- \t.,:!?;'\")}\[]))" <'='>
+text-sty-code          = <'~'> #"([^\s]|[^\s].*?[^\s])(?=~($|[- \t.,:!?;'\")}\[]))" <'~'>
+
+(* taken from org-emph-re/org-verbatim-re *)
+before-sty = #"[- ('\"{]|"
+
+(* first and last character must not be whitespace. that's why it's not just text *)
+text-inside-sty = ( link-format / footnote-link / text-link / text-styled / text-inside-sty-normal )*
+(* TODO space works? includes newline? *)
+text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=\*([- .,:!?;'\")}\[]|$))"
+
+(* There are 4 types of links: radio link (not subject to this
+   parser), angle link, plain link, and regular link
+
+   https://orgmode.org/worg/dev/org-syntax.html#Links
+
+   Plain links are defined here but probably never matched because
+   they have no characteristic start delimiter.
+
+   Protocol must match org-link-types-re but are here defined more
+   open. We can't rely on variable org settings.
+ *)
+text-link = text-link-angle / text-link-plain
+text-link-angle = <'<'> link-url-scheme <':'> text-link-angle-path <'>'>
+text-link-angle-path = #"[^\]<>\n]+"
+text-link-plain = link-url-scheme <':'> text-link-plain-path
+text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
+
+(* TODO how to prevent greedyness? e.g. not parse text-link-plain (-> look-ahead?) *)
+(* Simple work-around: parse characters as long there is no
+   characteristic delimiter – but always parse at least one character.
+   This works so far because when parsing, text-normal is tried last.
+   It can result in multiple subsequent text-normal which will be
+   concated in a later transform step.
+ *)
+text-normal = #".[^*/_=~+\[<{^\\]*"
+
+(* Superscript and subscript
+   https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript
+   https://orgmode.org/manual/Subscripts-and-Superscripts.html *)
+text-sub = <'_'> ( text-subsup-curly | text-subsup-word )
+text-sup = <'^'> ( text-subsup-curly | text-subsup-word )
+(* TODO word should match any unicode letter or digit but not "_" *)
+text-subsup-word = #"\*|[+-]?[a-zA-Z0-9,.\\]*[a-zA-Z0-9]"
+text-subsup-curly = <'{'> #"[^{}]*" <'}'>
+
+(* https://orgmode.org/worg/dev/org-syntax.html#Targets_and_Radio_Targets *)
+text-target = <'<<'> text-target-name <'>>'>
+text-target-name = #"[^<>\n\s][^<>\n]*[^<>\n\s]" | #"[^<>\n\s]"
+(* TODO for now, don't allow text objects *)
+text-radio-target = <'<<<'> text-target-name <'>>>'>
+
+(* https://orgmode.org/worg/dev/org-syntax.html#Macros *)
+text-macro = <'{{{'> macro-name <'('> macro-args <')'> <'}}}'>
+macro-name = #"[a-zA-Z][-\w]*"
+macro-args = <''> | macro-arg ( <','> macro-arg )*
+(* "ARGUMENTS can contain anything but “}}}” string."
+   Comma must be escaped; ")" is only allowed when not followed by "}}}". *)
+<macro-arg> = #"(\\,|[^)},]|\}(?!\}\})|\)(?!\}\}\}))*"
+
+(* Entities and LaTeX Fragments
+   https://orgmode.org/worg/dev/org-syntax.html#Entities_and_LaTeX_Fragments
+   https://orgmode.org/manual/LaTeX-fragments.html#LaTeX-fragments
+   https://orgmode.org/manual/LaTeX-fragments.html#LaTeX-fragments
+   The entity name must be in org-entities or org-entities-user. As
+   this is configurable, we parse any name that looks valid.
+
+   C-c C-x \ (org-toggle-pretty-entities)
+
+   TODO Implement other latex syntax:
+        \command[x]{y}{z}, \( \), \[ \], $$ $$, $ $
+	text-entity must be edited to also match \command[]{}s
+ *)
+text-entity = ""
+text-entity = <'\\'> entity-name ( entity-braces | ε & <#"[^a-zA-Z]|$"> )
+entity-name = #"[a-zA-Z]+"
+entity-braces = <'{}'>
+
+text-linebreak = <'\\\\'> text-linebreak-after
+text-linebreak-after = #"\s*$"
+
+(* Hyperlinks (regular links)
+   https://orgmode.org/guide/Hyperlinks.html
+   https://orgmode.org/manual/Link-Format.html
+
+   URIs in text, optionally wrapped in <>, are recognized as links.
+   The general link format is [[]] and [[][]].
+
+ *)
+
+(* Any text inside link brackets [[...][...]].
+   Backslash is the escape character for itself and opening/closing brackets.
+ *)
+<link-inside> = #"(\\\[|\\\]|\\\\|[^\[\]])+"
+
+link-format = <'[['> link <']]'> / <'[['> link <']['> link-description <']]'>
+
+(* "If the link does not look like a URL, it is considered to be internal in the current file."
+   - from orgmode guide. Hence the ordered alternatives: *)
+link = link-ext / link-int
+(* TODO does description must support markup? *)
+link-description = link-inside
+
+(* External Links
+   https://orgmode.org/manual/External-Links.html
+   https://orgmode.org/worg/dev/org-syntax.html#Links *)
+link-ext = link-ext-file / link-ext-id / link-ext-other
+
+(* TODO missing: ssh support *)
+link-ext-file = ( <'file:'> | & #"\.?/" ) link-inside-filename [ link-ext-file-location ]
+<link-inside-filename> = #"(\\\[|\\\]|\\\\|:(?!:)|[^:\[\]])+"
+<link-ext-file-location> = <'::'> ( link-file-loc-lnum / link-file-loc-headline / link-file-loc-customid / link-file-loc-string )
+link-file-loc-lnum = #"\d+"
+link-file-loc-headline = <'*'> link-inside
+link-file-loc-customid = <'#'> link-inside
+link-file-loc-string = link-inside
+
+link-ext-id = <"id:"> #"[0-9a-fA-F-]+"
+
+link-ext-other = link-url-scheme <':'> link-url-rest
+(* see org-link-types-re *)
+link-url-scheme = #"[a-z][a-z0-9]+"
+link-url-rest = link-inside
+
+(* Internal Links
+   https://orgmode.org/manual/Internal-Links.html
+
+   Here, link-file-loc-string works different than in link-ext-file:
+   It is not text search but a link to <<id>> or #+NAME: id. See manual.
+ *)
+link-int = link-file-loc-headline / link-file-loc-customid / link-file-loc-string
