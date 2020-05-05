@@ -69,6 +69,17 @@ Running the tests:
 lein test
 #+END_SRC
 
+If you're not familiar with Lisp or Clojure, here's a short video on
+how the tooling for Lisp (and hence Clojure) is great and enables fast
+developer feedback and high quality applications. Initially, the video
+was created to answer a [[https://github.com/200ok-ch/org-parser/issues/4][specific issue]] on this repository. However, the question is a valid
+general question that is asked quite often by people who haven't used
+a Lisp before.
+
+[[https://raw.githubusercontent.com/200ok-ch/org-parser/master/doc/images/quick_introduction_to_lisp_clojure_and_using_the_repl.jpg]]
+
+You can watch it here: https://youtu.be/o2MLHFGUkoQ
+
 ** License
 
 Copyright © 2020 [[https://200ok.ch/][200ok llc]].
