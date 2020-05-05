@@ -19,8 +19,8 @@ This project is work-in-progress. It is not ready for production yet.
 
 The biggest milestones are:
 
-- [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most orgmode syntax
-      - [X] Headlines and orgmode =#+*= stuff
+- [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
+      - [X] Headlines and Org mode =#+*= stuff
       - [X] More features
       - [X] Footnotes (?)
       - [X] Timestamps
@@ -32,15 +32,15 @@ The biggest milestones are:
 - [ ] Setup basic [[http://xahlee.info/clojure/clojure_instaparse_transform.html][instaparse transformations]] from the parse tree to a
       higher-level structure.
 
-- [ ] Transformations to higher-level structure: catch up with orgmode
-      features supported already by the EBNF parser
+- [ ] Transformations to higher-level structure: catch up with Org mode
+      features supported already by the EBNF parser.
 
 Not ready for production yet, *but it can already be useful* for you:
-E.g. if your script needs to parse parts of orgmode features, our EBNF
+E.g. if your script needs to parse parts of Org mode features, our EBNF
 parser probably already supports that. Do not underestimate
 e.g. timestamps. Use our well-tested parser to disassemble it in its
 parts, instead of trying to write a poor and ugly regex that is only
-capable of a subset of orgmode's timestamps ;)
+capable of a subset of Org mode's timestamps ;)
 
 Don't hesitate to contribute!
 
