@@ -152,7 +152,9 @@ keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"
 keyword-value = anything-but-newline
 
-node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value] <eol>
+(* TODO allow empty properties with or without trailing space *)
+(* TODO looks like node-property-line also parses :END: *)
+node-property-line = ! <':END:> <':'> node-property-name [node-property-plus] <':'> ( <' '> node-property-value | [<' '>] ) <eol>
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
 node-property-value = text
