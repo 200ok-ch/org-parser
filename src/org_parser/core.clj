@@ -1,6 +1,6 @@
 (ns org-parser.core
   (:require [org-parser.parser :as parser]
-            [org-parser.augmentor :as augmentor]
+            [org-parser.transform :as transform]
             [org-parser.render :as render]))
 
 
@@ -8,6 +8,6 @@
   (->> path
        slurp
        parser/org
-       augmentor/augment
+       transform/transform
        render/text
        println))

@@ -1,6 +1,16 @@
-* org-parser
+* General
+
+Tests: [[https://circleci.com/gh/200ok-ch/org-parser.svg?style=svg]]
+
+Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
+
+** What does this project do?
 
 =org-parser= is a parser for the [[https://orgmode.org/][Org mode]] markup language for Emacs.
+
+It can be used from JavaScript, Java, Clojure and ClojureScript!
+
+** Why is this project useful
 
 To our knowledge, there is no formal specification of Org. But there
 is a [[https://orgmode.org/worg/dev/org-syntax.html]['spec' written in prose]] which lead to the [[https://orgmode.org/worg/dev/org-element-api.html][reference
@@ -11,6 +21,39 @@ brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
 strives to be that!
 
+* Project State
+
+This project is work-in-progress. It is not ready for production yet.
+
+The biggest milestones are:
+
+- [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
+      - [X] Headlines and Org mode =#+*= stuff
+      - [X] More features
+      - [X] Footnotes (?)
+      - [X] Timestamps
+      - [X] Links
+      - [-] Text links
+      - [-] Styled text
+      - [-] Text that can contain style, links, footnotes, timestamps, ...
+
+- [ ] Setup basic [[http://xahlee.info/clojure/clojure_instaparse_transform.html][instaparse transformations]] from the parse tree to a
+      higher-level structure.
+
+- [ ] Transformations to higher-level structure: catch up with Org mode
+      features supported already by the EBNF parser.
+
+Not ready for production yet, *but it can already be useful* for you:
+E.g. if your script needs to parse parts of Org mode features, our EBNF
+parser probably already supports that. Do not underestimate
+e.g. timestamps. Use our well-tested parser to disassemble it in its
+parts, instead of trying to write a poor and ugly regex that is only
+capable of a subset of Org mode's timestamps ;)
+
+Don't hesitate to contribute!
+
+* Development
+
 =org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
 build parsers in Clojure. Apart from living up to this claim (and
 beyond the scope of just the one programming language), using
@@ -19,14 +62,30 @@ and CLJS. Therefore =org-parser= can be used from both ecosystems
 which, of course, include JavaScript and Java. Hence, it is possible
 to use it in various situations.
 
-** Usage
+** Prerequisites
 
-FIXME
+Please install [[https://clojure.org/guides/getting_started][Clojure]] and [[https://leiningen.org/][Leiningen]].
 
-** License
+There's no additional installation required. Leiningen will pull
+dependencies if required.
 
-Copyright © 2019 [[https://200ok.ch/][200ok llc]].
+** Testing
 
-This program and the accompanying materials are made available under the
-terms of the GNU Affero General Public License Version 3 which is made
-available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+Running the tests:
+
+#+BEGIN_SRC shell
+lein test
+#+END_SRC
+
+If you're not familiar with Lisp or Clojure, here's a short video on
+how the tooling for Lisp (and hence Clojure) is great and enables fast
+developer feedback and high quality applications. Initially, the video
+was created to answer a [[https://github.com/200ok-ch/org-parser/issues/4][specific issue]] on this repository. However, the question is a valid
+general question that is asked quite often by people who haven't used
+a Lisp before.
+
+[[https://raw.githubusercontent.com/200ok-ch/org-parser/master/doc/images/quick_introduction_to_lisp_clojure_and_using_the_repl.jpg]]
+
+You can watch it here: https://youtu.be/o2MLHFGUkoQ
+
+* License
