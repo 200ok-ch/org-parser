@@ -17,13 +17,13 @@
 (deftest append
   (testing "already in content block"
     (is (= [[:content "hello\nworld\n"]]
-         (#'sut/append [[:content "hello\n"]] "world")))))
+           (#'sut/append [[:content "hello\n"]] "world")))))
 
 
 (deftest reducer
   (testing "content-line begins block"
     (is (= [[:headline] [:content "hello world\n"]]
-         (#'sut/reducer [[:headline]] [:content-line "hello world"])))))
+           (#'sut/reducer [[:headline]] [:content-line "hello world"])))))
 
 
 (def parse-tree
@@ -36,10 +36,14 @@
    [:content-line "is another section"]])
 
 
-(deftest x
-  (testing "y"
-    (is (= [[:headline {:level 1, :title "hello world"}]
-           [:content "this is the first section\n\n"]
-           [:headline {:level 2, :title "and this"}]
-           [:content "\nis another section\n"]]
+(def transformed
+  [[:headline {:level 1, :title "hello world"}]
+   [:content "this is the first section\n\n"]
+   [:headline {:level 2, :title "and this"}]
+   [:content "\nis another section\n"]])
+
+
+(deftest transform
+  (testing "a full parsetree"
+    (is (= transformed
            (sut/transform parse-tree)))))
