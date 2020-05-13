@@ -1,11 +1,13 @@
 (ns org-parser.core
-  (:require [instaparse.core :as insta]
-            [org-parser.parser :as parser]
-            [clojure.pprint :refer [pprint]]))
+  (:require [org-parser.parser :as parser]
+            [org-parser.augmentor :as augmentor]
+            [org-parser.render :as render]))
 
 
 (defn -main [path & args]
   (->> path
        slurp
-       (insta/parse parser/org)
-       pprint))
+       parser/org
+       augmentor/augment
+       render/text
+       println))
