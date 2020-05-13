@@ -14,16 +14,16 @@
            (#'sut/property :title props)))))
 
 
-(deftest append-content
+(deftest append
   (testing "already in content block"
     (is (= [[:content "hello\nworld\n"]]
-         (#'sut/append-content [[:content "hello\n"]] "world")))))
+         (#'sut/append [[:content "hello\n"]] "world")))))
 
 
 (deftest reducer
   (testing "content-line begins block"
     (is (= [[:headline] [:content "hello world\n"]]
-         (sut/reducer [[:headline]] [:content-line "hello world"])))))
+         (#'sut/reducer [[:headline]] [:content-line "hello world"])))))
 
 
 (def parse-tree
