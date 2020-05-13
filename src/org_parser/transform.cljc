@@ -6,7 +6,7 @@
 
 
 (defmethod reducer :default [state line]
-  (update state :result conj line))
+  (conj state line))
 
 
 (defn- property [prop props]
