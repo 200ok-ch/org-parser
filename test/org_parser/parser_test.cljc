@@ -53,14 +53,6 @@
              (parse "***** COMMENT hello world"))))))
 
 
-;; (deftest content
-;;   (let [parse #(parser/org % :start :content-line)]
-;;     (testing "boring"
-;;       (is (= [[:content-line "anything"]
-;;               [:content-line "goes"]]
-;;              (parse "anything\ngoes"))))))
-
-
 (deftest sections
   (let [parse parser/org]
     (testing "boring"
