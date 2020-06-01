@@ -43,6 +43,9 @@ key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ]) | "AUT
 attr = <"ATTR_"> backend
 backend = #"[a-zA-Z0-9-_]+"
 
+(* TODO add equivalent TODO keyword specifiers
+        and allow more than [A-Z] in todo keyword names, esp. the shorthand definitions(d)
+	https://orgmode.org/manual/Per_002dfile-keywords.html *)
 todo-line = <"#+TODO: "> states
 <states> = todo-state {s todo-state} <s "|" s> done-state {s done-state}
 todo-state = #"[A-Z]+"
