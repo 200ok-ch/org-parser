@@ -1,5 +1,7 @@
 (ns org-parser.parser
-  (:require [instaparse.core :as insta]))
+  (:require #?(:clj [instaparse.core :as insta :refer [defparser]])
+            #?(:cljs [cljs-node-io.core :refer [slurp]])
+            #?(:cljs [instaparse.core :as insta :refer-macros [defparser]])))
 
 
-(def org (insta/parser (clojure.java.io/resource "org.ebnf")))
+(defparser org (slurp "resources/org.ebnf"))

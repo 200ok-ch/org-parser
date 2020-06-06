@@ -1,8 +1,9 @@
 (ns org-parser.core
-  (:require [org-parser.parser :as parser]
+  (:require #?(:cljs [cljs.nodejs :as nodejs])
+             #?(:cljs [cljs-node-io.core :refer [slurp]])
+            [org-parser.parser :as parser]
             [org-parser.transform :as transform]
             [org-parser.render :as render]))
-
 
 (defn -main [path & args]
   (->> path
@@ -11,3 +12,6 @@
        transform/transform
        render/text
        println))
+
+#?(:cljs (nodejs/enable-util-print!))
+#?(:cljs (set! *main-cli-fn* -main))
