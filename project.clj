@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.764"]
                  [cljs-node-io "1.1.2"]
+                 [org.clojure/data.json "1.0.0"]
                  [instaparse "1.4.10"]]
   :main ^:skip-aot org-parser.core
   :target-path "target/%s"

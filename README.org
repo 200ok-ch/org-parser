@@ -111,7 +111,7 @@ First, compile =org-parser= with: =lein cljsbuild once; chmod +x
 
 #+BEGIN_EXAMPLE
   munen@lambda:~/src/200ok/org-parser% ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
-  [[:headline {:level 1, :title "TODO Header with repeater"}] [:content "  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
+  [["headline",{"level":1,"title":"TODO Header with repeater"}],["content","  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
 #+END_EXAMPLE
 
 * License

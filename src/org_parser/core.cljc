@@ -10,7 +10,8 @@
        slurp
        parser/org
        transform/transform
-       render/text
+       #?(:clj render/edn)
+       #?(:cljs render/json)
        println))
 
 #?(:cljs (nodejs/enable-util-print!))
