@@ -1,4 +1,5 @@
 (ns org-parser.core
+  #?(:clj (:gen-class))
   (:require #?(:cljs [cljs.nodejs :as nodejs])
              #?(:cljs [cljs-node-io.core :refer [slurp]])
             [org-parser.parser :as parser]

@@ -12,8 +12,7 @@
   :target-path "target/%s"
   :repl-options {:init-ns org-parser.core}
   :plugins [[lein-cljsbuild "1.1.8"]]
-  ;; :hooks [leiningen.cljsbuild]
-
+  :profiles {:uberjar {:aot :all}}
   :cljsbuild {:builds
               [{:id "foo"
                 :source-paths ["src"]
