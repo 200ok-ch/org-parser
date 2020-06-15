@@ -2,10 +2,8 @@
   #?(:clj (:require [clojure.data.json :as json])))
 
 (defn edn [x]
-  (str x))
+  (prn-str x))
 
-#?(:cljs (defn json [x]
-           (.stringify js/JSON (clj->js x))))
-
-#?(:clj (defn text [x]
-  (json/write-str x)))
+(defn json [x]
+  #?(:clj (json/write-str x)
+     :cljs (.stringify js/JSON (clj->js x))))
