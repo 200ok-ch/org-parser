@@ -60,7 +60,7 @@ beyond the scope of just the one programming language), using
 instaparse is great for another reason: Instaparse works both on CLJ
 and CLJS. Therefore =org-parser= can be used from both ecosystems
 which, of course, include JavaScript and Java. Hence, it is possible
-to use it in various situations.
+to [[#usage][use it]] in various situations.
 
 ** Prerequisites
 
@@ -87,5 +87,46 @@ a Lisp before.
 [[https://raw.githubusercontent.com/200ok-ch/org-parser/master/doc/images/quick_introduction_to_lisp_clojure_and_using_the_repl.jpg]]
 
 You can watch it here: https://youtu.be/o2MLHFGUkoQ
+
+* Usage
+  :PROPERTIES:
+  :CUSTOM_ID: usage
+  :END:
+
+At the moment, you can run =org-parser= from Clojure, Java or from
+NodeJS. Other targets which are hosted on the JVM or on JavaScript are
+possible.
+
+** Clojure
+
+=lein run file.org=, for example:
+
+#+BEGIN_EXAMPLE
+  munen@lambda:~/src/200ok/org-parser% lein run test/org_parser/fixtures/schedule_with_repeater.org
+  [[:headline {:level 1, :title "TODO Header with repeater"}] [:content "  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
+#+END_EXAMPLE
+
+** NodeJS
+
+First, compile =org-parser= with: =lein cljsbuild once; chmod +x
+./target/org-parser.js=.
+
+=./target/org-parser.js file.org=, for example:
+
+#+BEGIN_EXAMPLE
+  munen@lambda:~/src/200ok/org-parser% ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
+  [["headline",{"level":1,"title":"TODO Header with repeater"}],["content","  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
+#+END_EXAMPLE
+
+** Java
+
+First, compile =org-parser= with: =lein uberjar=.
+
+=java -jar target/uberjar/org-parser-0.1.0-SNAPSHOT-standalone.jar file.org=, for example:
+
+#+BEGIN_EXAMPLE
+  munen@lambda:~/src/200ok/org-parser% java -jar target/uberjar/org-parser-0.1.0-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
+  [[:headline {:level 1, :title "TODO Header with repeater"}] [:content "  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
+#+END_EXAMPLE
 
 * License
