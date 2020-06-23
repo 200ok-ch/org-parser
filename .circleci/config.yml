@@ -4,18 +4,10 @@
 #
 version: 2
 jobs:
-  setup:
+  test-clj:
     docker:
-      # specify the version you desire here
       - image: circleci/clojure:lein-2.7.1
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
     working_directory: ~/repo
-
     environment:
       LEIN_ROOT: "true"
       # Customize the JVM maximum heap limit
@@ -36,28 +28,47 @@ jobs:
           command: sudo apt-get update -yq && sudo apt install -yq nodejs
 
       - run: lein deps
+      - run: lein test
 
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "project.clj" }}
 
-  test-clj:
-    steps:
-      - run: lein test
-
   test-cljs:
+    docker:
+      - image: circleci/clojure:lein-2.7.1
+    working_directory: ~/repo
+    environment:
+      LEIN_ROOT: "true"
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+
     steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: Install dependencies
+          command: sudo apt-get update -yq && sudo apt install -yq nodejs
+
+      - run: lein deps
       - run: lein doo node once
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
 
 workflows:
   version: 2
   run_tests:
     jobs:
-      - setup
-      - test-clj:
-          requires:
-            - setup
-      - test-cljs:
-          requires:
-            - setup
+      - test-clj
+      - test-cljs
