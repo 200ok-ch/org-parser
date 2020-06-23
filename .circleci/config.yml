@@ -43,10 +43,12 @@ jobs:
           key: v1-dependencies-{{ checksum "project.clj" }}
 
   test-clj:
-    - run: lein test
+    steps:
+      - run: lein test
 
   test-cljs:
-    - run: lein doo node once
+    steps:
+      - run: lein doo node once
 
 workflows:
   version: 2
