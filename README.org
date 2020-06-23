@@ -74,7 +74,10 @@ dependencies if required.
 Running the tests:
 
 #+BEGIN_SRC shell
+# Clojure
 lein test
+# CLJS (starts a watcher)
+lein doo node
 #+END_SRC
 
 If you're not familiar with Lisp or Clojure, here's a short video on

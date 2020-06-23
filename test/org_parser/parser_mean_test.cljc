@@ -1,7 +1,7 @@
-(ns org-parser.parser-test
+(ns org-parser.parser-mean-test
   (:require [org-parser.parser :as parser]
-            #?(:clj [clojure.test :as t :refer :all]
-               :cljs [cljs.test :as t :include-macros true])))
+            #?(:clj [clojure.test :refer :all]
+               :cljs [cljs.test :refer-macros [deftest is testing]])))
 
 (deftest headline
   (let [parse #(parser/org % :start :head-line)]

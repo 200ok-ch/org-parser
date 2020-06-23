@@ -1,8 +1,8 @@
 (ns org-parser.parser-test
   (:require [org-parser.parser :as parser]
             [instaparse.core :as insta]
-            #?(:clj [clojure.test :as t :refer :all]
-               :cljs [cljs.test :as t :include-macros true])))
+            #?(:clj [clojure.test :refer :all]
+               :cljs [cljs.test :refer-macros [deftest is testing]])))
 
 
 ;; if parse is successful it returns a vector otherwise a map
@@ -315,47 +315,47 @@ is another section"))))))
              (parse "<2020-01-18 -2d +1w>"))))
     (testing "timestamp with time and both warning and repeater"
       (is (= [:timestamp [:timestamp-active [:ts-inner
-	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
-	     [:ts-modifiers
-	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
-	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+	                                     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	                                     [:ts-modifiers
+	                                      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	                                      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
              (parse "<2020-01-18 18:00 -2d +1w>"))))
 
     (testing "timestamp with time span and both warning and repeater"
       (is (= [:timestamp [:timestamp-active [:ts-inner-span
-	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
-	     [:ts-time "20:00"]
-	     [:ts-modifiers
-	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
-	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+	                                     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	                                     [:ts-time "20:00"]
+	                                     [:ts-modifiers
+	                                      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	                                      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
              (parse "<2020-01-18 18:00-20:00 -2d +1w>"))))
 
     (testing "more than one space between parts of timestamp does not matter"
       (is (= [:timestamp [:timestamp-active [:ts-inner
-	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
-	     [:ts-modifiers
-	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
-	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+	                                     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	                                     [:ts-modifiers
+	                                      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	                                      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
              (parse "<2020-01-18    18:00    -2d    +1w>"))))
 
     (testing "timestamp ranges"
       (is (= [:timestamp [:timestamp-active
-	     [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-25"]] [:ts-modifiers]]
-	     [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-28"]] [:ts-modifiers]]]]
+	                  [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-25"]] [:ts-modifiers]]
+	                  [:ts-inner [:ts-inner-wo-time [:ts-date "2020-04-28"]] [:ts-modifiers]]]]
              (parse "<2020-04-25>--<2020-04-28>"))))
     (testing "timestamp ranges with times"
       (is (= [:timestamp [:timestamp-active
-	     [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-25"] [:ts-time "08:00"]] [:ts-modifiers]]
-	     [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-28"] [:ts-time "16:00"]] [:ts-modifiers]]]]
+	                  [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-25"] [:ts-time "08:00"]] [:ts-modifiers]]
+	                  [:ts-inner [:ts-inner-w-time [:ts-date "2020-04-28"] [:ts-time "16:00"]] [:ts-modifiers]]]]
              (parse "<2020-04-25 08:00>--<2020-04-28 16:00>"))))
 
     (testing "inactive timestamps"
       (is (= [:timestamp [:timestamp-inactive [:ts-inner-span
-	     [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
-	     [:ts-time "20:00"]
-	     [:ts-modifiers
-	      [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
-	      [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
+	                                       [:ts-inner-w-time [:ts-date "2020-01-18"] [:ts-time "18:00"]]
+	                                       [:ts-time "20:00"]
+	                                       [:ts-modifiers
+	                                        [:ts-warning [:ts-warning-type "-"] [:ts-mod-value "2"] [:ts-mod-unit "d"]]
+	                                        [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "w"]]]]]]
              (parse "[2020-01-18 18:00-20:00 -2d +1w]"))))
 
     (testing "syntactically wrong timestamp"
@@ -363,20 +363,20 @@ is another section"))))))
 
     (testing "at-least modifier for habits"
       (is (= [:timestamp [:timestamp-active [:ts-inner
-	     [:ts-inner-wo-time [:ts-date "2009-10-17"] [:ts-day "Sat"]]
-	     [:ts-modifiers [:ts-repeater
-	       [:ts-repeater-type ".+"] [:ts-mod-value "2"] [:ts-mod-unit "d"]
-	       [:ts-mod-at-least [:ts-mod-value "4"] [:ts-mod-unit "d"]]]]]]]
+	                                     [:ts-inner-wo-time [:ts-date "2009-10-17"] [:ts-day "Sat"]]
+	                                     [:ts-modifiers [:ts-repeater
+	                                                     [:ts-repeater-type ".+"] [:ts-mod-value "2"] [:ts-mod-unit "d"]
+	                                                     [:ts-mod-at-least [:ts-mod-value "4"] [:ts-mod-unit "d"]]]]]]]
              (parse "<2009-10-17 Sat .+2d/4d>"))))
 
     (testing "accept seconds in time"
       (is (= [:timestamp [:timestamp-active [:ts-inner [:ts-inner-w-time
-	      [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "15:30:55"]] [:ts-modifiers]]]]
+	                                                [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "15:30:55"]] [:ts-modifiers]]]]
              (parse "<2009-10-17 Sat 15:30:55>"))))
 
     (testing "missing leading zeros in time are no problem"
       (is (= [:timestamp [:timestamp-active [:ts-inner
-	     [:ts-inner-w-time [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "8:00"]] [:ts-modifiers]]]]
+	                                     [:ts-inner-w-time [:ts-date "2009-10-17"] [:ts-day "Sat"] [:ts-time "8:00"]] [:ts-modifiers]]]]
              (parse "<2009-10-17 Sat 8:00>"))))
 
     (testing "newlines are not recognized as space \\s"
@@ -428,17 +428,17 @@ is another section"))))))
   (let [parse #(parser/org % :start :link-format)]
     (testing "parse simple link"
       (is (= [:link-format [:link [:link-ext [:link-ext-other
-	      [:link-url-scheme "https"]
-	      [:link-url-rest "//example.com"]]]]]
+	                                      [:link-url-scheme "https"]
+	                                      [:link-url-rest "//example.com"]]]]]
              (parse "[[https://example.com]]"))))
     (testing "parse simple link that looks like an web address but is not valid"
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "www.example.com"]]]]
              (parse "[[www.example.com]]"))))
     (testing "parse link with description"
       (is (= [:link-format [:link [:link-ext [:link-ext-other
-	      [:link-url-scheme "https"]
-	      [:link-url-rest "//example.com"]]]]
-	     [:link-description "description words"]]
+	                                      [:link-url-scheme "https"]
+	                                      [:link-url-rest "//example.com"]]]]
+	      [:link-description "description words"]]
              (parse "[[https://example.com][description words]]"))))
     (testing "parse id link"
       (is (= [:link-format [:link [:link-ext [:link-ext-id "abc-123"]]]]
@@ -647,15 +647,15 @@ is another section"))))))
       (is (= [:text
               [:text-normal "normal text "]
               [:link-format [:link [:link-ext [:link-ext-other
-                                        [:link-url-scheme "http"] [:link-url-rest "//example.com"]]]]]
+                                               [:link-url-scheme "http"] [:link-url-rest "//example.com"]]]]]
               [:text-normal " more text"]]
              (parse "normal text [[http://example.com]] more text"))))
     (testing "parse link followed by footnote"
       (is (= [:text
               [:text-normal "normal text "]
               [:link-format [:link [:link-ext [:link-ext-other
-	       [:link-url-scheme "http"]
-	       [:link-url-rest "//example.com"]]]]]
+	                                       [:link-url-scheme "http"]
+	                                       [:link-url-rest "//example.com"]]]]]
 	      [:footnote-link "reserved"]]
              (parse "normal text [[http://example.com]][fn::reserved]"))))
     ;; TODO this is not a subscript (space before)
@@ -742,13 +742,13 @@ is another section"))))))
              (parse "<<t>>"))))
     (testing "parse invalid target"
       (is (insta/failure?
-             (parse "<< t>>"))))
+           (parse "<< t>>"))))
     (testing "parse invalid target"
       (is (insta/failure?
-             (parse "<<t >>"))))
+           (parse "<<t >>"))))
     (testing "parse invalid target"
       (is (insta/failure?
-             (parse "<< >>"))))
+           (parse "<< >>"))))
     ))
 
 (deftest text-subscript
