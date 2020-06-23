@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build:
+  setup:
     docker:
       # specify the version you desire here
       - image: circleci/clojure:lein-2.7.1
@@ -31,6 +31,10 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
+      - run:
+          name: Install dependencies
+          command: sudo apt-get update -yq && sudo apt install -yq nodejs
+
       - run: lein deps
 
       - save_cache:
@@ -38,5 +42,19 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "project.clj" }}
 
-      # run tests!
-      - run: lein test
+  test-clj:
+    - run: lein test
+
+  test-cljs:
+    - run: lein doo node once
+
+workflows:
+  version: 2
+  run_tests:
+    jobs:
+      - test-clj:
+          requires:
+            - setup
+      - test-cljs:
+          requires:
+            - setup

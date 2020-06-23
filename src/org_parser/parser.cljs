@@ -1,5 +1,8 @@
 (ns org-parser.parser
-  (:require [cljs-node-io.core :refer [slurp]]
-            [instaparse.core :as insta :refer-macros [defparser]]))
+  (:require [instaparse.core :as insta :refer-macros [defparser]]
+            ;; [cljs.nodejs :as nodejs]
+            ))
 
-(defparser org (slurp "resources/org.ebnf"))
+(def fs (js/require "fs"))
+
+(defparser org (.readFileSync fs "resources/org.ebnf" "utf8"))

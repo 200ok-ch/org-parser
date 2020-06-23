@@ -2,7 +2,7 @@
   (:require [org-parser.transform :as sut]
             [org-parser.parser :as parser]
             #?(:clj [clojure.test :refer :all]
-               :cljs [cljs.test :refer :all :include-macros true])))
+               :cljs [cljs.test :refer-macros [deftest is testing]])))
 
 
 (def props
@@ -11,7 +11,7 @@
 
 (deftest property
   (testing "helper fn"
-    (is (= '("hello" "world")
+    (is (= ["hello" "world"]
            (#'sut/property :title props)))))
 
 
@@ -43,6 +43,7 @@
    [:headline {:level 2, :title "and this"}]
    [:content "\nis another section\n"]])
 
+
 (deftest regression
   (testing "`transform` works on structures provided by parser"
     (let [parse parser/org]
@@ -53,6 +54,7 @@ this is the first section
 ** and this
 
 is another section"))))))
+
 
 (deftest transform
   (testing "a full parsetree"
