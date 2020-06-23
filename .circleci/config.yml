@@ -23,10 +23,6 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-      - run:
-          name: Install dependencies
-          command: sudo apt-get update -yq && sudo apt install -yq nodejs
-
       - run: lein deps
       - run: lein test
 
@@ -37,7 +33,7 @@ jobs:
 
   test-cljs:
     docker:
-      - image: circleci/clojure:lein-2.7.1
+      - image: circleci/clojure:openjdk-8-lein-2.9.3-buster
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
@@ -55,8 +51,8 @@ jobs:
             - v1-dependencies-
 
       - run:
-          name: Install dependencies
-          command: sudo apt-get update -yq && sudo apt install -yq nodejs
+          name: Install Node
+          command: sudo apt-get update -y && sudo apt install -y nodejs && sudo ln -s /usr/bin/nodejs /usr/bin/node
 
       - run: lein deps
       - run: lein doo node once
