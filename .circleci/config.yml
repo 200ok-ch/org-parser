@@ -52,7 +52,7 @@ jobs:
 
       - run:
           name: Install Node
-          command: sudo apt-get update -y && sudo apt install -y nodejs && sudo ln -s /usr/bin/nodejs /usr/bin/node
+          command: sudo apt-get update -y && sudo apt install -y nodejs
 
       - run: lein deps
       - run: lein doo node once
