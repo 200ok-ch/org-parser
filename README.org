@@ -108,6 +108,15 @@ a Lisp before.
 
 You can watch it here: https://youtu.be/o2MLHFGUkoQ
 
+* Release and Dependency Information
+** [[https://clojure.org/reference/deps_and_cli][CLI/deps.edn]] dependency information:
+   #+BEGIN_SRC
+org-parser/org-parser {:mvn/version "0.1.4"}
+   #+END_SRC
+** [[https://github.com/technomancy/leiningen][Leiningen]] dependency information:
+#+BEGIN_SRC
+[org-parser "0.1.4"]
+#+END_SRC
 * Usage
   :PROPERTIES:
   :CUSTOM_ID: usage
@@ -116,6 +125,14 @@ You can watch it here: https://youtu.be/o2MLHFGUkoQ
 At the moment, you can run =org-parser= from Clojure, Java or from
 NodeJS. Other targets which are hosted on the JVM or on JavaScript are
 possible.
+
+** Clojure Library
+ #+BEGIN_SRC clojure
+   (ns hello-world.core
+     (:require [org-parser.parser :refer [org]]))
+
+   (org "* Headline")
+ #+END_SRC
 
 ** Clojure
 
