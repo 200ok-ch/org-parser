@@ -1,4 +1,5 @@
 (ns org-parser.parser-test
+  (:refer-clojure :exclude [keyword])
   (:require [org-parser.parser :as parser]
             [instaparse.core :as insta]
             #?(:clj [clojure.test :refer :all]
