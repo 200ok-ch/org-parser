@@ -21,6 +21,21 @@ brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
 strives to be that!
 
+** Architecture
+
+The code base of =org-parser= is split into four namespaces:
+
+- org-parser.core (top level api, i.e. =read-str=, =write-str=)
+- org-parser.parse (aka. deserializer, reader)
+- org-parser.parse.transform (transforms the result of the parser into a more desirable structure)
+- org-parser.render (aka. serializer, writer)
+
+Thus =org-parser= has become a misnomer in the sense, that it now
+strives to be =clojure/data.org= (after the pattern of existing Clojure
+libraries like =data.json=, =data.xml=, =data.csv=, etc) providing
+reader as well as writer capabilities for the serialization format
+=org=.
+
 * Project State
 
 This project is work-in-progress. It is not ready for production yet.
