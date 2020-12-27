@@ -1,6 +1,6 @@
 * General
 
-Tests: [[https://circleci.com/gh/200ok-ch/org-parser.svg?style=svg]]
+#+html: <p>Tests: <a href="https://circleci.com/gh/200ok-ch/org-parser"><img src="https://circleci.com/gh/200ok-ch/org-parser.svg?style=svg"></a></p>
 
 Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
 
