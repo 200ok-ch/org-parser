@@ -49,7 +49,6 @@ jobs:
             - v1-dependencies-{{ checksum "project.clj" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
       - run:
           name: Install Node
           command: sudo apt-get update -y && sudo apt install -y nodejs
@@ -67,6 +66,21 @@ jobs:
       - image: clojure:lein-2.9.5-slim-buster
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: sudo apt-get update -yq && sudo apt install -yq git
+      - run:
+          name: Configure Git
+          command: |
+            git config --global user.email "info@200ok.ch"
+            git config --global user.name "200ok CI bot"
+            git remote rm origin
+            git remote add origin https://${GH_TOKEN}@github.com/200ok-ch/org-parser.git > /dev/null 2>&1
+
       - run:
           name: Deploy to Clojars
           command: lein release :patch
