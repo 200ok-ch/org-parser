@@ -72,18 +72,34 @@ jobs:
             - v1-dependencies-
       - run:
           name: Install dependencies
-          command: sudo apt-get update -yq && sudo apt install -yq git
+          command: apt-get update -yq && apt install -yq git
       - run:
           name: Configure Git
           command: |
             git config --global user.email "info@200ok.ch"
             git config --global user.name "200ok CI bot"
-            git remote rm origin
-            git remote add origin https://${GH_TOKEN}@github.com/200ok-ch/org-parser.git > /dev/null 2>&1
+            git remote rm origin > /dev/null 2>&1
+            # Set up origin with the ability to push to it through
+            # token auth.
+            git remote add origin "https://${GH_TOKEN}@github.com/200ok-ch/org-parser.git" > /dev/null 2>&1
+            # Checkout the relevant branch. `lein release` does not
+            # work from a commit sha.
+            git checkout -b "$CIRCLE_BRANCH"
+
 
       - run:
           name: Deploy to Clojars
-          command: lein release :patch
+          command: |
+            # Take away the `-SNAPSHOT` postfix from the latest version
+            lein change version leiningen.release/bump-version release
+            lein vcs commit "chore: Bump to version %s [skip ci]"
+            lein vcs tag v --no-sign
+            # Deploy this version to Clojars
+            lein update-in :deploy-repositories conj "[\"clojars\" {:url \"https://repo.clojars.org/\" :username :env/clojars_username :password :env/clojars_password :sign-releases false}]" -- deploy clojars
+            # Bump to the next patch level with `-SNAPSHOT` postfix
+            lein change version leiningen.release/bump-version
+            lein vcs commit "chore: Bump to version %s [skip ci]"
+            git push --set-upstream origin setup-ci
 
 workflows:
   version: 2
