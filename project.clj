@@ -14,6 +14,14 @@
   :plugins [[lein-cljsbuild "1.1.8"]
             [lein-doo "0.1.10"]]
   :profiles {:uberjar {:aot :all}}
+  :deploy-repositories [["snapshots" {:url "https://clojars.org/repo"
+                                      :username :env/clojars_username
+                                      :password :env/clojars_password
+                                      :sign-releases false}]
+                        ["releases"  {:url "https://clojars.org/repo"
+                                      :username :env/clojars_username
+                                      :password :env/clojars_password
+                                      :sign-releases false}]]
   :doo {:build "test-cljs-with-node"}
   :cljsbuild
   {:builds [{:id "foo"
