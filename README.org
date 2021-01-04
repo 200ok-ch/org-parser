@@ -2,7 +2,7 @@
 
 #+html: <p>Tests: <a href="https://circleci.com/gh/200ok-ch/org-parser"><img src="https://circleci.com/gh/200ok-ch/org-parser.svg?style=svg"></a></p>
 
-#+html: <a href="https://clojars.org/org-parser"><img src="https://img.shields.io/clojars/v/org-parser.svg" alt="Clojars Project" /></a><
+#+html: <a href="https://clojars.org/org-parser"><img src="https://img.shields.io/clojars/v/org-parser.svg" alt="Clojars Project" /></a>
 
 Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
 

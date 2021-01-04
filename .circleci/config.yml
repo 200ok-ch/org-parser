@@ -84,7 +84,7 @@ jobs:
             git remote add origin "https://${GH_TOKEN}@github.com/200ok-ch/org-parser.git" > /dev/null 2>&1
             # Checkout the relevant branch. `lein release` does not
             # work from a commit sha.
-            git checkout -b "$CIRCLE_BRANCH"
+            git checkout -B "$CIRCLE_BRANCH"
 
 
       - run:
@@ -99,7 +99,7 @@ jobs:
             # Bump to the next patch level with `-SNAPSHOT` postfix
             lein change version leiningen.release/bump-version
             lein vcs commit "chore: Bump to version %s [skip ci]"
-            git push --set-upstream origin setup-ci
+            git push --set-upstream origin "$CIRCLE_BRANCH"
 
 workflows:
   version: 2
