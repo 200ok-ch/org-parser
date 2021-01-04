@@ -62,9 +62,25 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "project.clj" }}
 
+  release:
+    docker:
+      - image: clojure:lein-2.9.5-slim-buster
+    steps:
+      - checkout
+      - run:
+          name: Deploy to Clojars
+          command: lein release :patch
+
 workflows:
   version: 2
   run_tests:
     jobs:
       - test-clj
       - test-cljs
+      - release:
+          requires:
+            - test-clj
+            - test-cljs
+          filters:
+            branches:
+              only: master
