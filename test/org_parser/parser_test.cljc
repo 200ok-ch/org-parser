@@ -142,6 +142,12 @@ is another section"))))))
       (is (= [:drawer-end-line]
              (parse ":END:"))))))
 
+(deftest drawer
+  (testing "drawer"
+    (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
+           (parser/org ":SOMENAME:
+:END:")))))
+
 
 (deftest dynamic-block-begin
   (let [parse #(parser/org % :start :dynamic-block-begin-line)]
