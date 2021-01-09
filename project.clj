@@ -1,4 +1,4 @@
-(defproject org-parser "0.1.5"
+(defproject org-parser "0.1.6-SNAPSHOT"
   :description "A parser for the Org mode markup language for Emacs"
   :url "https://github.com/200ok-ch/org-parser"
   :license {:name "GNU Affero General Public License v3.0"
