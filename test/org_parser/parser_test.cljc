@@ -143,11 +143,16 @@ is another section"))))))
              (parse ":END:"))))))
 
 (deftest drawer
-  (testing "drawer"
+  (testing "simple"
     (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
            (parser/org ":SOMENAME:
-:END:")))))
-
+:END:"))))
+  (testing "with a bit of content"
+    (is (= [:S
+            [:drawer-begin-line [:drawer-name "PROPERTIES"]]
+            [:content-line ":foo: bar"]
+            [:drawer-end-line]]
+           (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
 
 (deftest dynamic-block-begin
   (let [parse #(parser/org % :start :dynamic-block-begin-line)]
