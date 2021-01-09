@@ -21,7 +21,8 @@ implementation of Org in Emacs]].
 Working on our web-based Org implementation [[https://github.com/200ok-ch/organice/][organice]], we have seen how
 brittle existing libraries can be. It would be nice to have a proper
 BNF based parser and a set of tests behind that. =org-parser=
-strives to be that!
+strives to be that. It provides a higher-level data structure that is
+easy to consume for an application working with Org mode data.
 
 ** Architecture
 
@@ -29,7 +30,8 @@ The code base of =org-parser= is split into four namespaces:
 
 - org-parser.core (top level api, i.e. =read-str=, =write-str=)
 - org-parser.parse (aka. deserializer, reader)
-- org-parser.parse.transform (transforms the result of the parser into a more desirable structure)
+- org-parser.parse.transform (transforms the result of the parser into
+  a more desirable structure)
 - org-parser.render (aka. serializer, writer)
 
 Thus =org-parser= has become a misnomer in the sense, that it now
