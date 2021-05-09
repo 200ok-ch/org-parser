@@ -29,10 +29,10 @@
 
 (def parse-tree
   [:S
-   [:head-line [:stars "*"] [:title "hello" "world"]]
+   [:headline [:stars "*"] [:title "hello" "world"]]
    [:content-line "this is the first section"]
    [:empty-line]
-   [:head-line [:stars "**"] [:title "and" "this"]]
+   [:headline [:stars "**"] [:title "and" "this"]]
    [:empty-line]
    [:content-line "is another section"]])
 
