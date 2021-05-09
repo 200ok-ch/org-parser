@@ -209,7 +209,6 @@ is another section"))))))
       (is (= [:drawer-end-line]
              (parse ":END:"))))))
 
-;; TODO: merge tests for drawer and drawers?
 (deftest drawer
   (testing "simple"
     (is (= [:S [:drawer-name "SOMENAME"] [:drawer-end-line]]
