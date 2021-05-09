@@ -180,20 +180,20 @@ is another section"))))))
       (is (= [:dynamic-block [:dynamic-block-begin-line
                               [:dynamic-block-name "na.me"]
                               [:dynamic-block-parameters "pa rams "]]]
-             (parse "#+BEGIN: na.me pa rams \n#+end:\n"))))
+             (parse "#+BEGIN: na.me pa rams \n#+end:"))))
     (testing "one line of content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "name"]]
               [:content-line "text"]]
-             (parse "#+BEGIN: name \ntext\n#+end: \n"))))
+             (parse "#+BEGIN: name \ntext\n#+end: "))))
     ;; TODO doesn't work yet :(
     ;; (testing "parse reluctantly"
-    ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:\n"))))
+    ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
     (testing "content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
 	      [:content-line "multi"]
 	      [:content-line "line"]
 	      [:content-line "content"]]
-             (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: \n"))))))
+             (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: "))))))
 
 
 
