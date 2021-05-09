@@ -74,10 +74,10 @@ block = block-noparse | greater-block
    - everything beside block is parsed as greater block (i.e. VERSE)
  *)
 greater-block = greater-block-begin-line line* <greater-block-end-line>
-greater-block-begin-line = <#"#\+(BEGIN|begin)_"> greater-block-name [s greater-block-parameters] [s] <eol>
+greater-block-begin-line = <#"#\+(BEGIN|begin)_"> greater-block-name [s greater-block-parameters] [s]
 greater-block-name = #"\S+"
 greater-block-parameters = anything-but-newline
-greater-block-end-line = <#"#\+(END|end)_"> greater-block-name [s] <eol>
+greater-block-end-line = <#"#\+(END|end)_"> greater-block-name [s]
 
 (* Blocks
    https://orgmode.org/worg/dev/org-syntax.html#Blocks
@@ -86,10 +86,10 @@ greater-block-end-line = <#"#\+(END|end)_"> greater-block-name [s] <eol>
    Blocks where content is NOT parsed:
  *)
 block-noparse = block-begin-line block-content <block-end-line>
-block-begin-line = <#"#\+(BEGIN_|begin_)"> block-name-noparse [s block-data] [s] <eol>
+block-begin-line = <#"#\+(BEGIN_|begin_)"> block-name-noparse [s block-data] [s]
 block-data = anything-but-newline
 block-content = #"(.|\n)*?\n(?=#\+(END_|end_))" | ε
-block-end-line =             #"#\+(END_|end_)" block-name-noparse [s] <eol>
+block-end-line =             #"#\+(END_|end_)" block-name-noparse [s]
 
 (* TODO for later: *)
 block-export-data = #"\w+"
@@ -112,12 +112,12 @@ block-name-special = #"\S+"
    https://orgmode.org/worg/dev/org-syntax.html#Property_Drawers
  *)
 drawer = drawer-begin-line line* <drawer-end-line>
-<drawer-begin-line> = <':'> drawer-name <':'> [s] <eol>
+<drawer-begin-line> = <':'> drawer-name <':'> [s]
 drawer-name = #"[-\w]+"
-drawer-end-line = <':END:'> [s] <eol>
+drawer-end-line = <':END:'> [s]
 
 property-drawer = <property-drawer-begin-line> node-property-line* <drawer-end-line>
-property-drawer-begin-line = <':PROPERTIES:'> [s] <eol>
+property-drawer-begin-line = <':PROPERTIES:'> [s]
 
 (* Dynamic Blocks
    https://orgmode.org/manual/Dynamic-Blocks.html
@@ -127,7 +127,7 @@ dynamic-block = dynamic-block-begin-line line* <dynamic-block-end-line>
 dynamic-block-begin-line = <#"#\+(BEGIN|begin):"> s dynamic-block-name [s dynamic-block-parameters] [s] <eol>
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
-dynamic-block-end-line = <#"#\+(END|end):"> [s] <eol>
+dynamic-block-end-line = <#"#\+(END|end):"> [s]
 
 (* Footnotes
    https://www.gnu.org/software/emacs/manual/html_node/org/Footnotes.html
