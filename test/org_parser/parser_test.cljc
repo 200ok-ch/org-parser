@@ -256,17 +256,17 @@ is another section"))))))
       (is (= [:property-drawer [:node-property-line
                                 [:node-property-name "text"]
                                 [:node-property-plus]
-                                [:node-property-value "my value"]]]
+                                [:node-property-value [:text [:text-normal "my value"]]]]]
              (parse ":PROPERTIES:\n:text+: my value\n:END:"))))
     (testing "more properties"
       (is (= [:property-drawer
 	      [:node-property-line
 	       [:node-property-name "text"]
 	       [:node-property-plus]
-	       [:node-property-value "my value"]]
+	       [:node-property-value [:text [:text-normal "my value"]]]]
 	      [:node-property-line
 	       [:node-property-name "PRO"]
-	       [:node-property-value "abc"]]]
+	       [:node-property-value [:text [:text-normal "abc"]]]]]
              (parse ":PROPERTIES:\n:text+: my value\n:PRO: abc\n:END:"))))
     (testing "can only contain properties"
       (is (insta/failure? (parse ":PROPERTIES:\ntext\n:END:"))))
@@ -384,15 +384,13 @@ is another section"))))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
-              ;;[:node-property-value [:text [:text-normal "hello world"]]]]
-              [:node-property-value "hello world"]]
+              [:node-property-value [:text [:text-normal "hello world"]]]]
              (parse ":HELLO: hello world"))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
               [:node-property-plus]
-              ;;[:node-property-value [:text [:text-normal "hello world"]]]]
-              [:node-property-value "hello world"]]
+              [:node-property-value [:text [:text-normal "hello world"]]]]
              (parse ":HELLO+: hello world"))))
     ))
 
@@ -734,9 +732,6 @@ is another section"))))))
     (testing "parse styled text alone"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "*bold text*"))))
-    (testing "if given multi-line text, parse bold text" ;; normally, parsing text is line-based
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "a\nb"]]]]]
-             (parse "*a\nb*"))))
     (testing "parse styled text followed by normal text"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
               [:text-normal " normal text"]]

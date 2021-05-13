@@ -144,8 +144,7 @@ keyword-value = anything-but-newline
 node-property-line = ! <':END:'> <':'> node-property-name [node-property-plus] <':'> ( <' '> node-property-value | [<' '>] ) <eol>
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
-node-property-value = #".*"
-(* TODO parse property value as text *)
+node-property-value = text
 
 
 (* timestamps
@@ -283,7 +282,7 @@ text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
    It can result in multiple subsequent text-normal which will be
    concated in a later transform step.
  *)
-text-normal = #".[^*/_=~+\[<{^\\]*"
+text-normal = #"[^\n\r][^*/_=~+\[<{^\\\n\r]*"
 
 (* Superscript and subscript
    https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript
