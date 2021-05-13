@@ -86,13 +86,14 @@
     (testing "comment line"
       (is (= [[:comment-line [:comment-line-head "\t#"] [:comment-line-rest " comment"]]]
              (parse "\t# comment"))))
-    (testing "no valid comment line"
-      (is (= [[:content-line "#comment"]]
-             (parse "#comment"))))
-    (testing "no valid comment line"
-      (is (= [[:content-line "#\tcomment"]]
-             (parse "#\tcomment"))))
     ))
+
+(deftest comment-line
+  (let [parse #(parser/org % :start :comment-line)]
+    (testing "no valid comment line"
+      (is (insta/failure? (parse "#comment"))))
+    (testing "no valid comment line"
+      (is (insta/failure? (parse "#\tcomment"))))))
 
 ;; (deftest content
 ;;   (let [parse #(parser/org % :start :content-line)]
@@ -104,7 +105,7 @@
 
 (deftest sections
   (let [parse parser/org]
-    (testing "boring"
+    (testing "boring org file"
       (is (= [:S
               [:headline [:stars "*"] [:title "hello" "world"]]
               [:content-line "this is the first section"]
@@ -114,7 +115,7 @@
 this is the first section
 ** and this
 is another section"))))
-    (testing "boring with empty lines"
+    (testing "boring org file with empty lines"
       (is (=[:S
              [:headline [:stars "*"] [:title "hello" "world"]]
              [:content-line "this is the first section"]
