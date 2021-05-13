@@ -108,9 +108,9 @@
     (testing "boring org file"
       (is (= [:S
               [:headline [:stars "*"] [:title "hello" "world"]]
-              [:content-line "this is the first section"]
+              [:content-line [:text [:text-normal "this is the first section"]]]
               [:headline [:stars "**"] [:title "and" "this"]]
-              [:content-line "is another section"]]
+              [:content-line [:text [:text-normal "is another section"]]]]
              (parse "* hello world
 this is the first section
 ** and this
@@ -118,11 +118,11 @@ is another section"))))
     (testing "boring org file with empty lines"
       (is (=[:S
              [:headline [:stars "*"] [:title "hello" "world"]]
-             [:content-line "this is the first section"]
+             [:content-line [:text [:text-normal "this is the first section"]]]
              [:empty-line]
              [:headline [:stars "**"] [:title "and" "this"]]
              [:empty-line]
-             [:content-line "is another section"]]
+             [:content-line [:text [:text-normal "is another section"]]]]
             (parse "* hello world
 this is the first section
 
@@ -184,16 +184,16 @@ is another section"))))))
              (parse "#+BEGIN: na.me pa rams \n#+end:"))))
     (testing "one line of content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "name"]]
-              [:content-line "text"]]
+              [:content-line [:text [:text-normal "text"]]]]
              (parse "#+BEGIN: name \ntext\n#+end: "))))
     ;; TODO doesn't work yet :(
     ;; (testing "parse reluctantly"
     ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
     (testing "content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
-	      [:content-line "multi"]
-	      [:content-line "line"]
-	      [:content-line "content"]]
+	      [:content-line [:text [:text-normal "multi"]]]
+	      [:content-line [:text [:text-normal "line"]]]
+	      [:content-line [:text [:text-normal "content"]]]]
              (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: "))))))
 
 
@@ -218,7 +218,7 @@ is another section"))))))
   (testing "with a bit of content"
     (is (= [:S
             [:drawer-name "PROPERTIES"]
-            [:content-line ":foo: bar"]
+            [:content-line [:text [:text-normal ":foo: bar"]]]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
 
