@@ -673,6 +673,9 @@ is another section"))))))
 
 (deftest text
   (let [parse #(parser/org % :start :text)]
+    (testing "stop parsing text at EOL"
+      (is (= [:text [:text-normal "abc "]]
+             (parse "abc "))))
     (testing "parse text that contains style delimiter"
       (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
              (parse "a/b"))))
