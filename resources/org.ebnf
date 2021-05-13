@@ -25,6 +25,9 @@ comment-line-rest = #".*"
 <s> = <#"[\t ]+">
 <word> = #"[^\r\n\s]+"
 
+<anything-but-whitespace> = #"\S+"
+<anything-but-newline> = #"[^\n]+"
+
 headline = stars [s keyword] [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
 keyword = #"[A-Z]+"
@@ -90,9 +93,6 @@ block-name-noparse = #"COMMENT|comment|EXAMPLE|example|EXPORT|export|SRC|src"
 block-name-verse = #"VERSE|verse"
 block-name-greater = #"CENTER|center|QUOTE|quote"
 block-name-special = #"\S+"
-
-<anything-but-whitespace> = #"\S+"
-<anything-but-newline> = #"[^\n]+"
 
 (* Drawers
    https://orgmode.org/manual/Drawers.html
