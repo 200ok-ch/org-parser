@@ -184,8 +184,9 @@ node-property-value = text
 
 timestamp = timestamp-diary / timestamp-active / timestamp-inactive
 
-timestamp-diary = <'<%%('> ts-diary-sexp <')>'>
-<ts-diary-sexp> = #"(\)(?!>)|[^)>\n])*"
+(* "SEXP can contain any character excepted > and \n." *)
+timestamp-diary = <'<%%'> ts-diary-sexp <'>'>
+<ts-diary-sexp> = #"[^>\n]*"
 
 (* TODO How does that work out: :ts-inner appearing two times in :timestamp-active.
         And if it works in clojure, does it also work in JS hashes (parse result)? *)
