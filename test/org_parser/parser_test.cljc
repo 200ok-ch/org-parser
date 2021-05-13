@@ -465,7 +465,8 @@ is another section"))))))
       ;; http://xahlee.info/clojure/clojure_instaparse.html
       (is (insta/failure? (parse "<2020-04-17\nFri>"))))))
 
-(deftest timestamp
+
+(deftest timestamp-ts-time
   (let [parse #(parser/org % :start :ts-time)]
     (testing "parse time"
       (is (= [:ts-time "08:00"]
@@ -482,7 +483,6 @@ is another section"))))))
     (testing "parse time p.m."
       (is (= [:ts-time "08:00pm"]
              (parse "08:00pm"))))))
-
 
 
 (deftest literal-line
