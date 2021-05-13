@@ -15,9 +15,9 @@
       (is (= ["a"]
              (parse "a"))))
     (testing "single with trailing space"
-      (is (map? (parse "ab "))))
+      (is (insta/failure? (parse "ab "))))
     (testing "single with trailing newline"
-      (is (map? (parse "a\n"))))))
+      (is (insta/failure? (parse "a\n"))))))
 
 
 (deftest tags
@@ -34,33 +34,81 @@
 
 
 (deftest headline
-  (let [parse #(parser/org % :start :head-line)]
+  (let [parse #(parser/org % :start :headline)]
     (testing "boring"
-      (is (= [:head-line [:stars "*"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*"] [:title "hello" "world"]]
              (parse "* hello world"))))
     (testing "with priority"
-      (is (= [:head-line [:stars "**"] [:priority "A"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "**"] [:priority "A"] [:title "hello" "world"]]
              (parse "** [#A] hello world"))))
     (testing "with tags"
-      (is (= [:head-line [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "*** hello world :the:end:"))))
     (testing "with priority and tags"
-      (is (= [:head-line [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
              (parse "**** [#B] hello world :the:end:"))))
     (testing "title cannot have multiple lines"
-      (is (map? (parse "* a\nb"))))
-    (testing "with comment flag"
-      (is (= [:head-line [:stars "*****"] [:comment-token] [:title "hello" "world"]]
-             (parse "***** COMMENT hello world"))))))
+      (is (insta/failure? (parse "* a\nb"))))
+    (testing "with todo keyword"
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:title "hello" "world"]]
+             (parse "* TODO hello world"))))
+    (testing "with todo keyword and comment flag"
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:comment-token] [:title "hello" "world"]]
+             (parse "* TODO COMMENT hello world"))))
+    (testing "with comment flag but without todo keyword or prio: interpret COMMENT as keyword"
+      (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:title "hello" "world"]]
+             (parse "***** COMMENT hello world"))))
+    ))
+
+
+(deftest line
+  (let [parse #(parser/org % :start :line)]
+    (testing "horizontal rule"
+      (is (= [[:horizontal-rule "-----"]]
+             (parse "-----"))))
+    (testing "horizontal rule space-indented"
+      (is (= [[:horizontal-rule " --------"]]
+             (parse " --------"))))
+
+    (testing "keyword line"
+      (is (= [[:keyword-line [:keyword-key "KEY"] [:keyword-value "VALUE"]]]
+             (parse "#+KEY: VALUE"))))
+
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest ""]]]
+             (parse "#"))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest " "]]]
+             (parse "# "))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest " comment"]]]
+             (parse "# comment"))))
+    (testing "comment line"
+      (is (= [[:comment-line [:comment-line-head "\t#"] [:comment-line-rest " comment"]]]
+             (parse "\t# comment"))))
+    (testing "no valid comment line"
+      (is (= [[:content-line "#comment"]]
+             (parse "#comment"))))
+    (testing "no valid comment line"
+      (is (= [[:content-line "#\tcomment"]]
+             (parse "#\tcomment"))))
+    ))
+
+;; (deftest content
+;;   (let [parse #(parser/org % :start :content-line)]
+;;     (testing "boring"
+;;       (is (= [[:content-line "anything"]
+;;               [:content-line "goes"]]
+;;              (parse "anything\ngoes"))))))
 
 
 (deftest sections
   (let [parse parser/org]
     (testing "boring"
       (is (= [:S
-              [:head-line [:stars "*"] [:title "hello" "world"]]
+              [:headline [:stars "*"] [:title "hello" "world"]]
               [:content-line "this is the first section"]
-              [:head-line [:stars "**"] [:title "and" "this"]]
+              [:headline [:stars "**"] [:title "and" "this"]]
               [:content-line "is another section"]]
              (parse "* hello world
 this is the first section
@@ -68,10 +116,10 @@ this is the first section
 is another section"))))
     (testing "boring with empty lines"
       (is (=[:S
-             [:head-line [:stars "*"] [:title "hello" "world"]]
+             [:headline [:stars "*"] [:title "hello" "world"]]
              [:content-line "this is the first section"]
              [:empty-line]
-             [:head-line [:stars "**"] [:title "and" "this"]]
+             [:headline [:stars "**"] [:title "and" "this"]]
              [:empty-line]
              [:content-line "is another section"]]
             (parse "* hello world
@@ -114,13 +162,11 @@ is another section"))))))
       (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
 
-
 (deftest greater-block-begin
   (let [parse #(parser/org % :start :greater-block-begin-line)]
     (testing "greater-block-begin"
       (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
-
 
 (deftest greater-block-end
   (let [parse #(parser/org % :start :greater-block-end-line)]
@@ -128,13 +174,34 @@ is another section"))))))
       (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
 
+(deftest dynamic-block
+  (let [parse #(parser/org % :start :dynamic-block)]
+    (testing "no content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line
+                              [:dynamic-block-name "na.me"]
+                              [:dynamic-block-parameters "pa rams "]]]
+             (parse "#+BEGIN: na.me pa rams \n#+end:"))))
+    (testing "one line of content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "name"]]
+              [:content-line "text"]]
+             (parse "#+BEGIN: name \ntext\n#+end: "))))
+    ;; TODO doesn't work yet :(
+    ;; (testing "parse reluctantly"
+    ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
+    (testing "content"
+      (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
+	      [:content-line "multi"]
+	      [:content-line "line"]
+	      [:content-line "content"]]
+             (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: "))))))
+
+
 
 (deftest drawer-begin
   (let [parse #(parser/org % :start :drawer-begin-line)]
     (testing "drawer-begin"
-      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
+      (is (= [[:drawer-name "SOMENAME"]]
              (parse ":SOMENAME:"))))))
-
 
 (deftest drawer-end
   (let [parse #(parser/org % :start :drawer-end-line)]
@@ -144,12 +211,12 @@ is another section"))))))
 
 (deftest drawer
   (testing "simple"
-    (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
+    (is (= [:S [:drawer-name "SOMENAME"] [:drawer-end-line]]
            (parser/org ":SOMENAME:
 :END:"))))
   (testing "with a bit of content"
     (is (= [:S
-            [:drawer-begin-line [:drawer-name "PROPERTIES"]]
+            [:drawer-name "PROPERTIES"]
             [:content-line ":foo: bar"]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))

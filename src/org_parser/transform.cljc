@@ -5,7 +5,7 @@
 (defmulti reducer
   "The reducer multi method takes a `result` and a `line` and dispatches
   on the first element in `line`, which is the type (a keyword) of the
-  parsed line, e.g. `:head-line`, `:content-line`, etc."
+  parsed line, e.g. `:headline`, `:content-line`, etc."
   (fn [_ line] (first line)))
 
 
@@ -23,7 +23,7 @@
        (drop 1)))
 
 
-(defmethod reducer :head-line [state [_ & properties]]
+(defmethod reducer :headline [state [_ & properties]]
   (let [level (->> properties
                    (property :stars)
                    first

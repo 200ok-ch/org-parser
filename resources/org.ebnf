@@ -7,20 +7,27 @@
 
 S = line*
 
-<line> = (empty-line / head-line / affiliated-keyword-line / keyword-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / content-line) eol
+<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
 content-line = #".*"
 (* content-line = text *)
 
+(* "Comments consist of one or more consecutive comment lines."
+   https://orgmode.org/worg/dev/org-syntax.html#Comments *)
+comment-line = comment-line-head comment-line-rest
+comment-line-head = #"\s*#(?= |$)"
+comment-line-rest = #".*"
+
 <eol> = <#'\n|$'>
 (* TODO remove <> to enable use where the spaces are actual needed *)
 <s> = <#"[\t ]+">
-<word> = #"[^\r\n\s$]+"
+<word> = #"[^\r\n\s]+"
 
-head-line = stars [s priority] [s comment-token] s title [s tags]
+headline = stars [s keyword] [s priority] [s comment-token] s title [s tags]
 stars = #'\*+'
+keyword = #"[A-Z]+"
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
 (* TODO title text is more than just words; e.g. formatting and timestamps are allowed. *)
@@ -43,6 +50,9 @@ key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ]) | "AUT
 attr = <"ATTR_"> backend
 backend = #"[a-zA-Z0-9-_]+"
 
+(* https://orgmode.org/worg/dev/org-syntax.html#Horizontal_Rules *)
+horizontal-rule = #"\s*-----+"
+
 (* TODO add equivalent TODO keyword specifiers
         and allow more than [A-Z] in todo keyword names, esp. the shorthand definitions(d)
 	https://orgmode.org/manual/Per_002dfile-keywords.html *)
@@ -51,24 +61,73 @@ todo-line = <"#+TODO: "> states
 todo-state = #"[A-Z]+"
 done-state = #"[A-Z]+"
 
-greater-block-begin-line = <"#+BEGIN_"> greater-block-name [s greater-block-parameters]
-greater-block-name = anything-but-whitespace
+(* TODO blocks - see greater-block for why this is faulty *)
+block = block-noparse | greater-block
+
+(* Greater Blocks - can contain Blocks
+   https://orgmode.org/worg/dev/org-syntax.html#Greater_Blocks
+
+   TODO currently blocks have many problems:
+   - content is parsed greedy
+   - content cannot contain blocks
+   - name is not matched in #+end_name
+   - everything beside block is parsed as greater block (i.e. VERSE)
+ *)
+greater-block = greater-block-begin-line line* <greater-block-end-line>
+greater-block-begin-line = <#"#\+(BEGIN|begin)_"> greater-block-name [s greater-block-parameters] [s]
+greater-block-name = #"\S+"
 greater-block-parameters = anything-but-newline
+greater-block-end-line = <#"#\+(END|end)_"> greater-block-name [s]
 
-<anything-but-whitespace> = #"[^\r\n\s$]+"
-<anything-but-newline> = #"[^\n$]+"
+(* Blocks
+   https://orgmode.org/worg/dev/org-syntax.html#Blocks
+   VERSE block content is parsed, every other block is not.
+   block-data is mandatory for SRC and EXPORT.
+   Blocks where content is NOT parsed:
+ *)
+block-noparse = block-begin-line block-content <block-end-line>
+block-begin-line = <#"#\+(BEGIN_|begin_)"> block-name-noparse [s block-data] [s]
+block-data = anything-but-newline
+block-content = #"(.|\n)*?\n(?=#\+(END_|end_))" | ε
+block-end-line =             #"#\+(END_|end_)" block-name-noparse [s]
 
-greater-block-end-line = <"#+END_"> greater-block-name
+(* TODO for later: *)
+block-export-data = #"\w+"
+block-src-data = block-src-lang (* [block-src-switches] [block-src-args] *)
+block-src-lang = #"\S+"
 
-drawer-begin-line = <":"> drawer-name <":">
-drawer-name = #"[a-zA-Z0-9-_]+"
-drawer-end-line = <":END:">
+(* Mostly unused: block types. Everything beside block-name-noparse is
+   parsed as greater-block. *)
+block-name-noparse = #"COMMENT|comment|EXAMPLE|example|EXPORT|export|SRC|src"
+block-name-verse = #"VERSE|verse"
+block-name-greater = #"CENTER|center|QUOTE|quote"
+block-name-special = #"\S+"
 
-dynamic-block-begin-line = <'#+BEGIN: '> dynamic-block-name [s dynamic-block-parameters]
-dynamic-block-end-line = <'#+END:'>
+<anything-but-whitespace> = #"\S+"
+<anything-but-newline> = #"[^\n]+"
 
+(* Drawers
+   https://orgmode.org/manual/Drawers.html
+   https://orgmode.org/worg/dev/org-syntax.html#Drawers
+   https://orgmode.org/worg/dev/org-syntax.html#Property_Drawers
+ *)
+drawer = drawer-begin-line line* <drawer-end-line>
+<drawer-begin-line> = <':'> drawer-name <':'> [s]
+drawer-name = #"[-\w]+"
+drawer-end-line = <':END:'> [s]
+
+property-drawer = <property-drawer-begin-line> node-property-line* <drawer-end-line>
+property-drawer-begin-line = <':PROPERTIES:'> [s]
+
+(* Dynamic Blocks
+   https://orgmode.org/manual/Dynamic-Blocks.html
+   https://orgmode.org/worg/dev/org-syntax.html#Dynamic_Blocks
+ *)
+dynamic-block = dynamic-block-begin-line line* <dynamic-block-end-line>
+dynamic-block-begin-line = <#"#\+(BEGIN|begin):"> s dynamic-block-name [s dynamic-block-parameters] [s] <eol>
 dynamic-block-name = anything-but-whitespace
 dynamic-block-parameters = anything-but-newline
+dynamic-block-end-line = <#"#\+(END|end):"> [s]
 
 (* Footnotes
    https://www.gnu.org/software/emacs/manual/html_node/org/Footnotes.html
@@ -93,7 +152,9 @@ keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"
 keyword-value = anything-but-newline
 
-node-property-line = <':'> node-property-name [node-property-plus] <':'> [<' '> node-property-value]
+(* TODO allow empty properties with or without trailing space *)
+(* TODO looks like node-property-line also parses :END: *)
+node-property-line = ! <':END:'> <':'> node-property-name [node-property-plus] <':'> ( <' '> node-property-value | [<' '>] ) <eol>
 node-property-name = #"[^\s:+]+"
 node-property-plus = <"+">
 node-property-value = text
