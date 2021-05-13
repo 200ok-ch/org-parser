@@ -162,49 +162,35 @@ is another section"))))))
       (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
 
-(deftest greater-blocks
-  (let [parse #(parser/org % :start :greater-block)]
+(deftest blocks
+  (let [parse #(parser/org % :start :block)]
     (testing "no content"
-      (is (= [:greater-block
-              [:greater-block-begin-line [:greater-block-name "center"] [:greater-block-parameters "params! "]]]
-             (parse "#+BEGIN_center params! \n#+end_center\n"))))
+      (is (= [:block
+              [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]]
+             (parse "#+BEGIN_center params! \n#+end_center"))))
     (testing "one line of content"
-      (is (= [:greater-block [:greater-block-begin-line [:greater-block-name "center"]]
+      (is (= [:block [:block-begin-line [:block-name "center"]]
               [:content-line "content"]]
-             (parse "#+BEGIN_center \ncontent\n#+end_center \n"))))
+             (parse "#+BEGIN_center \ncontent\n#+end_center "))))
     (testing "more lines of content"
-      (is (= [:greater-block [:greater-block-begin-line [:greater-block-name "center"]]
+      (is (= [:block [:block-begin-line [:block-name "center"]]
               [:content-line "my"] [:content-line "content"]]
-             (parse "#+BEGIN_center\nmy\ncontent\n#+end_center\n"))))
+             (parse "#+BEGIN_center\nmy\ncontent\n#+end_center"))))
     ;; TODO this is a problem:
     ;; (testing "fail if block name not matching"
     ;;   (is (insta/failure? (parse "#+BEGIN_one\n#+end_other\n"))))
     ))
 
-(deftest block-noparse
-  (let [parse #(parser/org % :start :block-noparse)]
-    (testing "no content"
-      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "example"]] [:block-content]]
-             (parse "#+BEGIN_example\n#+end_example\n"))))
-    (testing "one line of content"
-      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "example"]] [:block-content "content\n"]]
-             (parse "#+BEGIN_example \ncontent\n#+end_example\n"))))
-    (testing "content"
-      (is (= [:block-noparse [:block-begin-line [:block-name-noparse "SRC"] [:block-data "some useless data"]]
-              [:block-content "multi\nline\ncontent\n"]]
-             (parse "#+begin_SRC some useless data\nmulti\nline\ncontent\n#+end_SRC \n"))))))
-
-
-(deftest greater-block-begin
-  (let [parse #(parser/org % :start :greater-block-begin-line)]
-    (testing "greater-block-begin"
-      (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
+(deftest block-begin
+  (let [parse #(parser/org % :start :block-begin-line)]
+    (testing "block-begin"
+      (is (= [:block-begin-line [:block-name "CENTER"] [:block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
 
-(deftest greater-block-end
-  (let [parse #(parser/org % :start :greater-block-end-line)]
-    (testing "greater-block-end"
-      (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
+(deftest block-end
+  (let [parse #(parser/org % :start :block-end-line)]
+    (testing "block-end"
+      (is (= [:block-end-line [:block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
 
 (deftest dynamic-block
@@ -233,7 +219,7 @@ is another section"))))))
 (deftest drawer-begin
   (let [parse #(parser/org % :start :drawer-begin-line)]
     (testing "drawer-begin"
-      (is (= [[:drawer-name "SOMENAME"]]
+      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
              (parse ":SOMENAME:"))))))
 
 (deftest drawer-end
@@ -243,25 +229,25 @@ is another section"))))))
              (parse ":END:"))))))
 
 (deftest drawer
-  (testing "simple"
+  (testing "simple drawer"
     (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
            (parser/org ":SOMENAME:
 :END:"))))
-  (testing "with a bit of content"
+  (testing "drawer with a bit of content"
     (is (= [:S
             [:drawer-begin-line [:drawer-name "PROPERTIES"]]
             [:content-line ":foo: bar"]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
 
-(deftest drawers
+(deftest drawer-semantic-block
   (let [parse #(parser/org % :start :drawer)]
     (testing "drawer"
-      (is (= [:drawer [:drawer-name "MYDRAWER"]
+      (is (= [:drawer [:drawer-begin-line [:drawer-name "MYDRAWER"]]
               [:content-line "any"] [:content-line "text"]]
              (parse ":MYDRAWER:\nany\ntext\n:END:"))))))
 
-(deftest property-drawers
+(deftest property-drawer-semantic-block
   (let [parse #(parser/org % :start :property-drawer)]
     (testing "no properties"
       (is (= [:property-drawer]
@@ -398,13 +384,15 @@ is another section"))))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
-              [:node-property-value [:text [:text-normal "hello world"]]]]
+              ;;[:node-property-value [:text [:text-normal "hello world"]]]]
+              [:node-property-value "hello world"]]
              (parse ":HELLO: hello world"))))
     (testing "node-property"
       (is (= [:node-property-line
               [:node-property-name "HELLO"]
               [:node-property-plus]
-              [:node-property-value [:text [:text-normal "hello world"]]]]
+              ;;[:node-property-value [:text [:text-normal "hello world"]]]]
+              [:node-property-value "hello world"]]
              (parse ":HELLO+: hello world"))))
     ))
 
