@@ -251,11 +251,12 @@ text = ( link-format / footnote-link / text-link / text-target / text-radio-targ
  *)
 text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
 
+(* Do not try to parse styled text recursively. Only parse simplest form of styled text. *)
 (* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
-text-sty-bold          = <'*'> text <'*'>
-text-sty-italic        = <'/'> text <'/'>
-text-sty-underlined    = <'_'> text <'_'>
-text-sty-strikethrough = <'+'> text <'+'>
+text-sty-bold          = <'*'> text-inside-sty-normal <'*'>
+text-sty-italic        = <'/'> text-inside-sty-normal <'/'>
+text-sty-underlined    = <'_'> text-inside-sty-normal <'_'>
+text-sty-strikethrough = <'+'> text-inside-sty-normal <'+'>
 (* https://orgmode.org/worg/dev/org-syntax.html#Emphasis_Markers is wrong at this point:
    The BORDER character in =BxB= must not be whitespace but can be [,'"]. *)
 text-sty-verbatim      = <'='> #"([^\s]|[^\s].*?[^\s])(?==($|[- \t.,:!?;'\")}\[]))" <'='>

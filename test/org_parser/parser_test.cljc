@@ -616,13 +616,13 @@ is another section"))))))
 (deftest text-styled
   (let [parse #(parser/org % :start :text-styled)]
     (testing "parse bold text"
-      (is (= [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
              (parse "*bold text*"))))
     (testing "parse italic text"
-      (is (= [:text-styled [:text-sty-italic [:text [:text-normal "italic text"]]]]
+      (is (= [:text-styled [:text-sty-italic [:text-inside-sty-normal "italic text"]]]
              (parse "/italic text/"))))
     (testing "parse underlined text"
-      (is (= [:text-styled [:text-sty-underlined [:text [:text-normal "underlined text"]]]]
+      (is (= [:text-styled [:text-sty-underlined [:text-inside-sty-normal "underlined text"]]]
              (parse "_underlined text_"))))
     (testing "parse verbatim text"
       (is (= [:text-styled [:text-sty-verbatim "verbatim /abc/ text"]]
@@ -631,7 +631,7 @@ is another section"))))))
       (is (= [:text-styled [:text-sty-code "code *abc* text"]]
              (parse "~code *abc* text~"))))
     (testing "parse strike-through text"
-      (is (= [:text-styled [:text-sty-strikethrough [:text [:text-normal "strike-through text"]]]]
+      (is (= [:text-styled [:text-sty-strikethrough [:text-inside-sty-normal "strike-through text"]]]
              (parse "+strike-through text+"))))
     ;; parse reluctant
     ;; (testing "parse text-styled alone is not reluctant"
@@ -683,27 +683,24 @@ is another section"))))))
       (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
              (parse "a /b"))))
     (testing "parse styled text alone"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
              (parse "*bold text*"))))
-    (testing "if given multi-line text, parse bold text" ;; normally, parsing text is line-based
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "a\nb"]]]]]
-             (parse "*a\nb*"))))
     (testing "parse styled text followed by normal text"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " normal text"]]
              (parse "*bold text* normal text"))))
     (testing "parse normal text followed by styled text"
       (is (= [:text [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
+              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
              (parse "normal text *bold text*"))))
     (testing "parse styled text surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " more text"]]
              (parse "normal text *bold text* more text"))))
     (testing "parse styled text reluctant"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " text"]
               [:text-normal "*"]]
              (parse "*bold text* text*"))))
