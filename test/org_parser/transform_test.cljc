@@ -30,18 +30,25 @@
 (def parse-tree
   [:S
    [:headline [:stars "*"] [:title "hello" "world"]]
-   [:content-line "this is the first section"]
+   [:content-line [:text [:text-normal "this is the first section"]]]
    [:empty-line]
    [:headline [:stars "**"] [:title "and" "this"]]
    [:empty-line]
-   [:content-line "is another section"]])
+   [:content-line [:text [:text-normal "is another section"]]]])
 
 
 (def transformed
   [[:headline {:level 1, :title "hello world"}]
-   [:content "this is the first section\n\n"]
+   [:content
+    {:raw "this is the first section\n\n",
+     :parsed [[:content-line [:text [:text-normal "this is the first section"]]]
+              [:empty-line]]}]
    [:headline {:level 2, :title "and this"}]
-   [:content "\nis another section\n"]])
+   [:content
+    {:raw "\nis another section\n",
+     :parsed [[:empty-line]
+              [:content-line [:text [:text-normal "is another section"]]]]}
+    ]])
 
 
 (deftest regression
