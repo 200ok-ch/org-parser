@@ -391,3 +391,22 @@ link-url-rest = link-inside
    It is not text search but a link to <<id>> or #+NAME: id. See manual.
  *)
 link-int = link-file-loc-headline / link-file-loc-customid / link-file-loc-string
+
+(* Tables
+   https://orgmode.org/worg/dev/org-syntax.html#Tables
+   https://orgmode.org/worg/org-tutorials/tables.html
+
+   Two types of tables: org and table.el tables
+*)
+table = table-org / table-tableel
+table-org     = table-row <eol> { table-row <eol> } { table-formula <eol> }
+table-tableel = table-tableel-sep <eol> { ( table-tableel-line / table-tableel-sep ) <eol> }
+
+table-tableel-sep  = [s] #'\+-[+-]*'
+table-tableel-line = [s] #'\|[^\n]*'
+
+table-row = [s] ( table-row-sep / table-row-cells )
+table-row-sep = #'\|-[-+|]*'
+table-row-cells = <'|'> table-cell { <'|'> table-cell } [ <'|'> ]
+table-cell = #'[^|\n]*'
+table-formula = [s] <'#+TBLFM: '> anything-but-newline

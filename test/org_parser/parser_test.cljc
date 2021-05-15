@@ -860,3 +860,34 @@ is another section"))))))
     (testing "curly braces inside braced subscript are not allowed"
       (is (insta/failure? (parse "text_{{}"))))
     ))
+
+(deftest tables
+  (let [parse #(parser/org % :start :table)]
+    (testing "parse table.el table"
+      (is (= [:table [:table-tableel
+                      [:table-tableel-sep "+---+"]
+                      [:table-tableel-line "| x |"]
+                      [:table-tableel-sep "+---+"]]]
+             (parse "+---+\n| x |\n+---+\n"))))
+    (testing "parse table.el table with preceding whitespace"
+      (is (= [:table [:table-tableel
+                      [:table-tableel-sep "+---+"]
+                      [:table-tableel-line "| x |"]
+                      [:table-tableel-sep "+---+"]]]
+             (parse " +---+\n | x |\n +---+\n"))))
+    (testing "parse org table"
+      (is (= [:table
+              [:table-org
+               [:table-row [:table-row-sep "|--+--|"]]
+               [:table-row [:table-row-cells [:table-cell " x"] [:table-cell "x "]]]
+               [:table-row [:table-row-sep "|--+--|"]]]]
+             (parse " |--+--|\n | x|x |\n |--+--|\n"))))
+    (testing "parse org table with formulas"
+      (is (= [:table
+              [:table-org
+               [:table-row [:table-row-sep "|--+--|"]]
+               [:table-row [:table-row-cells [:table-cell " x"] [:table-cell "x "]]]
+               [:table-row [:table-row-sep "|--+--|"]]
+               [:table-formula "$4=vmean($2..$3)"]]]
+             (parse " |--+--|\n | x|x |\n |--+--|\n #+TBLFM: $4=vmean($2..$3)"))))
+    ))
