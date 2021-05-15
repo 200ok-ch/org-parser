@@ -139,15 +139,26 @@ fn-label = #"[a-zA-Z0-9-_]+"
 <fn-text> = text
 <fn-text-inline> = #"[^\[\]]*"
 
-list-item-line = ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> (list-item-checkbox <" "> list-item-contents / list-item-contents)
+(* Lists
+   https://orgmode.org/worg/dev/org-syntax.html#Plain_Lists_and_Items
+
+   CHECK-BOX is either a single whitespace character, a "X" character
+   or a hyphen, enclosed within square brackets.
+
+   Lists cannot be parsed as semantic elements because:
+   - the definition of where an item ends is complicated (among other
+     things it depends on indentation)
+   - lists can be nested and that also depends on indentation
+ *)
+list-item-line = [<s>] ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> ( list-item-checkbox <" "> list-item-rest / list-item-rest )
 list-item-bullet = #"[*\-+]"
-list-item-contents = anything-but-newline
 list-item-counter = #"(\d+|[a-zA-Z])"
 list-item-counter-suffix = #"[.)]"
 list-item-checkbox = <"["> list-item-checkbox-state <"]">
-(* CHECK-BOX is either a single whitespace character, a “X” character
-or a hyphen, enclosed within square brackets. *)
 list-item-checkbox-state = #"[ \-X]"
+list-item-tag = #".*?(?= :: )"  (* shortest match followed by " :: " *)
+<list-item-rest> = list-item-tag <" :: "> list-item-contents / list-item-contents
+list-item-contents = anything-but-newline  (* TODO use text *)
 
 keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"

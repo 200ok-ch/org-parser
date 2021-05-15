@@ -14,6 +14,8 @@
   (testing "escaping of '-' within brackets work"
     ;; in other dialects, the regex would be written like: [- X]
     (is (re-matches #"[ \-X]" "-")))
+  (testing "In [.], . doesn't have to be escaped" ;; just to be sure
+    (is (not (re-matches #"[.]" "x"))))
   (testing ". does not match newline"
     (is (not (re-matches #"." "\n"))))
   (testing ". does not match carriage return"
@@ -340,8 +342,20 @@ is another section"))))))
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:list-item-contents "a simple list item"]]
              (parse "- [X] a simple list item"))))
+    (testing "list-item-line with tag"
+      (is (= [:list-item-line
+              [:list-item-bullet "*"]
+              [:list-item-tag "a tag"]
+              [:list-item-contents "a simple list item"]]
+             (parse " * a tag :: a simple list item"))))
+    (testing "list-item-line with checkbox and tag"
+      (is (= [:list-item-line
+              [:list-item-bullet "-"]
+              [:list-item-checkbox [:list-item-checkbox-state "X"]]
+              [:list-item-tag "a tag"]
+              [:list-item-contents "a simple list item"]]
+             (parse "- [X] a tag :: a simple list item"))))
     ))
-
 
 (deftest keyword
   (let [parse #(parser/org % :start :keyword-line)]
