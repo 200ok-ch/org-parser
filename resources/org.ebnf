@@ -38,9 +38,10 @@ tags = <':'> ( tag <':'> )+
 (* Fixed Width Areas
    https://orgmode.org/worg/dev/org-syntax.html#Fixed_Width_Areas
    https://orgmode.org/manual/Literal-Examples.html *)
-fixed-width-line = fw-head fw-rest
-fw-head = #"\s*:(?= |$)"
-fw-rest = #".*"
+fixed-width-area = fixed-width-line <eol> { fixed-width-line <eol> }
+fixed-width-line = <fw-head> fw-rest
+fw-head = #"\s*:( |$)"
+<fw-rest> = #".*"
 
 affiliated-keyword-line = <"#+"> (key | attr) <": "> value
 optional = <"["> optional-value <"]">

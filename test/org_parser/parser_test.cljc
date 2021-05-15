@@ -515,20 +515,29 @@ is another section"))))))
 
 (deftest literal-line
   (let [parse #(parser/org % :start :fixed-width-line)]
-    (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " "]]
+    (testing "parse empty fixed-width line starting with colon (discards single trailing space)"
+      (is (= [:fixed-width-line ""]
              (parse ": "))))
-    (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest ""]]
+    (testing "parse empty fixed-width line starting with colon"
+      (is (= [:fixed-width-line ""]
              (parse ":"))))
     (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " literal text"]]
-             (parse ": literal text"))))
+      (is (= [:fixed-width-line " literal text"]
+             (parse ":  literal text"))))
     (testing "parse fixed-width line starting with spaces"
-      (is (= [:fixed-width-line [:fw-head "  :"] [:fw-rest " literal text "]]
+      (is (= [:fixed-width-line "literal text "]
              (parse "  : literal text "))))
-    (testing "parse fixed-width line starting with colon"
+    (testing "fail to parse fixed-width line with no space after colon"
       (is (insta/failure? (parse ":literal text"))))
+    ))
+
+(deftest fixed-width-area
+  (let [parse #(parser/org % :start :fixed-width-area)]
+    (testing "parse fixed-width area starting with colon"
+      (is (= [:fixed-width-area
+              [:fixed-width-line "foo "]
+              [:fixed-width-line "bar"]]
+             (parse " : foo \n : bar"))))
     ))
 
 (deftest links
