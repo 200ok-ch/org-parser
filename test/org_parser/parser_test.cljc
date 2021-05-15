@@ -8,6 +8,34 @@
 
 ;; if parse is successful it returns a vector otherwise a map
 
+(deftest check-regex-syntax
+  ;; There are so many dialects of regex. AFAIK, instaparse uses Java/Clojure regex syntax.
+  ;; To be sure, here are some checks:
+  (testing "escaping of '-' within brackets work"
+    ;; in other dialects, the regex would be written like: [- X]
+    (is (re-matches #"[ \-X]" "-")))
+  (testing ". does not match newline"
+    (is (not (re-matches #"." "\n"))))
+  (testing ". does not match carriage return"
+    (is (not (re-matches #"." "\r"))))
+  (testing "[^x] matches newline"
+    (is (re-matches #"[^x]" "\n")))
+  (testing "\\s does not match newline"
+    (is (not (re-matches #"\\s" "\n"))))
+  )
+
+
+
+(deftest basic-terminals
+  (testing "newline as <eol>"
+    (is (= () (#(parser/org % :start :eol) "\n"))))
+  (testing "carriage return as <eol>"
+    (is (= () (#(parser/org % :start :eol) "\r"))))
+  (testing "horizontal space <s> does not match form feed"
+    (is (insta/failure? (#(parser/org % :start :s) "\f"))))
+  (testing "horizontal space <s> does not match CR"
+    (is (insta/failure? (#(parser/org % :start :s) "\r"))))
+  )
 
 (deftest word
   (let [parse #(parser/org % :start :word)]
