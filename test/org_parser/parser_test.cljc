@@ -8,6 +8,36 @@
 
 ;; if parse is successful it returns a vector otherwise a map
 
+(deftest check-regex-syntax
+  ;; There are so many dialects of regex. AFAIK, instaparse uses Java/Clojure regex syntax.
+  ;; To be sure, here are some checks:
+  (testing "escaping of '-' within brackets work"
+    ;; in other dialects, the regex would be written like: [- X]
+    (is (re-matches #"[ \-X]" "-")))
+  (testing "In [.], . doesn't have to be escaped" ;; just to be sure
+    (is (not (re-matches #"[.]" "x"))))
+  (testing ". does not match newline"
+    (is (not (re-matches #"." "\n"))))
+  (testing ". does not match carriage return"
+    (is (not (re-matches #"." "\r"))))
+  (testing "[^x] matches newline"
+    (is (re-matches #"[^x]" "\n")))
+  (testing "\\s does not match newline"
+    (is (not (re-matches #"\\s" "\n"))))
+  )
+
+
+
+(deftest basic-terminals
+  (testing "newline as <eol>"
+    (is (= () (#(parser/org % :start :eol) "\n"))))
+  (testing "carriage return as <eol>"
+    (is (= () (#(parser/org % :start :eol) "\r"))))
+  (testing "horizontal space <s> does not match form feed"
+    (is (insta/failure? (#(parser/org % :start :s) "\f"))))
+  (testing "horizontal space <s> does not match CR"
+    (is (insta/failure? (#(parser/org % :start :s) "\r"))))
+  )
 
 (deftest word
   (let [parse #(parser/org % :start :word)]
@@ -312,8 +342,20 @@ is another section"))))))
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:list-item-contents "a simple list item"]]
              (parse "- [X] a simple list item"))))
+    (testing "list-item-line with tag"
+      (is (= [:list-item-line
+              [:list-item-bullet "*"]
+              [:list-item-tag "a tag"]
+              [:list-item-contents "a simple list item"]]
+             (parse " * a tag :: a simple list item"))))
+    (testing "list-item-line with checkbox and tag"
+      (is (= [:list-item-line
+              [:list-item-bullet "-"]
+              [:list-item-checkbox [:list-item-checkbox-state "X"]]
+              [:list-item-tag "a tag"]
+              [:list-item-contents "a simple list item"]]
+             (parse "- [X] a tag :: a simple list item"))))
     ))
-
 
 (deftest keyword
   (let [parse #(parser/org % :start :keyword-line)]
@@ -487,20 +529,29 @@ is another section"))))))
 
 (deftest literal-line
   (let [parse #(parser/org % :start :fixed-width-line)]
-    (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " "]]
+    (testing "parse empty fixed-width line starting with colon (discards single trailing space)"
+      (is (= [:fixed-width-line ""]
              (parse ": "))))
-    (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest ""]]
+    (testing "parse empty fixed-width line starting with colon"
+      (is (= [:fixed-width-line ""]
              (parse ":"))))
     (testing "parse fixed-width line starting with colon"
-      (is (= [:fixed-width-line [:fw-head ":"] [:fw-rest " literal text"]]
-             (parse ": literal text"))))
+      (is (= [:fixed-width-line " literal text"]
+             (parse ":  literal text"))))
     (testing "parse fixed-width line starting with spaces"
-      (is (= [:fixed-width-line [:fw-head "  :"] [:fw-rest " literal text "]]
+      (is (= [:fixed-width-line "literal text "]
              (parse "  : literal text "))))
-    (testing "parse fixed-width line starting with colon"
+    (testing "fail to parse fixed-width line with no space after colon"
       (is (insta/failure? (parse ":literal text"))))
+    ))
+
+(deftest fixed-width-area
+  (let [parse #(parser/org % :start :fixed-width-area)]
+    (testing "parse fixed-width area starting with colon"
+      (is (= [:fixed-width-area
+              [:fixed-width-line "foo "]
+              [:fixed-width-line "bar"]]
+             (parse " : foo \n : bar"))))
     ))
 
 (deftest links
