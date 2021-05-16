@@ -77,7 +77,7 @@ done-state = #"[A-Z]+"
    - content is parsed greedy (doesn't stop at first #+end_name)
    - name is not matched in #+end_name
  *)
-block = block-begin-line <eol> line* <block-end-line>
+block = block-begin-line <eol> line* block-end-line
 block-begin-line = <#"#\+(BEGIN|begin)_"> block-name [s block-parameters] [s]
 block-name = #"\S+"
 block-parameters = anything-but-newline

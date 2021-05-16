@@ -166,19 +166,25 @@ is another section"))))))
   (let [parse #(parser/org % :start :block)]
     (testing "no content"
       (is (= [:block
-              [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]]
+              [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]
+              [:block-end-line [:block-name "center"]]]
              (parse "#+BEGIN_center params! \n#+end_center"))))
     (testing "one line of content"
       (is (= [:block [:block-begin-line [:block-name "center"]]
-              [:content-line "content"]]
+              [:content-line "content"]
+              [:block-end-line [:block-name "center"]]]
              (parse "#+BEGIN_center \ncontent\n#+end_center "))))
     (testing "more lines of content"
       (is (= [:block [:block-begin-line [:block-name "center"]]
-              [:content-line "my"] [:content-line "content"]]
+              [:content-line "my"] [:content-line "content"]
+              [:block-end-line [:block-name "center"]]]
              (parse "#+BEGIN_center\nmy\ncontent\n#+end_center"))))
-    ;; TODO this is a problem:
-    ;; (testing "fail if block name not matching"
-    ;;   (is (insta/failure? (parse "#+BEGIN_one\n#+end_other\n"))))
+    (testing "parse even if block name at begin and end not matching"
+      ;; This must be handled by in a later step.
+      (is (= [:block
+              [:block-begin-line [:block-name "one"]]
+              [:block-end-line [:block-name "other"]]]
+             (parse "#+BEGIN_one\n#+end_other"))))
     ))
 
 (deftest block-begin
