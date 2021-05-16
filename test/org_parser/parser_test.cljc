@@ -192,16 +192,41 @@ is another section"))))))
       (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
 
-(deftest greater-block-begin
-  (let [parse #(parser/org % :start :greater-block-begin-line)]
-    (testing "greater-block-begin"
-      (is (= [:greater-block-begin-line [:greater-block-name "CENTER"] [:greater-block-parameters "some params"]]
+(deftest blocks
+  (let [parse #(parser/org % :start :block)]
+    (testing "no content"
+      (is (= [:block
+              [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]
+              [:block-end-line [:block-name "center"]]]
+             (parse "#+BEGIN_center params! \n#+end_center"))))
+    (testing "one line of content"
+      (is (= [:block [:block-begin-line [:block-name "center"]]
+              [:content-line "content"]
+              [:block-end-line [:block-name "center"]]]
+             (parse "#+BEGIN_center \ncontent\n#+end_center "))))
+    (testing "more lines of content"
+      (is (= [:block [:block-begin-line [:block-name "center"]]
+              [:content-line "my"] [:content-line "content"]
+              [:block-end-line [:block-name "center"]]]
+             (parse "#+BEGIN_center\nmy\ncontent\n#+end_center"))))
+    (testing "parse even if block name at begin and end not matching"
+      ;; This must be handled by in a later step.
+      (is (= [:block
+              [:block-begin-line [:block-name "one"]]
+              [:block-end-line [:block-name "other"]]]
+             (parse "#+BEGIN_one\n#+end_other"))))
+    ))
+
+(deftest block-begin
+  (let [parse #(parser/org % :start :block-begin-line)]
+    (testing "block-begin"
+      (is (= [:block-begin-line [:block-name "CENTER"] [:block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
 
-(deftest greater-block-end
-  (let [parse #(parser/org % :start :greater-block-end-line)]
-    (testing "greater-block-end"
-      (is (= [:greater-block-end-line [:greater-block-name "CENTER"]]
+(deftest block-end
+  (let [parse #(parser/org % :start :block-end-line)]
+    (testing "block-end"
+      (is (= [:block-end-line [:block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
 
 (deftest dynamic-block
@@ -230,7 +255,7 @@ is another section"))))))
 (deftest drawer-begin
   (let [parse #(parser/org % :start :drawer-begin-line)]
     (testing "drawer-begin"
-      (is (= [[:drawer-name "SOMENAME"]]
+      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
              (parse ":SOMENAME:"))))))
 
 (deftest drawer-end
@@ -240,16 +265,48 @@ is another section"))))))
              (parse ":END:"))))))
 
 (deftest drawer
-  (testing "simple"
-    (is (= [:S [:drawer-name "SOMENAME"] [:drawer-end-line]]
+  (testing "simple drawer"
+    (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
            (parser/org ":SOMENAME:
 :END:"))))
-  (testing "with a bit of content"
+  (testing "drawer with a bit of content"
     (is (= [:S
-            [:drawer-name "PROPERTIES"]
+            [:drawer-begin-line [:drawer-name "PROPERTIES"]]
             [:content-line ":foo: bar"]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
+
+(deftest drawer-semantic-block
+  (let [parse #(parser/org % :start :drawer)]
+    (testing "drawer"
+      (is (= [:drawer [:drawer-begin-line [:drawer-name "MYDRAWER"]]
+              [:content-line "any"] [:content-line "text"]]
+             (parse ":MYDRAWER:\nany\ntext\n:END:"))))))
+
+(deftest property-drawer-semantic-block
+  (let [parse #(parser/org % :start :property-drawer)]
+    (testing "no properties"
+      (is (= [:property-drawer]
+             (parse ":PROPERTIES:\n:END:"))))
+    (testing "one property"
+      (is (= [:property-drawer [:node-property-line
+                                [:node-property-name "text"]
+                                [:node-property-plus]
+                                [:node-property-value [:text [:text-normal "my value"]]]]]
+             (parse ":PROPERTIES:\n:text+: my value\n:END:"))))
+    (testing "more properties"
+      (is (= [:property-drawer
+	      [:node-property-line
+	       [:node-property-name "text"]
+	       [:node-property-plus]
+	       [:node-property-value [:text [:text-normal "my value"]]]]
+	      [:node-property-line
+	       [:node-property-name "PRO"]
+	       [:node-property-value [:text [:text-normal "abc"]]]]]
+             (parse ":PROPERTIES:\n:text+: my value\n:PRO: abc\n:END:"))))
+    (testing "can only contain properties"
+      (is (insta/failure? (parse ":PROPERTIES:\ntext\n:END:"))))
+    ))
 
 (deftest dynamic-block-begin
   (let [parse #(parser/org % :start :dynamic-block-begin-line)]
@@ -732,9 +789,6 @@ is another section"))))))
     (testing "parse styled text alone"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
              (parse "*bold text*"))))
-    (testing "if given multi-line text, parse bold text" ;; normally, parsing text is line-based
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "a\nb"]]]]]
-             (parse "*a\nb*"))))
     (testing "parse styled text followed by normal text"
       (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
               [:text-normal " normal text"]]
