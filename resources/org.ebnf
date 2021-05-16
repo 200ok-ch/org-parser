@@ -212,9 +212,8 @@ ts-date = #"\d{4}-\d{2}-\d{2}"
    timestamp date is updated accordingly. *)
 ts-time = #"\d{1,2}:\d{2}(:\d{2})?([AaPp][Mm])?"
 
-(* TODO Is there a class for letters? *)
-(* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
-ts-day = #"[^\d\s>\]]+"
+(* TODO use this regex for unicode letters: #"\p{L}+" *)
+ts-day = #"[^\d\s\r\n>\]]+"
 
 (* Reapeaters and warnings are described here:
    https://orgmode.org/manual/Repeated-tasks.html *)
@@ -267,7 +266,6 @@ before-sty = #"[- ('\"{]|"
 
 (* first and last character must not be whitespace. that's why it's not just text *)
 text-inside-sty = ( link-format / footnote-link / text-link / text-styled / text-inside-sty-normal )*
-(* TODO space works? includes newline? *)
 text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=\*([- .,:!?;'\")}\[]|$))"
 
 (* There are 4 types of links: radio link (not subject to this
@@ -301,7 +299,10 @@ text-normal = #"[^\n\r][^*/_=~+\[<{^\\\n\r]*"
    https://orgmode.org/manual/Subscripts-and-Superscripts.html *)
 text-sub = <'_'> ( text-subsup-curly | text-subsup-word )
 text-sup = <'^'> ( text-subsup-curly | text-subsup-word )
-(* TODO word should match any unicode letter or digit but not "_" *)
+(* TODO word should match any unicode letter or digit but not "_";
+   in Java regex this is possible with sth. like [\p{L}&&[^_]]
+   https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html
+ *)
 text-subsup-word = #"\*|[+-]?[a-zA-Z0-9,.\\]*[a-zA-Z0-9]"
 text-subsup-curly = <'{'> #"[^{}]*" <'}'>
 

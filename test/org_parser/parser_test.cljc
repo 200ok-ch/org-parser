@@ -23,7 +23,15 @@
   (testing "[^x] matches newline"
     (is (re-matches #"[^x]" "\n")))
   (testing "\\s does not match newline"
+    ;; looks like instaparse regexes and regexes here are different:
+    ;; s in <s> = #"\s+" also parses \r\n
     (is (not (re-matches #"\\s" "\n"))))
+  (testing "\\s does not match carriage return"
+    (is (not (re-matches #"\\s" "\r"))))
+  (testing "\\w does not match unicode letters"
+    (is (not (re-matches #"\w*" "abökoß"))))
+  (testing "\\p{L} does match unicode letters"
+    (is (re-matches #"\p{L}*" "abökoßα")))
   )
 
 
