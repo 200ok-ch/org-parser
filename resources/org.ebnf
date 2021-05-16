@@ -296,7 +296,7 @@ text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
 
    Stop parsing at EOL.
  *)
-text-normal = #"[^\n\r][^*/_=~+\[<{^\\\n\r]*"
+text-normal = #".[^*/_=~+\[<{^\\\n\r]*"
 
 (* Superscript and subscript
    https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript
