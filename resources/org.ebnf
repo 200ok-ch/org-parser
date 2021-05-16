@@ -7,7 +7,7 @@
 
 S = line*
 
-<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / content-line) eol
+<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / greater-block-begin-line / greater-block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
 
 empty-line = "" | #"\s+"
 (* TODO same as title text below. *)
@@ -403,3 +403,25 @@ link-url-rest = link-inside
    It is not text search but a link to <<id>> or #+NAME: id. See manual.
  *)
 link-int = link-file-loc-headline / link-file-loc-customid / link-file-loc-string
+
+(* Tables
+   https://orgmode.org/worg/dev/org-syntax.html#Tables
+   https://orgmode.org/worg/org-tutorials/tables.html
+
+   Two types of tables: org and table.el tables
+*)
+table = table-org / table-tableel
+table-org     = table-row <eol> { table-row <eol> } { table-formula <eol> }
+table-tableel = table-tableel-sep <eol> { ( table-tableel-line / table-tableel-sep ) <eol> }
+
+table-tableel-sep  = [s] #'\+-[+-]*'
+table-tableel-line = [s] #'\|[^\n]*'
+
+table-row = [s] ( table-row-sep / table-row-cells )
+table-row-sep = #'\|-[-+|]*'
+table-row-cells = <'|'> table-cell { <'|'> table-cell } [ <'|'> ]
+table-cell = #'[^|\n]*'
+table-formula = [s] <'#+TBLFM: '> anything-but-newline
+
+(* TODO only as long as tables are not parsed as semantic blocks: *)
+<table-line> = table-tableel-sep / table-tableel-line / table-row / table-formula
