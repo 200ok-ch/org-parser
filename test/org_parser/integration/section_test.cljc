@@ -45,7 +45,7 @@
 
 
 (deftest section
-  (doseq [{:keys [input ast result]} samples]
+  (doseq [{:keys [input ast result output]} samples]
     (let [ast* (parser/org input)]
       (if ast (is (= ast ast*)))
       (if result (is (= result (transform/transform ast*)))))))
