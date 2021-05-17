@@ -676,6 +676,8 @@ is another section"))))))
     (testing "stop parsing text at EOL"
       (is (= [:text [:text-normal "abc "]]
              (parse "abc "))))
+    (testing "does not parse a string starting with newline"
+      (is (insta/failure? (parse "\nfoo"))))
     (testing "parse text that contains style delimiter"
       (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
              (parse "a/b"))))
