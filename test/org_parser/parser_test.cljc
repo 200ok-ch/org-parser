@@ -8,6 +8,16 @@
 
 ;; if parse is successful it returns a vector otherwise a map
 
+(defn rep [r]
+  (if (= :begin-test-var (:type r))
+    (println (:var r))))
+
+(defn benchmark  [f]
+  (binding [clojure.test/report rep]
+    (time (f))))
+
+(use-fixtures :each benchmark)
+
 (deftest check-regex-syntax
   ;; There are so many dialects of regex. AFAIK, instaparse uses Java/Clojure regex syntax.
   ;; To be sure, here are some checks:
