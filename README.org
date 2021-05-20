@@ -111,7 +111,7 @@ You can watch it here: https://youtu.be/o2MLHFGUkoQ
 
 * Release and Dependency Information
 
-Note: The version number should be replaced with the current version vor org-parser.
+Note: The version number should be replaced with the current version of org-parser.
 
 ** [[https://clojure.org/reference/deps_and_cli][CLI/deps.edn]] dependency information:
 
@@ -148,7 +148,7 @@ possible.
 
 =lein run file.org=, for example:
 
-#+begin_src sh :results verbatim
+#+begin_src sh :results verbatim :exports both
   lein run test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
@@ -164,7 +164,7 @@ First, compile =org-parser= with:
 
 =./target/org-parser.js file.org=, for example:
 
-#+begin_src sh :results verbatim
+#+begin_src sh :results verbatim :exports both
   ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
@@ -177,7 +177,7 @@ First, compile =org-parser= with: =lein uberjar=.
 
 =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
-#+begin_src sh :results verbatim
+#+begin_src sh :results verbatim :exports both
   java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
