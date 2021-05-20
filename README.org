@@ -49,15 +49,14 @@ The biggest milestones are:
 - [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
       - [X] Headlines and Org mode =#+*= stuff
       - [X] More features
-      - [X] Footnotes (?)
+      - [X] Footnotes
       - [X] Timestamps
       - [X] Links
       - [-] Text links
       - [-] Styled text
       - [-] Text that can contain style, links, footnotes, timestamps, ...
 
-- [ ] Setup basic [[http://xahlee.info/clojure/clojure_instaparse_transform.html][instaparse transformations]] from the parse tree to a
-      higher-level structure.
+- [X] Setup basic from the parse tree to a higher-level structure.
 
 - [ ] Transformations to higher-level structure: catch up with Org mode
       features supported already by the EBNF parser.
@@ -111,14 +110,22 @@ a Lisp before.
 You can watch it here: https://youtu.be/o2MLHFGUkoQ
 
 * Release and Dependency Information
+
+Note: The version number should be replaced with the current version vor org-parser.
+
 ** [[https://clojure.org/reference/deps_and_cli][CLI/deps.edn]] dependency information:
+
    #+BEGIN_SRC
 org-parser/org-parser {:mvn/version "0.1.4"}
    #+END_SRC
+
 ** [[https://github.com/technomancy/leiningen][Leiningen]] dependency information:
+
 #+BEGIN_SRC
 [org-parser "0.1.4"]
 #+END_SRC
+
+
 * Usage
   :PROPERTIES:
   :CUSTOM_ID: usage
@@ -129,6 +136,7 @@ NodeJS. Other targets which are hosted on the JVM or on JavaScript are
 possible.
 
 ** Clojure Library
+
  #+BEGIN_SRC clojure
    (ns hello-world.core
      (:require [org-parser.parser :refer [org]]))
@@ -140,32 +148,44 @@ possible.
 
 =lein run file.org=, for example:
 
-#+BEGIN_EXAMPLE
-  munen@lambda:~/src/200ok/org-parser% lein run test/org_parser/fixtures/schedule_with_repeater.org
-  [[:headline {:level 1, :title "TODO Header with repeater"}] [:content "  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
-#+END_EXAMPLE
+#+begin_src sh :results verbatim
+  lein run test/org_parser/fixtures/schedule_with_repeater.org
+#+end_src
+
+#+RESULTS:
+: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
+: 
 
 ** NodeJS
 
-First, compile =org-parser= with: =lein cljsbuild once; chmod +x
-./target/org-parser.js=.
+First, compile =org-parser= with:
+
+: lein cljsbuild once; chmod +x ./target/org-parser.js
 
 =./target/org-parser.js file.org=, for example:
 
-#+BEGIN_EXAMPLE
-  munen@lambda:~/src/200ok/org-parser% ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
-  [["headline",{"level":1,"title":"TODO Header with repeater"}],["content","  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
-#+END_EXAMPLE
+#+begin_src sh :results verbatim
+  ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
+#+end_src
+
+#+RESULTS:
+: [["headline",{"level":1,"title":"Header with repeater"}],["content","[:text [:text-normal \"  SCHEDULED: \"] [:text-normal \"<2019-11-27 Wed \"] [:text-normal \"+1d>\"]]\n"]]
 
 ** Java
 
 First, compile =org-parser= with: =lein uberjar=.
 
-=java -jar target/uberjar/org-parser-0.1.0-SNAPSHOT-standalone.jar file.org=, for example:
+=java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
-#+BEGIN_EXAMPLE
-  munen@lambda:~/src/200ok/org-parser% java -jar target/uberjar/org-parser-0.1.0-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
-  [[:headline {:level 1, :title "TODO Header with repeater"}] [:content "  SCHEDULED: <2019-11-27 Wed +1d>\n"]]
-#+END_EXAMPLE
+#+begin_src sh :results verbatim
+  java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
+#+end_src
+
+#+RESULTS:
+: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
+: 
+
+Note: The =*= character must be replaced with the current version
+number of org-parser.
 
 * License
