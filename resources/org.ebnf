@@ -9,10 +9,9 @@ S = line*
 
 <line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / block-begin-line / block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
 
+(* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
-(* TODO same as title text below. *)
-content-line = #".*"
-(* content-line = text *)
+content-line = text
 
 (* "Comments consist of one or more consecutive comment lines."
    https://orgmode.org/worg/dev/org-syntax.html#Comments *)
@@ -252,11 +251,12 @@ text = ( link-format / footnote-link / text-link / text-target / text-radio-targ
  *)
 text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
 
+(* Do not try to parse styled text recursively. Only parse simplest form of styled text. *)
 (* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
-text-sty-bold          = <'*'> text <'*'>
-text-sty-italic        = <'/'> text <'/'>
-text-sty-underlined    = <'_'> text <'_'>
-text-sty-strikethrough = <'+'> text <'+'>
+text-sty-bold          = <'*'> text-inside-sty-normal <'*'>
+text-sty-italic        = <'/'> text-inside-sty-normal <'/'>
+text-sty-underlined    = <'_'> text-inside-sty-normal <'_'>
+text-sty-strikethrough = <'+'> text-inside-sty-normal <'+'>
 (* https://orgmode.org/worg/dev/org-syntax.html#Emphasis_Markers is wrong at this point:
    The BORDER character in =BxB= must not be whitespace but can be [,'"]. *)
 text-sty-verbatim      = <'='> #"([^\s]|[^\s].*?[^\s])(?==($|[- \t.,:!?;'\")}\[]))" <'='>
@@ -268,7 +268,7 @@ before-sty = #"[- ('\"{]|"
 (* first and last character must not be whitespace. that's why it's not just text *)
 text-inside-sty = ( link-format / footnote-link / text-link / text-styled / text-inside-sty-normal )*
 (* TODO space works? includes newline? *)
-text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=\*([- .,:!?;'\")}\[]|$))"
+text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=[*/_+]([- .,:!?;'\")}\[]|$))"
 
 (* There are 4 types of links: radio link (not subject to this
    parser), angle link, plain link, and regular link
@@ -293,8 +293,10 @@ text-link-plain-path = #"[^\s()<>]+(\w|[^\s[:punct:]]/)"
    This works so far because when parsing, text-normal is tried last.
    It can result in multiple subsequent text-normal which will be
    concated in a later transform step.
+
+   Stop parsing at EOL.
  *)
-text-normal = #"[^\n\r][^*/_=~+\[<{^\\\n\r]*"
+text-normal = #".[^*/_=~+\[<{^\\\n\r]*"
 
 (* Superscript and subscript
    https://orgmode.org/worg/dev/org-syntax.html#Subscript_and_Superscript

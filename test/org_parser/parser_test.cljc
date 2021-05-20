@@ -116,13 +116,14 @@
     (testing "comment line"
       (is (= [[:comment-line [:comment-line-head "\t#"] [:comment-line-rest " comment"]]]
              (parse "\t# comment"))))
-    (testing "no valid comment line"
-      (is (= [[:content-line "#comment"]]
-             (parse "#comment"))))
-    (testing "no valid comment line"
-      (is (= [[:content-line "#\tcomment"]]
-             (parse "#\tcomment"))))
     ))
+
+(deftest comment-line
+  (let [parse #(parser/org % :start :comment-line)]
+    (testing "no valid comment line"
+      (is (insta/failure? (parse "#comment"))))
+    (testing "no valid comment line"
+      (is (insta/failure? (parse "#\tcomment"))))))
 
 ;; (deftest content
 ;;   (let [parse #(parser/org % :start :content-line)]
@@ -134,24 +135,24 @@
 
 (deftest sections
   (let [parse parser/org]
-    (testing "boring"
+    (testing "boring org file"
       (is (= [:S
               [:headline [:stars "*"] [:title "hello" "world"]]
-              [:content-line "this is the first section"]
+              [:content-line [:text [:text-normal "this is the first section"]]]
               [:headline [:stars "**"] [:title "and" "this"]]
-              [:content-line "is another section"]]
+              [:content-line [:text [:text-normal "is another section"]]]]
              (parse "* hello world
 this is the first section
 ** and this
 is another section"))))
-    (testing "boring with empty lines"
+    (testing "boring org file with empty lines"
       (is (=[:S
              [:headline [:stars "*"] [:title "hello" "world"]]
-             [:content-line "this is the first section"]
+             [:content-line [:text [:text-normal "this is the first section"]]]
              [:empty-line]
              [:headline [:stars "**"] [:title "and" "this"]]
              [:empty-line]
-             [:content-line "is another section"]]
+             [:content-line [:text [:text-normal "is another section"]]]]
             (parse "* hello world
 this is the first section
 
@@ -201,12 +202,13 @@ is another section"))))))
              (parse "#+BEGIN_center params! \n#+end_center"))))
     (testing "one line of content"
       (is (= [:block [:block-begin-line [:block-name "center"]]
-              [:content-line "content"]
+              [:content-line [:text [:text-normal "content"]]]
               [:block-end-line [:block-name "center"]]]
              (parse "#+BEGIN_center \ncontent\n#+end_center "))))
     (testing "more lines of content"
       (is (= [:block [:block-begin-line [:block-name "center"]]
-              [:content-line "my"] [:content-line "content"]
+              [:content-line [:text [:text-normal "my"]]]
+              [:content-line [:text [:text-normal "content"]]]
               [:block-end-line [:block-name "center"]]]
              (parse "#+BEGIN_center\nmy\ncontent\n#+end_center"))))
     (testing "parse even if block name at begin and end not matching"
@@ -238,16 +240,16 @@ is another section"))))))
              (parse "#+BEGIN: na.me pa rams \n#+end:"))))
     (testing "one line of content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "name"]]
-              [:content-line "text"]]
+              [:content-line [:text [:text-normal "text"]]]]
              (parse "#+BEGIN: name \ntext\n#+end: "))))
     ;; TODO doesn't work yet :(
     ;; (testing "parse reluctantly"
     ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
     (testing "content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
-	      [:content-line "multi"]
-	      [:content-line "line"]
-	      [:content-line "content"]]
+	      [:content-line [:text [:text-normal "multi"]]]
+	      [:content-line [:text [:text-normal "line"]]]
+	      [:content-line [:text [:text-normal "content"]]]]
              (parse "#+begin: abc \nmulti\nline\ncontent\n#+end: "))))))
 
 
@@ -272,7 +274,7 @@ is another section"))))))
   (testing "drawer with a bit of content"
     (is (= [:S
             [:drawer-begin-line [:drawer-name "PROPERTIES"]]
-            [:content-line ":foo: bar"]
+            [:content-line [:text [:text-normal ":foo: bar"]]]
             [:drawer-end-line]]
            (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
 
@@ -280,7 +282,8 @@ is another section"))))))
   (let [parse #(parser/org % :start :drawer)]
     (testing "drawer"
       (is (= [:drawer [:drawer-begin-line [:drawer-name "MYDRAWER"]]
-              [:content-line "any"] [:content-line "text"]]
+              [:content-line [:text [:text-normal "any"]]]
+              [:content-line [:text [:text-normal "text"]]]]
              (parse ":MYDRAWER:\nany\ntext\n:END:"))))))
 
 (deftest property-drawer-semantic-block
@@ -723,13 +726,13 @@ is another section"))))))
 (deftest text-styled
   (let [parse #(parser/org % :start :text-styled)]
     (testing "parse bold text"
-      (is (= [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
              (parse "*bold text*"))))
     (testing "parse italic text"
-      (is (= [:text-styled [:text-sty-italic [:text [:text-normal "italic text"]]]]
+      (is (= [:text-styled [:text-sty-italic [:text-inside-sty-normal "italic text"]]]
              (parse "/italic text/"))))
     (testing "parse underlined text"
-      (is (= [:text-styled [:text-sty-underlined [:text [:text-normal "underlined text"]]]]
+      (is (= [:text-styled [:text-sty-underlined [:text-inside-sty-normal "underlined text"]]]
              (parse "_underlined text_"))))
     (testing "parse verbatim text"
       (is (= [:text-styled [:text-sty-verbatim "verbatim /abc/ text"]]
@@ -738,7 +741,7 @@ is another section"))))))
       (is (= [:text-styled [:text-sty-code "code *abc* text"]]
              (parse "~code *abc* text~"))))
     (testing "parse strike-through text"
-      (is (= [:text-styled [:text-sty-strikethrough [:text [:text-normal "strike-through text"]]]]
+      (is (= [:text-styled [:text-sty-strikethrough [:text-inside-sty-normal "strike-through text"]]]
              (parse "+strike-through text+"))))
     ;; parse reluctant
     ;; (testing "parse text-styled alone is not reluctant"
@@ -780,6 +783,11 @@ is another section"))))))
 
 (deftest text
   (let [parse #(parser/org % :start :text)]
+    (testing "stop parsing text at EOL"
+      (is (= [:text [:text-normal "abc "]]
+             (parse "abc "))))
+    (testing "does not parse a string starting with newline"
+      (is (insta/failure? (parse "\nfoo"))))
     (testing "parse text that contains style delimiter"
       (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
              (parse "a/b"))))
@@ -787,24 +795,24 @@ is another section"))))))
       (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
              (parse "a /b"))))
     (testing "parse styled text alone"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
              (parse "*bold text*"))))
     (testing "parse styled text followed by normal text"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " normal text"]]
              (parse "*bold text* normal text"))))
     (testing "parse normal text followed by styled text"
       (is (= [:text [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]]
+              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
              (parse "normal text *bold text*"))))
     (testing "parse styled text surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " more text"]]
              (parse "normal text *bold text* more text"))))
     (testing "parse styled text reluctant"
-      (is (= [:text [:text-styled [:text-sty-bold [:text [:text-normal "bold text"]]]]
+      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
               [:text-normal " text"]
               [:text-normal "*"]]
              (parse "*bold text* text*"))))
