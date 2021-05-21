@@ -22,8 +22,7 @@
      [:content-line
       [:text
        [:text-normal "this line has "]
-       [:text-styled
-        [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]]]
+       [:text-sty-bold "bold text"]]]]
 
     :result
     {:headlines
@@ -34,8 +33,7 @@
         :ast [[:text [:text-normal "this is the first section"]]
               [:text
                [:text-normal "this line has "]
-               [:text-styled
-                [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]]}}]}}
+               [:text-sty-bold "bold text"]]]}}]}}
 
    ;; next sample here:
    ;; {:input ...
