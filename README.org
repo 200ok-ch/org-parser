@@ -153,7 +153,7 @@ possible.
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
+: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
 : 
 
 ** NodeJS
@@ -169,11 +169,13 @@ First, compile =org-parser= with:
 #+end_src
 
 #+RESULTS:
-: [["headline",{"level":1,"title":"Header with repeater"}],["content","[:text [:text-normal \"  SCHEDULED: \"] [:text-normal \"<2019-11-27 Wed \"] [:text-normal \"+1d>\"]]\n"]]
+: {"headlines":[{"headline":{"level":1,"title":"Header with repeater"},"section":{"ast":[["text",["text-normal","  SCHEDULED: "],["timestamp",["timestamp-active",["ts-inner",["ts-inner-wo-time",["ts-date","2019-11-27"],["ts-day","Wed"]],["ts-modifiers",["ts-repeater",["ts-repeater-type","+"],["ts-mod-value","1"],["ts-mod-unit","d"]]]]]]]],"raw":["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
 
 ** Java
 
-First, compile =org-parser= with: =lein uberjar=.
+First, compile =org-parser= with:
+
+: lein uberjar
 
 =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
@@ -182,7 +184,7 @@ First, compile =org-parser= with: =lein uberjar=.
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
+: {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
 : 
 
 Note: The =*= character must be replaced with the current version
