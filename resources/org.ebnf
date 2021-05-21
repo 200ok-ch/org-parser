@@ -242,7 +242,7 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
+text = ( timestamp / link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html

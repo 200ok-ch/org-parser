@@ -721,13 +721,33 @@ is another section"))))))
       (is (= [:link-ext-other [:link-url-scheme "zyx"] [:link-url-rest "rest-of uri ..."]]
              (parse "zyx:rest-of uri ..."))))))
 
-; TODO
-;(deftest links-in-text
-;  (let [parse #(parser/org % :start :text)]
-;    (testing "parse link after text"
-;      (is (= [:text-normal]
-;             (parse "text before [[http://example.com]]"))))
-;    ))
+(deftest embedded-in-text
+  (let [parse #(parser/org % :start :text)]
+    (testing "parse timestamp after text"
+      (is (= [:text
+              [:text-normal "text before "]
+              [:timestamp
+               [:timestamp-active
+                [:ts-inner
+                 [:ts-inner-w-time
+                  [:ts-date "2021-05-22"]
+                  [:ts-day "Sat"]
+                  [:ts-time "00:12"]]
+                 [:ts-modifiers]]]]
+              [:text-normal " after"]]
+             (parse "text before <2021-05-22 Sat 00:12> after"))))
+    (testing "parse link after text"
+      (is (= [:text
+              [:text-normal "text before "]
+              [:link-format
+               [:link
+                [:link-ext
+                 [:link-ext-other
+                  [:link-url-scheme "http"]
+                  [:link-url-rest "//example.com"]]]]]
+              [:text-normal " after"]]
+             (parse "text before [[http://example.com]] after"))))
+    ))
 
 
 (deftest text-styled
