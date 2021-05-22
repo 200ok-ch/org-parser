@@ -586,6 +586,24 @@ is another section"))))))
       (is (= [:ts-time "08:00pm"]
              (parse "08:00pm"))))))
 
+(deftest timestamp-inactive-ranges
+  (let [parse #(parser/org % :start :timestamp-inactive-range)]
+    (testing "parse inactive range"
+      (is (= [:timestamp-inactive-range [:ts-inner-span
+               [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
+               [:ts-time "23:46"]
+               [:ts-modifiers]]]
+             (parse "[2021-05-22 Sat 23:26-23:46]"))))
+    (testing "parse inactive long range"
+      (is (= [:timestamp-inactive-range
+              [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
+              [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:46"]]]
+             (parse "[2021-05-22 Sat 23:26]--[2021-05-22 Sat 23:46]"))))
+    (testing "do not parse active range"
+      (is (insta/failure? (parse "<2021-05-22 Sat 23:26-23:46>"))))
+    (testing "do not parse inactive timestamp without range"
+      (is (insta/failure? (parse "[2021-05-22 Sat 23:26]"))))
+    ))
 
 (deftest literal-line
   (let [parse #(parser/org % :start :fixed-width-line)]
@@ -1003,4 +1021,61 @@ is another section"))))))
                [:table-row [:table-row-sep "|--+--|"]]
                [:table-formula "$4=vmean($2..$3)"]]]
              (parse " |--+--|\n | x|x |\n |--+--|\n #+TBLFM: $4=vmean($2..$3)"))))
+    ))
+
+
+(deftest clock
+  (let [parse #(parser/org % :start :clock)]
+    (testing "a simple clock line"
+      (is (= [:clock [:timestamp-inactive-range
+               [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
+               [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:46"]]]
+              [:clock-duration [:clock-dur-hh "0"] [:clock-dur-mm "20"]]]
+             (parse "CLOCK: [2021-05-22 Sat 23:26]--[2021-05-22 Sat 23:46] =>  0:20"))))
+    (testing "a simple clock line"
+      (is (= [:clock [:timestamp-inactive-range [:ts-inner-span
+               [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
+               [:ts-time "23:46"]
+               [:ts-modifiers]]]
+              [:clock-duration [:clock-dur-hh "0"] [:clock-dur-mm "20"]]]
+             (parse " CLOCK: [2021-05-22 Sat 23:26-23:46] =>  0:20 "))))
+    (testing "do not parse corrupted headlines"
+      (is (insta/failure? (parse "CLOCK: [not a timestamp Sat 23:26] =>  0:20 "))))
+    ))
+
+
+(deftest diary-sexp
+  (let [parse #(parser/org % :start :diary-sexp)]
+    (testing "a simple diary sexp line"
+      (is (= [:diary-sexp "nr()<n)-h"]
+             (parse "%%(nr()<n)-h"))))
+    (testing "do not parse if not starting at begin of line"
+      (is (insta/failure? (parse "  %%(x)"))))
+    ))
+
+
+(deftest planning
+  (let [parse #(parser/org % :start :planning)]
+    (testing "a simple planning info"
+      (is (= [:planning [:planning-info
+                         [:planning-keyword [:planning-kw-scheduled]]
+                         [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]] [:ts-modifiers]]]]]]
+             (parse "SCHEDULED: [2021-05-22 Sat 23:26]"))))
+    (testing "a planning info with spaces"
+      (is (= [:planning [:planning-info
+                         [:planning-keyword [:planning-kw-deadline]]
+                         [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-22"] [:ts-day "Sat"]] [:ts-modifiers]]]]]]
+             (parse "  DEADLINE: <2021-05-22 Sat> "))))
+    (testing "all planning items in a row"
+      (is (= [:planning
+              [:planning-info
+               [:planning-keyword [:planning-kw-scheduled]]
+               [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]] [:ts-modifiers]]]]]
+              [:planning-info
+               [:planning-keyword [:planning-kw-deadline]]
+               [:timestamp [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-22"] [:ts-day "Sat"]] [:ts-modifiers]]]]]
+              [:planning-info
+               [:planning-keyword [:planning-kw-closed]]
+               [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-21"] [:ts-day "Fri"]] [:ts-modifiers]]]]]]
+             (parse "SCHEDULED: [2021-05-22 Sat 23:26]  DEADLINE: <2021-05-22 Sat>  CLOSED: [2021-05-21 Fri] "))))
     ))
