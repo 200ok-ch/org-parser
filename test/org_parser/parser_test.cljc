@@ -88,6 +88,13 @@
     (testing "with comment flag but without todo keyword or prio: interpret COMMENT as keyword"
       (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:title "hello" "world"]]
              (parse "***** COMMENT hello world"))))
+    (testing "headline with planning info in next line"
+      (is (= [:headline [:stars "*"] [:title "hello"]
+              [:planning
+              [:planning-info
+               [:planning-keyword [:planning-kw-closed]]
+               [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-22"] [:ts-day "Sat"]] [:ts-modifiers]]]]]]]
+             (parse "* hello\n  CLOSED: [2021-05-22 Sat]"))))
     ))
 
 
