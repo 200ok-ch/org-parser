@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [instaparse.core :as insta]))
 
+;; See also parse_org.js in https://github.com/200ok-ch/organice for inspirations
 
 (def conjv (comp vec conj))
 
@@ -45,17 +46,31 @@
                    first
                    count)
         title (->> properties
-                   (property :title)
-                   (str/join " "))]
+                   (property :text))
+        tags (->>  []) ;; TODO extract tags from the last element of :text if it's a :text-normal; empty otherwise;
+                            ;; use regex #'\s+(:[a-zA-Z0-9_@#%]+)+:\s*$' (see EBNF), if it is matching remove it from the :text-normal, trim it and split by ':'
+        ]
     ;; a headline introduces a new headline
     (update state :headlines conjv {:headline {:level level
-                                               :title title}})))
+                                               :title title
+                                               ;;:tags  tags
+                                               ;; TODO much more to come, e.g. planning info (already parsed)
+                                               }})))
 
 
 ;; content-line needs to simply drop the keyword
 (defmethod reducer :content-line [state [_ ast] raw]
   (reducer state ast raw))
 
+;; Merge consecutive :text-normal inside a :text list. They come from
+;; the parser stopping at any special character like '*', '/', ...
+;; TODO
+;(defmethod reducer :text [state [_ ast] raw]
+;  (fold text [] #((cons %1 %2))))
+;; fold (right to left) with lambda:
+;;   if (head accu) is :text-normal AND current is :text-normal
+;;       then (cons (str/concat current (head accu)) (tail accu))
+;;       else (cons current accu)
 
 (defn- wrap-raw [reducer raw]
   (fn [agg ast]
