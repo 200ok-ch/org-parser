@@ -77,11 +77,22 @@ done-state = #"[A-Z]+"
    - content is parsed greedy (doesn't stop at first #+end_name)
    - name is not matched in #+end_name
  *)
-block = block-begin-line <eol> line* block-end-line
-block-begin-line = <#"#\+(BEGIN|begin)_"> block-name [s block-parameters] [s]
+block = noparse-block / greater-block
+block-begin-marker = #'#\+(BEGIN|begin)_'
+block-end-marker   = #'#\+(END|end)_'
+
+(* Blocks where content is not parsed *)
+noparse-block = noparse-block-begin-line <eol> noparse-block-content block-end-line
+noparse-block-begin-line = [s] <block-begin-marker> block-name-noparse [s block-parameters] [s]
+(* TODO further divide the noparse-block: src and export blocks require a special syntax for block-parameters, see below *)
+noparse-block-content = #'((.|[\r\n])*?[\r\n](?=[\t ]*#\+(END|end)_))|'
+
+(* Greater "normal" blocks where content is parsed *)
+greater-block = block-begin-line <eol> line* block-end-line
+block-begin-line = [s] <block-begin-marker> block-name [s block-parameters] [s]
 block-name = #"\S+"
 block-parameters = anything-but-newline
-block-end-line = <#"#\+(END|end)_"> block-name [s]
+block-end-line = [s] <block-end-marker> block-name [s]
 
 (* Data/parameters of blocks (coming after #+BEGIN_NAME) *)
 block-export-data = #"\w+"
