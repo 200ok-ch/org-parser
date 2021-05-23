@@ -203,27 +203,85 @@ is another section"))))))
 (deftest blocks
   (let [parse #(parser/org % :start :block)]
     (testing "no content"
-      (is (= [:block
+      (is (= [:block [:greater-block
               [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]
-              [:block-end-line [:block-name "center"]]]
+              [:block-end-line [:block-name "center"]]]]
              (parse "#+BEGIN_center params! \n#+end_center"))))
     (testing "one line of content"
-      (is (= [:block [:block-begin-line [:block-name "center"]]
+      (is (= [:block [:greater-block
+              [:block-begin-line [:block-name "QUOTE"]]
               [:content-line [:text [:text-normal "content"]]]
-              [:block-end-line [:block-name "center"]]]
-             (parse "#+BEGIN_center \ncontent\n#+end_center "))))
+              [:block-end-line [:block-name "QUOTE"]]]]
+             (parse "#+BEGIN_QUOTE \ncontent\n#+end_QUOTE "))))
     (testing "more lines of content"
-      (is (= [:block [:block-begin-line [:block-name "center"]]
+      (is (= [:block [:greater-block
+              [:block-begin-line [:block-name "center"]]
               [:content-line [:text [:text-normal "my"]]]
               [:content-line [:text [:text-normal "content"]]]
-              [:block-end-line [:block-name "center"]]]
+              [:block-end-line [:block-name "center"]]]]
              (parse "#+BEGIN_center\nmy\ncontent\n#+end_center"))))
     (testing "parse even if block name at begin and end not matching"
       ;; This must be handled by in a later step.
-      (is (= [:block
+      (is (= [:block [:greater-block
               [:block-begin-line [:block-name "one"]]
-              [:block-end-line [:block-name "other"]]]
+              [:block-end-line [:block-name "other"]]]]
              (parse "#+BEGIN_one\n#+end_other"))))
+    ))
+
+(deftest noparse-blocks-alone
+  ;; The parsing of multi-line content with the look-ahead regex wasn't easy...
+  (let [parse #(parser/org % :start :noparse-block)]
+    (testing "no content"
+      (is (= [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "src"]]
+              [:noparse-block-content ""]
+              [:block-end-line [:block-name "src"]]]
+             (parse "#+BEGIN_src\n#+END_src"))))
+    (testing "only one blank line"
+      (is (= [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "src"]]
+              [:noparse-block-content "\n"]
+              [:block-end-line [:block-name "src"]]]
+             (parse "#+BEGIN_src\n\n#+END_src"))))
+    (testing "only one line of content"
+      (is (= [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "src"]]
+              [:noparse-block-content "content\n"]
+              [:block-end-line [:block-name "src"]]]
+             (parse "#+BEGIN_src\ncontent\n #+END_src"))))
+    (testing "two lines of content"
+      (is (= [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "src"]]
+              [:noparse-block-content "content\n second line \n"]
+              [:block-end-line [:block-name "src"]]]
+             (parse "#+BEGIN_src\ncontent\n second line \n #+END_src"))))
+    ))
+
+(deftest noparse-blocks
+  (let [parse #(parser/org % :start :block)]
+    (testing "no content"
+      (is (= [:block [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "example"] [:block-parameters "params! "]]
+              [:noparse-block-content ""]
+              [:block-end-line [:block-name "example"]]]]
+             (parse "#+BEGIN_example params! \n#+end_example"))))
+    (testing "one line of content"
+      (is (= [:block [:noparse-block [:noparse-block-begin-line [:block-name-noparse "src"]]
+              [:noparse-block-content "content\n"]
+              [:block-end-line [:block-name "src"]]]]
+             (parse "#+BEGIN_src \ncontent\n#+end_src "))))
+    (testing "more lines of content"
+      (is (= [:block [:noparse-block [:noparse-block-begin-line [:block-name-noparse "export"]]
+              [:noparse-block-content "my\ncontent\n"]
+              [:block-end-line [:block-name "export"]]]]
+             (parse "#+BEGIN_export\nmy\ncontent\n#+end_export"))))
+    (testing "parse even if block name at begin and end not matching"
+      ;; This must be handled by in a later step.
+      (is (= [:block [:noparse-block
+              [:noparse-block-begin-line [:block-name-noparse "comment"]]
+              [:noparse-block-content ""]
+              [:block-end-line [:block-name "other"]]]]
+             (parse "#+BEGIN_comment\n#+end_other"))))
     ))
 
 (deftest block-begin
