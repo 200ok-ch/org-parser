@@ -73,27 +73,27 @@
 (deftest headline
   (let [parse #(parser/org % :start :headline)]
     (testing "boring"
-      (is (= [:headline [:stars "*"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
              (parse "* hello world"))))
     (testing "with priority"
-      (is (= [:headline [:stars "**"] [:priority "A"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "**"] [:priority "A"] [:text [:text-normal "hello world"]]]
              (parse "** [#A] hello world"))))
     (testing "with tags"
-      (is (= [:headline [:stars "***"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "***"] [:text [:text-normal "hello world :the:end:"]]]
              (parse "*** hello world :the:end:"))))
     (testing "with priority and tags"
-      (is (= [:headline [:stars "****"] [:priority "B"] [:title "hello" "world"] [:tags "the" "end"]]
+      (is (= [:headline [:stars "****"] [:priority "B"] [:text [:text-normal "hello world :the:end:"]]]
              (parse "**** [#B] hello world :the:end:"))))
     (testing "title cannot have multiple lines"
       (is (insta/failure? (parse "* a\nb"))))
     (testing "with todo keyword"
-      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:text [:text-normal "hello world"]]]
              (parse "* TODO hello world"))))
     (testing "with todo keyword and comment flag"
-      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:comment-token] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*"] [:keyword "TODO"] [:comment-token] [:text [:text-normal "hello world"]]]
              (parse "* TODO COMMENT hello world"))))
     (testing "with comment flag but without todo keyword or prio: interpret COMMENT as keyword"
-      (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:title "hello" "world"]]
+      (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:text [:text-normal "hello world"]]]
              (parse "***** COMMENT hello world"))))
     (testing "headline with planning info in next line"
       (is (= [:headline [:stars "*"] [:title "hello"]
@@ -151,9 +151,9 @@
   (let [parse parser/org]
     (testing "boring org file"
       (is (= [:S
-              [:headline [:stars "*"] [:title "hello" "world"]]
+              [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
               [:content-line [:text [:text-normal "this is the first section"]]]
-              [:headline [:stars "**"] [:title "and" "this"]]
+              [:headline [:stars "**"] [:text [:text-normal "and this"]]]
               [:content-line [:text [:text-normal "is another section"]]]]
              (parse "* hello world
 this is the first section
@@ -161,10 +161,10 @@ this is the first section
 is another section"))))
     (testing "boring org file with empty lines"
       (is (=[:S
-             [:headline [:stars "*"] [:title "hello" "world"]]
+             [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
              [:content-line [:text [:text-normal "this is the first section"]]]
              [:empty-line]
-             [:headline [:stars "**"] [:title "and" "this"]]
+             [:headline [:stars "**"] [:text [:text-normal "and this"]]]
              [:empty-line]
              [:content-line [:text [:text-normal "is another section"]]]]
             (parse "* hello world

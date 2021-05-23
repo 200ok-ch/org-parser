@@ -17,7 +17,7 @@
 
     :ast
     [:S
-     [:headline [:stars "*"] [:title "hello" "world"]]
+     [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
      [:content-line [:text [:text-normal "this is the first section"]]]
      [:content-line
       [:text
@@ -27,7 +27,7 @@
     :result
     {:headlines
      [{:headline {:level 1
-                  :title "hello world"}
+                  :title [[:text-normal "hello world"]]}
        :section
        {:raw ["this is the first section" "this line has *bold text*"]
         :ast [[:text [:text-normal "this is the first section"]]
