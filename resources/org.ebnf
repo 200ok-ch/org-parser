@@ -211,8 +211,7 @@ ts-date = #"\d{4}-\d{2}-\d{2}"
    timestamp date is updated accordingly. *)
 ts-time = #"\d{1,2}:\d{2}(:\d{2})?([AaPp][Mm])?"
 
-(* TODO Is there a class for letters? *)
-(* TODO Does \s also match \n\r? If yes (like in JS), there is redundant \r\n in code above. *)
+(* TODO Use this regex for unicode letters: #"\p{L}+" (only works in JVM) *)
 ts-day = #"[^\d\s>\]]+"
 
 (* Reapeaters and warnings are described here:
@@ -303,7 +302,10 @@ text-normal = #".[^*/_=~+\[<{^\\\n\r]*"
    https://orgmode.org/manual/Subscripts-and-Superscripts.html *)
 text-sub = <'_'> ( text-subsup-curly | text-subsup-word )
 text-sup = <'^'> ( text-subsup-curly | text-subsup-word )
-(* TODO word should match any unicode letter or digit but not "_" *)
+(* TODO word should match any unicode letter or digit but not "_";
+   in Java regex this is possible with sth. like [\p{L}&&[^_]]
+   https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html
+ *)
 text-subsup-word = #"\*|[+-]?[a-zA-Z0-9,.\\]*[a-zA-Z0-9]"
 text-subsup-curly = <'{'> #"[^{}]*" <'}'>
 

@@ -22,8 +22,15 @@
     (is (not (re-matches #"." "\r"))))
   (testing "[^x] matches newline"
     (is (re-matches #"[^x]" "\n")))
-  (testing "\\s does not match newline"
-    (is (not (re-matches #"\\s" "\n"))))
+  (testing "\\s does match newline"
+    (is (re-matches #"\s" "\n")))
+  (testing "\\s does match carriage return"
+    (is (re-matches #"\s" "\r")))
+  (testing "\\w does not match unicode letters"
+    (is (not (re-matches #"\w*" "abökoß"))))
+  ;; The cljs build does not work with this Java Unicode regex pattern :(
+  ;; (testing "\\p{L} does match unicode letters"
+  ;;   (is (re-matches #"\p{L}*" "abökoßα")))
   )
 
 
