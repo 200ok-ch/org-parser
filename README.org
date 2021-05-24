@@ -112,7 +112,7 @@ You can watch it here: https://youtu.be/o2MLHFGUkoQ
 * Release and Dependency Information
 
 Note: The version number should be replaced with the current version of org-parser.
-See the clojars badge at the [top of this README](https://github.com/200ok-ch/org-parser#general).
+See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
 
 ** [[https://clojure.org/reference/deps_and_cli][CLI/deps.edn]] dependency information:
 
@@ -187,6 +187,6 @@ First, compile =org-parser= with: =lein uberjar=.
 : 
 
 Note: The =*= character must be replaced with the current version number of org-parser.
-See the clojars badge at the [top of this README](https://github.com/200ok-ch/org-parser#general).
+See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
 
 * License
