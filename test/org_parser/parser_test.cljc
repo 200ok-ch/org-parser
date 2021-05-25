@@ -843,22 +843,22 @@ is another section"))))))
 (deftest text-styled
   (let [parse #(parser/org % :start :text-styled)]
     (testing "parse bold text"
-      (is (= '([:text-sty-bold "bold text"])
+      (is (= [[:text-sty-bold "bold text"]]
              (parse "*bold text*"))))
     (testing "parse italic text"
-      (is (= '([:text-sty-italic "italic text"])
+      (is (= [[:text-sty-italic "italic text"]]
              (parse "/italic text/"))))
     (testing "parse underlined text"
-      (is (= '([:text-sty-underlined "underlined text"])
+      (is (= [[:text-sty-underlined "underlined text"]]
              (parse "_underlined text_"))))
     (testing "parse verbatim text"
-      (is (= '([:text-sty-verbatim "verbatim /abc/ text"])
+      (is (= [[:text-sty-verbatim "verbatim /abc/ text"]]
              (parse "=verbatim /abc/ text="))))
     (testing "parse code text"
-      (is (= '([:text-sty-code "code *abc* text"])
+      (is (= [[:text-sty-code "code *abc* text"]]
              (parse "~code *abc* text~"))))
     (testing "parse strike-through text"
-      (is (= '([:text-sty-strikethrough "strike-through text"])
+      (is (= [[:text-sty-strikethrough "strike-through text"]]
              (parse "+strike-through text+"))))
     ;; parse reluctant
     ;; (testing "parse text-styled alone is not reluctant"
@@ -874,13 +874,13 @@ is another section"))))))
     (testing "not parse verbatim text with space around"
       (is (insta/failure? (parse "= verbatim="))))
     (testing "parse verbatim text"
-      (is (= '([:text-sty-verbatim "verbatim = text"])
+      (is (= [[:text-sty-verbatim "verbatim = text"]]
              (parse "=verbatim = text="))))
     (testing "parse verbatim text"
-      (is (= '([:text-sty-verbatim "="])
+      (is (= [[:text-sty-verbatim "="]]
              (parse "==="))))
     (testing "parse verbatim text"
-      (is (= '([:text-sty-verbatim "a"])
+      (is (= [[:text-sty-verbatim "a"]]
              (parse "=a="))))
     ))
 
