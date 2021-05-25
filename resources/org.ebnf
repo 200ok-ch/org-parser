@@ -7,7 +7,13 @@
 
 S = line*
 
-<line> = (empty-line / headline / clock / diary-sexp / affiliated-keyword-line / keyword-line / comment-line / todo-line / block-begin-line / block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
+<line> = (empty-line / headline / clock / diary-sexp /
+          affiliated-keyword-line / keyword-line / comment-line / todo-line /
+          block-begin-line / block-end-line /
+          dynamic-block-begin-line / dynamic-block-end-line /
+          drawer-end-line / drawer-begin-line /
+          list-item-line / footnote-line / fixed-width-line /
+          horizontal-rule / table-line / content-line) eol
 
 (* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
@@ -91,6 +97,7 @@ noparse-block-content = #'((.|[\r\n])*?[\r\n](?=[\t ]*#\+(END|end)_))|'
 
 (* Greater "normal" blocks where content is parsed *)
 greater-block = block-begin-line <eol> line* block-end-line
+(* TODO use negative look-ahead to stop before first block-end-line *)
 block-begin-line = [s] <block-begin-marker> block-name [s block-parameters] [s]
 block-name = #"\S+"
 block-parameters = anything-but-newline
