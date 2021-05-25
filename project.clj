@@ -16,7 +16,7 @@
   :profiles {:uberjar {:aot :all}}
   :doo {:build "test-cljs-with-node"}
   :cljsbuild
-  {:builds [{:id "foo"
+  {:builds [{:id "main"
              :source-paths ["src"]
              :compiler {:optimizations :none
                         :target :nodejs
