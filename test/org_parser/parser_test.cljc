@@ -96,7 +96,7 @@
       (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:text [:text-normal "hello world"]]]
              (parse "***** COMMENT hello world"))))
     (testing "headline with planning info in next line"
-      (is (= [:headline [:stars "*"] [:title "hello"]
+      (is (= [:headline [:stars "*"] [:text [:text-normal "hello"]]
               [:planning
               [:planning-info
                [:planning-keyword [:planning-kw-closed]]
