@@ -7,7 +7,7 @@
 
 S = line*
 
-<line> = (empty-line / headline / affiliated-keyword-line / keyword-line / comment-line / todo-line / block-begin-line / block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
+<line> = (empty-line / headline / clock / diary-sexp / affiliated-keyword-line / keyword-line / comment-line / todo-line / block-begin-line / block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
 
 (* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
@@ -27,7 +27,7 @@ comment-line-rest = #".*"
 <anything-but-whitespace> = #"\S+"
 <anything-but-newline> = #"[^\n]+"
 
-headline = stars [s keyword] [s priority] [s comment-token] s title [s tags]
+headline = stars [s keyword] [s priority] [s comment-token] s title [s tags] [ eol planning ]
 stars = #'\*+'
 keyword = #"[A-Z]+"
 priority = <"[#"> #"[A-Z]" <"]">
@@ -203,6 +203,10 @@ timestamp-diary = <'<%%'> ts-diary-sexp <'>'>
 timestamp-active   = <'<'> (ts-inner / ts-inner-span) <'>'> / <'<'> ts-inner <'>--<'> ts-inner <'>'>
 
 timestamp-inactive = <'['> (ts-inner / ts-inner-span) <']'> / <'['> ts-inner <']--['> ts-inner <']'>
+
+(* Used for CLOCK entries: *)
+timestamp-inactive-range = <'['> ts-inner-span <']'> / <'['> ts-inner-w-time <']--['> ts-inner-w-time <']'>
+timestamp-inactive-no-range = <'['> ts-inner-w-time <']'>
 
 (* a single point in time *)
 ts-inner = ts-inner-w-time ts-modifiers / ts-inner-wo-time ts-modifiers
@@ -427,3 +431,24 @@ table-formula = [s] <'#+TBLFM: '> anything-but-newline
 
 (* TODO only as long as tables are not parsed as semantic blocks: *)
 <table-line> = table-tableel-sep / table-tableel-line / table-row / table-formula
+
+
+(* Clock, Diary Sexp and Planning
+   https://orgmode.org/worg/dev/org-syntax.html#Clock,_Diary_Sexp_and_Planning
+ *)
+
+clock = [s] <'CLOCK:'> s ( timestamp-inactive-no-range / timestamp-inactive-range s <'=>'> s clock-duration ) [s]
+clock-duration = clock-dur-hh <':'> clock-dur-mm
+clock-dur-hh = #'\d+'
+clock-dur-mm = #'\d\d'
+
+diary-sexp = <'%%('> anything-but-newline
+
+(* Planning element must directly follow a headline.
+   TODO change the headline to parse the next line as planning! *)
+planning = [s] planning-info { s planning-info } [s]
+planning-info = planning-keyword <':'> s timestamp
+planning-keyword = planning-kw-deadline / planning-kw-scheduled / planning-kw-closed
+planning-kw-deadline  = <'DEADLINE'>
+planning-kw-scheduled = <'SCHEDULED'>
+planning-kw-closed    = <'CLOSED'>
