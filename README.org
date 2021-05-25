@@ -174,7 +174,9 @@ First, compile =org-parser= with:
 
 ** Java
 
-First, compile =org-parser= with: =lein uberjar=.
+First, compile =org-parser= with:
+
+: lein uberjar
 
 =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 

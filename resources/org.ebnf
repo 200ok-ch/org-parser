@@ -156,7 +156,7 @@ list-item-checkbox = <"["> list-item-checkbox-state <"]">
 list-item-checkbox-state = #"[ \-X]"
 list-item-tag = #".*?(?= :: )"  (* shortest match followed by " :: " *)
 <list-item-rest> = list-item-tag <" :: "> list-item-contents / list-item-contents
-list-item-contents = anything-but-newline  (* TODO use text *)
+<list-item-contents> = text
 
 keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
 keyword-key = #"[^\s:]+"
@@ -256,14 +256,14 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
+text = ( timestamp / link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html
    "Text in the code and verbatim string is not processed for Org specific syntax;"
    Implies that the rest can be nested.
  *)
-text-styled = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
+<text-styled> = text-sty-bold / text-sty-italic / text-sty-underlined / text-sty-strikethrough / text-sty-verbatim / text-sty-code
 
 (* Do not try to parse styled text recursively. Only parse simplest form of styled text. *)
 (* TODO simplest possible solution; ignores ways of escaping and does not allow the delim to appear inside *)
@@ -282,7 +282,7 @@ before-sty = #"[- ('\"{]|"
 (* first and last character must not be whitespace. that's why it's not just text *)
 text-inside-sty = ( link-format / footnote-link / text-link / text-styled / text-inside-sty-normal )*
 (* TODO space works? includes newline? *)
-text-inside-sty-normal = #"([^ ]|[^ ].*?[^ ])(?=[*/_+]([- .,:!?;'\")}\[]|$))"
+<text-inside-sty-normal> = #"([^ ]|[^ ].*?[^ ])(?=[*/_+]([- .,:!?;'\")}\[]|$))"
 
 (* There are 4 types of links: radio link (not subject to this
    parser), angle link, plain link, and regular link

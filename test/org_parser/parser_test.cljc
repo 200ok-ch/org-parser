@@ -436,56 +436,56 @@ is another section"))))))
   (let [parse #(parser/org % :start :list-item-line)]
 
     (testing "list-item-line with asterisk"
-      (is (= [:list-item-line [:list-item-bullet "*"] [:list-item-contents "a simple list item"]]
+      (is (= [:list-item-line [:list-item-bullet "*"] [:text [:text-normal "a simple list item"]]]
              (parse "* a simple list item"))))
     (testing "list-item-line with hyphen"
-      (is (= [:list-item-line [:list-item-bullet "-"] [:list-item-contents "a simple list item"]]
+      (is (= [:list-item-line [:list-item-bullet "-"] [:text [:text-normal "a simple list item"]]]
              (parse "- a simple list item"))))
     (testing "list-item-line with plus sign"
-      (is (= [:list-item-line [:list-item-bullet "+"] [:list-item-contents "a simple list item"]]
+      (is (= [:list-item-line [:list-item-bullet "+"] [:text [:text-normal "a simple list item"]]]
              (parse "+ a simple list item"))))
     (testing "list-item-line with counter and dot"
       (is (= [:list-item-line
               [:list-item-counter "1"]
               [:list-item-counter-suffix "."]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "1. a simple list item"))))
     (testing "list-item-line with counter and parentheses"
       (is (= [:list-item-line
               [:list-item-counter "1"]
               [:list-item-counter-suffix ")"]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "1) a simple list item"))))
     (testing "list-item-line with alphabetical counter and parentheses"
       (is (= [:list-item-line
               [:list-item-counter "a"]
               [:list-item-counter-suffix ")"]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "a) a simple list item"))))
     (testing "list-item-line with alphabetical counter and parentheses"
       (is (= [:list-item-line
               [:list-item-counter "A"]
               [:list-item-counter-suffix ")"]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "A) a simple list item"))))
     (testing "list-item-line with checkbox"
       (is (= [:list-item-line
               [:list-item-bullet "-"]
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "- [X] a simple list item"))))
     (testing "list-item-line with tag"
       (is (= [:list-item-line
               [:list-item-bullet "*"]
               [:list-item-tag "a tag"]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse " * a tag :: a simple list item"))))
     (testing "list-item-line with checkbox and tag"
       (is (= [:list-item-line
               [:list-item-bullet "-"]
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:list-item-tag "a tag"]
-              [:list-item-contents "a simple list item"]]
+              [:text [:text-normal "a simple list item"]]]
              (parse "- [X] a tag :: a simple list item"))))
     ))
 
@@ -811,27 +811,54 @@ is another section"))))))
       (is (= [:link-ext-other [:link-url-scheme "zyx"] [:link-url-rest "rest-of uri ..."]]
              (parse "zyx:rest-of uri ..."))))))
 
+(deftest embedded-in-text
+  (let [parse #(parser/org % :start :text)]
+    (testing "parse timestamp after text"
+      (is (= [:text
+              [:text-normal "text before "]
+              [:timestamp
+               [:timestamp-active
+                [:ts-inner
+                 [:ts-inner-w-time
+                  [:ts-date "2021-05-22"]
+                  [:ts-day "Sat"]
+                  [:ts-time "00:12"]]
+                 [:ts-modifiers]]]]
+              [:text-normal " after"]]
+             (parse "text before <2021-05-22 Sat 00:12> after"))))
+    (testing "parse link after text"
+      (is (= [:text
+              [:text-normal "text before "]
+              [:link-format
+               [:link
+                [:link-ext
+                 [:link-ext-other
+                  [:link-url-scheme "http"]
+                  [:link-url-rest "//example.com"]]]]]
+              [:text-normal " after"]]
+             (parse "text before [[http://example.com]] after"))))
+    ))
 
 
 (deftest text-styled
   (let [parse #(parser/org % :start :text-styled)]
     (testing "parse bold text"
-      (is (= [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
+      (is (= '([:text-sty-bold "bold text"])
              (parse "*bold text*"))))
     (testing "parse italic text"
-      (is (= [:text-styled [:text-sty-italic [:text-inside-sty-normal "italic text"]]]
+      (is (= '([:text-sty-italic "italic text"])
              (parse "/italic text/"))))
     (testing "parse underlined text"
-      (is (= [:text-styled [:text-sty-underlined [:text-inside-sty-normal "underlined text"]]]
+      (is (= '([:text-sty-underlined "underlined text"])
              (parse "_underlined text_"))))
     (testing "parse verbatim text"
-      (is (= [:text-styled [:text-sty-verbatim "verbatim /abc/ text"]]
+      (is (= '([:text-sty-verbatim "verbatim /abc/ text"])
              (parse "=verbatim /abc/ text="))))
     (testing "parse code text"
-      (is (= [:text-styled [:text-sty-code "code *abc* text"]]
+      (is (= '([:text-sty-code "code *abc* text"])
              (parse "~code *abc* text~"))))
     (testing "parse strike-through text"
-      (is (= [:text-styled [:text-sty-strikethrough [:text-inside-sty-normal "strike-through text"]]]
+      (is (= '([:text-sty-strikethrough "strike-through text"])
              (parse "+strike-through text+"))))
     ;; parse reluctant
     ;; (testing "parse text-styled alone is not reluctant"
@@ -847,13 +874,13 @@ is another section"))))))
     (testing "not parse verbatim text with space around"
       (is (insta/failure? (parse "= verbatim="))))
     (testing "parse verbatim text"
-      (is (= [:text-styled [:text-sty-verbatim "verbatim = text"]]
+      (is (= '([:text-sty-verbatim "verbatim = text"])
              (parse "=verbatim = text="))))
     (testing "parse verbatim text"
-      (is (= [:text-styled [:text-sty-verbatim "="]]
+      (is (= '([:text-sty-verbatim "="])
              (parse "==="))))
     (testing "parse verbatim text"
-      (is (= [:text-styled [:text-sty-verbatim "a"]]
+      (is (= '([:text-sty-verbatim "a"])
              (parse "=a="))))
     ))
 
@@ -885,24 +912,24 @@ is another section"))))))
       (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
              (parse "a /b"))))
     (testing "parse styled text alone"
-      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
+      (is (= [:text [:text-sty-bold "bold text"]]
              (parse "*bold text*"))))
     (testing "parse styled text followed by normal text"
-      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
+      (is (= [:text [:text-sty-bold "bold text"]
               [:text-normal " normal text"]]
              (parse "*bold text* normal text"))))
     (testing "parse normal text followed by styled text"
       (is (= [:text [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]]
+              [:text-sty-bold "bold text"]]
              (parse "normal text *bold text*"))))
     (testing "parse styled text surrounded by normal text"
       (is (= [:text
               [:text-normal "normal text "]
-              [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
+              [:text-sty-bold "bold text"]
               [:text-normal " more text"]]
              (parse "normal text *bold text* more text"))))
     (testing "parse styled text reluctant"
-      (is (= [:text [:text-styled [:text-sty-bold [:text-inside-sty-normal "bold text"]]]
+      (is (= [:text [:text-sty-bold "bold text"]
               [:text-normal " text"]
               [:text-normal "*"]]
              (parse "*bold text* text*"))))
