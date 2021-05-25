@@ -155,13 +155,13 @@ possible.
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
-: 
+:
 
 ** NodeJS
 
 First, compile =org-parser= with:
 
-: lein cljsbuild once; chmod +x ./target/org-parser.js
+: lein cljsbuild once main; chmod +x ./target/org-parser.js
 
 =./target/org-parser.js file.org=, for example:
 
@@ -184,7 +184,7 @@ First, compile =org-parser= with: =lein uberjar=.
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}, :section {:ast [[:text [:text-normal "  SCHEDULED: "] [:text-normal "<2019-11-27 Wed "] [:text-normal "+1d>"]]], :raw ["  SCHEDULED: <2019-11-27 Wed +1d>"]}}]}
-: 
+:
 
 Note: The =*= character must be replaced with the current version number of org-parser.
 See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
