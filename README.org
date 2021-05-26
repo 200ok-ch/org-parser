@@ -187,7 +187,6 @@ possible.
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-:
 
 ** NodeJS
 
@@ -218,7 +217,6 @@ First, compile =org-parser= with:
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-:
 
 Note: The =*= character must be replaced with the current version number of org-parser.
 See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
