@@ -12,17 +12,49 @@ Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https
 
 It can be used from JavaScript, Java, Clojure and ClojureScript!
 
-** Why is this project useful
+** Why is this project useful / Rationale
 
-To our knowledge, there is no formal specification of Org. But there
-is a [[https://orgmode.org/worg/dev/org-syntax.html]['spec' written in prose]] which lead to the [[https://orgmode.org/worg/dev/org-element-api.html][reference
-implementation of Org in Emacs]].
+Org mode in Emacs is implemented in [[http://git.savannah.gnu.org/cgit/emacs/org-mode.git/tree/lisp/org-element.el][org-element.el]] ([[https://orgmode.org/worg/dev/org-element-api.html][API
+documentation]]). The [[https://orgmode.org/worg/dev/org-syntax.html][spec for the Org syntax is written in prose]].
 
-Working on our web-based Org implementation [[https://github.com/200ok-ch/organice/][organice]], we have seen how
-brittle existing libraries can be. It would be nice to have a proper
-BNF based parser and a set of tests behind that. =org-parser=
-strives to be that. It provides a higher-level data structure that is
-easy to consume for an application working with Org mode data.
+This is already great work, yet it has some drawbacks:
+
+1. The spec is not machine readable. Hence, there can be drift between
+   documentation and implementation. In fact, during the development
+   of [[https://github.com/200ok-ch/organice/][organice]], our web-based Org implementation with great mobile
+   phone support, and =org-parser= we have encountered drift.
+2. org-element.el is naturally written in Emacs lisp and makes strong
+   use of Emacs as a text-processor. Hence, its code can only be used
+   within Emacs.
+
+While writing the official spec already is an amazing effort in the
+standardization of the Org format, the power of Org is so enticing
+that many want to use it outside of Emacs, as well. Since
+org-element.el only runs in Emacs, this caused a myriad of
+implementations for other platforms (JavaScript, Rust, Go, Java, etc)
+to have been created. Most implementations are only partial, and more
+importantly each of them creates another island. Since they are just
+as programming language dependent as org-element.el, it is impossible
+to share logic between them.
+
+=org-parser= aims at alleviating both these issues. It documents the
+syntax in a standard and machine readable notation (EBNF). And the
+reference implementation is done in a way that it runs on the
+established virtual machines of Java and JavaScript. Hence,
+=org-parser= can be used from all programming languages running on
+those virtual machines. =org-parser= provides a higher-level data
+structure that is easy to consume for an application working with Org
+mode data. Even if your application is not running on the Java or
+JavaScript virtual machines, you can embed =org-parser= as a
+command-line application. Lastly, =org-parser= brings a strong test
+suite to document the reference implementation in yet another
+unambiguous way.
+
+It is our aim that =org-parser= can be the foundation on which many
+Org mode applications in many different languages can be built. The
+applications using =org-parser= can then focus on implementing user
+facing features and don’t have to worry about the implementation of
+the Org syntax itself.
 
 ** Architecture
 
@@ -155,7 +187,7 @@ possible.
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-: 
+:
 
 ** NodeJS
 
@@ -186,7 +218,7 @@ First, compile =org-parser= with:
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-: 
+:
 
 Note: The =*= character must be replaced with the current version number of org-parser.
 See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
