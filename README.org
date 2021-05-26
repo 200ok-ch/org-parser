@@ -4,7 +4,7 @@
 
 #+html: <a href="https://clojars.org/org-parser"><img src="https://img.shields.io/clojars/v/org-parser.svg?color=brightgreen" alt="Clojars Project" /></a>
 
-Community chat: #organice on IRC [[https://freenode.net/][Freenode]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
+Community chat: #organice on IRC [[https://libera.chat/][Libera.Chat]], or [[https://matrix.to/#/!DfVpGxoYxpbfAhuimY:matrix.org?via=matrix.org&via=ungleich.ch][#organice:matrix.org]] on Matrix
 
 ** What does this project do?
 
