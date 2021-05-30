@@ -4,7 +4,9 @@
             #?(:cljs [cljs-node-io.core :refer [slurp]])
             [org-parser.parser :as parser]
             [org-parser.transform :as transform]
-            [org-parser.render :as render]))
+            [org-parser.render :as render]
+            [clojure.string :as string]
+            ))
 
 (defn read-str
   "Reads one ORG value from input String. Takes optional Options."
@@ -24,6 +26,7 @@
        read-str
        #?(:clj render/edn)
        #?(:cljs render/json)
+       string/trim-newline
        println))
 
 #?(:cljs
