@@ -8,12 +8,14 @@
 S = line*
 
 <line> = (empty-line / headline / clock / diary-sexp /
-          affiliated-keyword-line / keyword-line / comment-line / todo-line /
+          comment-line / todo-line /
           block-begin-line / block-end-line /
           dynamic-block-begin-line / dynamic-block-end-line /
           drawer-end-line / drawer-begin-line /
           list-item-line / footnote-line / fixed-width-line /
-          horizontal-rule / table / content-line) eol
+          horizontal-rule / table /
+          affiliated-keyword-line / macro-definition / other-keyword-line /
+          content-line) eol
 
 (* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
@@ -32,7 +34,7 @@ comment-line-rest = #".*"
 indent = #"[\t ]*"
 
 <anything-but-whitespace> = #"\S+"
-<anything-but-newline> = #"[^\n]+"
+<anything-but-newline> = #"[^\r\n]+"
 
 (* It's impractical to parse tags here because the title has to be
    parsed as text and text does not know where tags start.
@@ -56,13 +58,29 @@ fixed-width-line = <fw-head> fw-rest
 fw-head = #"\s*:( |$)"
 <fw-rest> = #".*"
 
-affiliated-keyword-line = <"#+"> (key | attr) <": "> value
-optional = <"["> optional-value <"]">
-value = #"[^\]\n]+"
-<optional-value> = #"[^\]\n]+"
-key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ optional ]) | "AUTHOR" | "DATE" | "TITLE"
-attr = <"ATTR_"> backend
-backend = #"[a-zA-Z0-9-_]+"
+(* Affiliated Keywords
+   https://orgmode.org/worg/dev/org-syntax.html#Affiliated_Keywords
+
+   TODO: is macro-definition also an affiliated keyword? if yes, how to combine?
+   TODO: allow any other keywords beside key and attr
+   TODO: tests for macros
+ *)
+affiliated-keyword-line = [s] <"#+"> (affil-kw-key | affil-kw-attr) <":"> s kw-value
+affil-kw-key = "HEADER" | "NAME" | "PLOT" | (("RESULTS" | "CAPTION") [ affil-kw-optional ]) | "AUTHOR" | "DATE" | "TITLE"
+affil-kw-attr = <"ATTR_"> affil-kw-backend
+affil-kw-optional = <"["> affil-kw-optional-value <"]">
+<affil-kw-optional-value> = #"[^\]\r\n]+"
+affil-kw-value = #"[^\]\r\n]+"
+affil-kw-backend = #"[a-zA-Z0-9-_]+"
+
+(* These are related to Affiliated Keywords but not limited to the
+   well-known keywords like TITLE, AUTHOR, etc. *)
+other-keyword-line = [s] <"#+"> kw-name <":"> s kw-value
+kw-name = #"[a-zA-Z0-9-_]+"
+kw-value = #"[^\r\n]*"
+
+macro-definition = [s] <#"#\+(MACRO|macro):"> s macro-name s macro-value
+macro-value = anything-but-newline
 
 (* https://orgmode.org/worg/dev/org-syntax.html#Horizontal_Rules *)
 horizontal-rule = #"\s*-----+"
@@ -170,10 +188,6 @@ list-item-tag = #".*?(?= :: )"  (* shortest match followed by " :: " *)
 <list-item-rest> = list-item-tag <" :: "> list-item-contents / list-item-contents
 <list-item-contents> = text
 
-keyword-line = <'#+'> keyword-key <':'> [<' '> keyword-value]
-keyword-key = #"[^\s:]+"
-keyword-value = anything-but-newline
-
 (* TODO allow empty properties with or without trailing space *)
 node-property-line = ! <':END:'> <':'> node-property-name [node-property-plus] <':'> ( <' '> node-property-value | [<' '>] ) <eol>
 node-property-name = #"[^\s:+]+"
@@ -268,7 +282,9 @@ ts-mod-unit = #'[hdwmy]'
  *)
 
 (* TODO handle latex code? *)
-text = ( timestamp / link-format / footnote-link / text-link / text-target / text-radio-target / text-entity / text-macro / text-styled / text-sub / text-sup / text-linebreak / text-normal )*
+text = { timestamp / link-format / footnote-link / text-link /
+         text-target / text-radio-target / text-entity / text-macro /
+         text-styled / text-sub / text-sup / text-linebreak / text-normal }
 
 (* Emphasis and Monospace (font style markup)
    https://orgmode.org/manual/Emphasis-and-Monospace.html
@@ -342,10 +358,12 @@ text-target-name = #"[^<>\n\s][^<>\n]*[^<>\n\s]" | #"[^<>\n\s]"
 (* TODO for now, don't allow text objects *)
 text-radio-target = <'<<<'> text-target-name <'>>>'>
 
-(* https://orgmode.org/worg/dev/org-syntax.html#Macros *)
-text-macro = <'{{{'> macro-name <'('> macro-args <')'> <'}}}'>
+(* https://orgmode.org/worg/dev/org-syntax.html#Macros
+   https://orgmode.org/manual/Macro-Replacement.html
+ *)
+text-macro = <'{{{'> macro-name [ <'('> macro-args <')'> ] <'}}}'>
 macro-name = #"[a-zA-Z][-\w]*"
-macro-args = <''> | macro-arg ( <','> macro-arg )*
+macro-args = <''> |  macro-arg { <','> [s] macro-arg }
 (* "ARGUMENTS can contain anything but “}}}” string."
    Comma must be escaped; ")" is only allowed when not followed by "}}}". *)
 <macro-arg> = #"(\\,|[^)},]|\}(?!\}\})|\)(?!\}\}\}))*"
