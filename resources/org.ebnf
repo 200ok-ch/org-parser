@@ -20,9 +20,10 @@ comment-line-head = #"\s*#(?= |$)"
 comment-line-rest = #".*"
 
 <eol> = <#'[\r\n]|$'>
-(* TODO remove <> to enable use where the spaces are actual needed *)
 <s> = <#"[\t ]+">
 <word> = #"[^\r\n\s]+"
+(* indentation matters, e.g. for list-item-line *)
+indent = #"[\t ]*"
 
 <anything-but-whitespace> = #"\S+"
 <anything-but-newline> = #"[^\n]+"
@@ -148,7 +149,7 @@ fn-label = #"[a-zA-Z0-9-_]+"
      things it depends on indentation)
    - lists can be nested and that also depends on indentation
  *)
-list-item-line = [<s>] ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> ( list-item-checkbox <" "> list-item-rest / list-item-rest )
+list-item-line = indent ( list-item-bullet | list-item-counter list-item-counter-suffix ) <" "> ( list-item-checkbox <" "> list-item-rest / list-item-rest )
 list-item-bullet = #"[*\-+]"
 list-item-counter = #"(\d+|[a-zA-Z])"
 list-item-counter-suffix = #"[.)]"

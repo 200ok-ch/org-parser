@@ -436,52 +436,59 @@ is another section"))))))
   (let [parse #(parser/org % :start :list-item-line)]
 
     (testing "list-item-line with asterisk"
-      (is (= [:list-item-line [:list-item-bullet "*"] [:text [:text-normal "a simple list item"]]]
+      (is (= [:list-item-line [:indent ""] [:list-item-bullet "*"] [:text [:text-normal "a simple list item"]]]
              (parse "* a simple list item"))))
     (testing "list-item-line with hyphen"
-      (is (= [:list-item-line [:list-item-bullet "-"] [:text [:text-normal "a simple list item"]]]
+      (is (= [:list-item-line [:indent ""] [:list-item-bullet "-"] [:text [:text-normal "a simple list item"]]]
              (parse "- a simple list item"))))
     (testing "list-item-line with plus sign"
-      (is (= [:list-item-line [:list-item-bullet "+"] [:text [:text-normal "a simple list item"]]]
+      (is (= [:list-item-line [:indent ""] [:list-item-bullet "+"] [:text [:text-normal "a simple list item"]]]
              (parse "+ a simple list item"))))
     (testing "list-item-line with counter and dot"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-counter "1"]
               [:list-item-counter-suffix "."]
               [:text [:text-normal "a simple list item"]]]
              (parse "1. a simple list item"))))
     (testing "list-item-line with counter and parentheses"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-counter "1"]
               [:list-item-counter-suffix ")"]
               [:text [:text-normal "a simple list item"]]]
              (parse "1) a simple list item"))))
     (testing "list-item-line with alphabetical counter and parentheses"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-counter "a"]
               [:list-item-counter-suffix ")"]
               [:text [:text-normal "a simple list item"]]]
              (parse "a) a simple list item"))))
     (testing "list-item-line with alphabetical counter and parentheses"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-counter "A"]
               [:list-item-counter-suffix ")"]
               [:text [:text-normal "a simple list item"]]]
              (parse "A) a simple list item"))))
     (testing "list-item-line with checkbox"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-bullet "-"]
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:text [:text-normal "a simple list item"]]]
              (parse "- [X] a simple list item"))))
     (testing "list-item-line with tag"
       (is (= [:list-item-line
+              [:indent " "]
               [:list-item-bullet "*"]
               [:list-item-tag "a tag"]
               [:text [:text-normal "a simple list item"]]]
              (parse " * a tag :: a simple list item"))))
     (testing "list-item-line with checkbox and tag"
       (is (= [:list-item-line
+              [:indent ""]
               [:list-item-bullet "-"]
               [:list-item-checkbox [:list-item-checkbox-state "X"]]
               [:list-item-tag "a tag"]
