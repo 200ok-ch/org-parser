@@ -74,26 +74,27 @@ reader as well as writer capabilities for the serialization format
 
 * Project State
 
-This project is work-in-progress. It is not ready for production yet.
+This project is work-in-progress. It is not ready for production yet
+because the structure of the AST (parse tree) can still change.
 
 The biggest milestones are:
 
-- [-] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
-      - [X] Headlines and Org mode =#+*= stuff
-      - [X] More features
-      - [X] Footnotes
+- [X] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
+      - [X] Headlines
+      - [X] Org mode =#+*= stuff
       - [X] Timestamps
       - [X] Links
-      - [-] Text links
-      - [-] Styled text
-      - [-] Text that can contain style, links, footnotes, timestamps, ...
+      - [X] Text links
+      - [X] Footnotes
+      - [X] Styled text
+      - [X] Drawers and =#+BEGIN_xxx= blocks
+      - [ ] Nested markup (see #12)
+- [X] Setup basic transformation from the parse tree to a higher-level structure.
+- [-] Transformations to higher-level structure: catch up with
+      features that are already supported by the EBNF parser.
+- [-] Render parsed org file with =write-str=
 
-- [X] Setup basic from the parse tree to a higher-level structure.
-
-- [ ] Transformations to higher-level structure: catch up with Org mode
-      features supported already by the EBNF parser.
-
-Not ready for production yet, *but it can already be useful* for you:
+*It can already be useful* for you:
 E.g. if your script needs to parse parts of Org mode features, our EBNF
 parser probably already supports that. Do not underestimate
 e.g. timestamps. Use our well-tested parser to disassemble it in its
@@ -170,12 +171,17 @@ possible.
 
 ** Clojure Library
 
- #+BEGIN_SRC clojure
+ #+BEGIN_SRC clojure :results verbatim :exports both
    (ns hello-world.core
      (:require [org-parser.parser :refer [org]]))
 
    (org "* Headline")
+
+   ;; TODO: also demonstrate use of read-str and write-str
  #+END_SRC
+
+ #+RESULTS:
+ : [:S [:headline [:stars "*"] [:title "Headline"]]]
 
 ** Clojure
 
@@ -192,7 +198,9 @@ possible.
 
 First, compile =org-parser= with:
 
-: lein cljsbuild once main; chmod +x ./target/org-parser.js
+#+begin_src sh :exports code :results silent
+  lein cljsbuild once main && chmod +x ./target/org-parser.js
+#+end_src
 
 =./target/org-parser.js file.org=, for example:
 
@@ -207,7 +215,9 @@ First, compile =org-parser= with:
 
 First, compile =org-parser= with:
 
-: lein uberjar
+#+begin_src sh :exports code :results silent
+  lein uberjar
+#+end_src
 
 =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
