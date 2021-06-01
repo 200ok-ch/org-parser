@@ -19,13 +19,15 @@
 ;; deserialized org data structure back to an org string. This needs
 ;; to be extenden to the full feature scope.
 
+(defn- serialize-text-element [[tag text]]
+  (case tag
+    :text-bold (str "*" text "*")
+    text))
 
-(defn- serialize-text
-  ([_ & _] "Hello World")
-  ;; TODO fix this and add text-* things
-  ;; ([[:text-normal s]]  s)
-  ;; ([[:text-bold s]]    (str/concat "*" s "*"))
-  )
+(defn- serialize-text [elements]
+  (apply str (map serialize-text-element elements)))
+
+#_(serialize-text [[:text-normal "hello "] [:text-bold "world"] [:asdf "!"]])
 
 (defn- serialize-headline* [headline]
   (str/join " "
