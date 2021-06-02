@@ -154,8 +154,7 @@ Run =lein run file.org=, for example:
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-: 
+: {:headlines [{:headline {:level 1, :title [[:text-sty-bold "Header"] [:text-normal " with repeater"]], :planning [[:planning-info [:planning-keyword [:planning-kw-scheduled]] [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]], :tags []}}]}
 
 ** NodeJS
 
@@ -170,7 +169,7 @@ Then run =./target/org-parser.js file.org=, for example:
 #+end_src
 
 #+RESULTS:
-: {"headlines":[{"headline":{"level":1,"title":"Header with repeater"}}]}
+: {"headlines":[{"headline":{"level":1,"title":[["text-sty-bold","Header"],["text-normal"," with repeater"]],"planning":[["planning-info",["planning-keyword",["planning-kw-scheduled"]],["timestamp-active",["ts-inner",["ts-inner-wo-time",["ts-date","2019-11-27"],["ts-day","Wed"]],["ts-modifiers",["ts-repeater",["ts-repeater-type","+"],["ts-mod-value","1"],["ts-mod-unit","d"]]]]]]],"tags":[]}}]}
 
 ** Java
 
@@ -185,8 +184,7 @@ Then run =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
-: 
+: {:headlines [{:headline {:level 1, :title [[:text-sty-bold "Header"] [:text-normal " with repeater"]], :planning [[:planning-info [:planning-keyword [:planning-kw-scheduled]] [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]], :tags []}}]}
 
 Note: The =*= character must be replaced with the current version number of org-parser.
 See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
