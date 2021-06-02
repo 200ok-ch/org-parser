@@ -22,6 +22,11 @@
 (defn- serialize-text-element [[tag text]]
   (case tag
     :text-bold (str "*" text "*")
+    :text-bold (str "/" text "/")
+    :text-bold (str "_" text "_")
+    :text-bold (str "+" text "+")
+    :text-bold (str "=" text "=")
+    :text-bold (str "~" text "~")
     text))
 
 (defn- serialize-text [elements]
