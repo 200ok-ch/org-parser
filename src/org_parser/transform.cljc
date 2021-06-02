@@ -46,6 +46,18 @@
        (drop 1)
        vec))
 
+(defn- extract-tags [[_ s]]
+  "Given a [:text-normal 'xxx'], return the text-normal without tags
+  and the tags as a list."
+  (let [[tags & _] (re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" s)] ;; find tags by regex
+    (if (nil? tags)
+      [[:text-normal s] []]
+      [[:text-normal (subs s (- (count s) (count tags)))]
+       (->> tags str/trim #(str/split % #":") (filter #(not (= % ""))))])))
+;; trim the string, then split by ":", then only take tags that are =! ""
+#_(->> "   :tag1:tag2:  " str/trim #(str/split % #":") (filter #(not (= % ""))))
+
+
 
 (defmethod reducer :headline [state [_ & properties] raw]
   (let [level (->> properties
