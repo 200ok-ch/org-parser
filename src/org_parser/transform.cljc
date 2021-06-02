@@ -46,52 +46,53 @@
        (drop 1)
        vec))
 
+;; Unused?
+(defn- replace-first-property [elements prop f]
+  "In a vector like [[:a 1] [:b 2]], replace the first matching tagged
+  list with a new tagged list using the mapper function f."
+  (let [head (take-while #(not= (first %) prop) elements)
+        tail (drop-while #(not= (first %) prop) elements)]
+    (concat head [(f (first tail))] (drop 1 tail))))
+
+(comment
+  (replace-first-property [[:a 1] [:b 2] [:c 3] [:d 4]] :b identity)
+  (replace-first-property [[:a 1] [:b 2] [:c 3] [:d 4]] :b (fn [_] [:b 100]))
+  (vec [:a 1])
+  (concat [1 2 3] [4] [5]))
+
 (defn- extract-tags [[_ s]]
   "Given a [:text-normal 'xxx'], return the text-normal without tags
-  and the tags as a list."
+  and a vector of tags."
   (let [[tags & _] (re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" s)] ;; find tags by regex
     (if (nil? tags)
       [[:text-normal s] []]
       [[:text-normal (subs s 0 (- (count s) (count tags)))]
        (vec (filter #(not (= % "")) (str/split (str/trim tags) #":" )))])))
 
-#_(->> "test-input" str/trim #(str/split % #":"))
-#_(str/split (->> "   :tag1:tag2: " str/trim) #":")
-#_(->> "   :tag1:tag2: " str/trim (fn [x] str/split x #":"))
-#_(let [[x & _] nil] x)
-
-#_(extract-tags [:text-normal "title   :tag1:tag2:"])
-
-#_(re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" "title    :tag:tag:")
+(comment
+  (extract-tags [:text-normal "title   :tag1:tag2:"])
+  (str/split (->> "   :tag1:tag2: " str/trim) #":")
+  (let [[x & _] nil] x)
+  (re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" "title    :tag:tag:"))
 
 (defn- extract-tags-from-text [texts]
-  (let [ltext (last texts)]
-    (if (= (first ltext) :text-normal)
-      (let [[text tags] (extract-tags ltext)]
-        [(cons (butlast texts) [text]) tags])
+  (let [lasttext (last texts)]
+    (if (= (first lasttext) :text-normal)
+      (let [[text tags] (extract-tags lasttext)]
+        [(conjv (vec (butlast texts)) text) tags])
       [texts []])))
 
-#_(extract-tags-from-text [[:text-bold "bold"] [:text-normal "und  :tag:"]])
+#_(extract-tags-from-text [[:text-bold "bold"] [:text-x "foo"] [:text-normal "und  :tag:"]])
 
 (defmethod reducer :headline [state [_ & properties] raw]
-  (let [level (->> properties
-                   (property :stars)
-                   first
-                   count)
-        [title tags] (->> properties (property :text) extract-tags-from-text)
-        ;; title2 (reduce text-reducer [] (property :text title))
+  (let [[title tags] (->> properties (property :text) extract-tags-from-text)
         ]
-    (update state :headlines conjv {:headline {:level level
-                                               :title title ;; TODO use reduced title2 instead
+    (update state :headlines conjv {:headline {:level (->> properties (property :level) first)
+                                               :title title
                                                :planning (->> properties (property :planning))
-                                               :tags  tags
+                                               :tags tags
                                                }})))
 
-#_(reducer {} [:headline [:stars "*"] [:text [:text-normal "hello  :tag:"]]
-               [:planning
-                [:planning-info
-                 [:planning-keyword [:planning-kw-closed]]
-                 [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-22"] [:ts-day "Sat"]] [:ts-modifiers]]]]]]] "")
 
 ;; content-line needs to simply drop the keyword
 (defmethod reducer :content-line [state [_ ast] raw]
@@ -99,35 +100,47 @@
 
 
 (defn- text-reducer [accu element]
-  (let [keep (butlast accu)
-        [last-key content] (last accu)]
-    (if (= last-key (first element))
-      (conj keep [last-key (str content (last element))])
-      (conj accu element))))
+  (case accu
+    [] [element]
+    (let [[lastkey lastval] (last accu)
+          [newkey newval] element]
+      (if (and (= lastkey newkey) (= newkey :text-normal))
+        (conjv (vec (butlast accu)) [newkey (str lastval newval)])  ;; WTF?! without vec in (vec (butlast .)) the output is total crap
+        (conjv accu element)))))
+
+#_(reduce text-reducer [] [[:text-underlined "underlined"]
+                           [:text-normal "a"]
+                           [:text-normal "/"]])
+
+#_(reduce text-reducer [] [[:text-normal "asdf"] [:text-normal "jklö"] [:text-bold "test"]])
+#_(reduce text-reducer [] [[:text-normal "z"] [:text-normal "a"] [:text-bold "test"] [:text-normal "0"]])
+#_((let [[lastkey lastval] (last [])] [lastkey lastval]))
+#_((let [x (last [])] x))
 
 #_(text-reducer [] [:text-normal "asdf"])
-#_(text-reducer [[:text-normal "asdf"]] [:text-normal "asdf"])
-#_(text-reducer [[:text-bold "asdf"]] [:text-normal "asdf"])
-#_(text-reducer [[:text-normal "asdf"]] [:text-bold "asdf"])
+#_(text-reducer [[:text-normal "asdf"]] [:text-normal "jklö"])
+#_(text-reducer [[:text-bold "asdf"]] [:text-normal "jklö"])
+#_(text-reducer [[:text-normal "asdf"]] [:text-bold "jklö"])
 
+(defn- merge-consecutive-text-normal [& elements]
+  "Merge consecutive :text-normal inside a :text list. They come from
+  the parser stopping at any special character like '*', '/', ..."
+  (vec (concat [:text] (reduce text-reducer [] elements))))
 
-;; Merge consecutive :text-normal inside a :text list. They come from
-;; the parser stopping at any special character like '*', '/', ...
-(defmethod reducer :text [state [_ & ast] raw]
-  (append-to-document state (consv :text (reduce text-reducer [] ast)) raw))
-
-
-(comment
-  (reducer {} [:text [:text-normal "a"] [:text-normal "/b"]] "a/b")
-  {:preamble {:section {:ast [[:text [:text-normal "a/b"]]], :raw ["a/b"]}}}
-  )
+#_(apply merge-consecutive-text-normal [[:text-normal "asdf"] [:text-normal "jklö"] [:text-bold "test"]])
+#_(apply merge-consecutive-text-normal [[:text-normal "foo "] [:text-normal "bar"] [:text-sty-bold "bar"] [:text-normal " baz"]])
 
 (defn- wrap-raw [reducer raw]
   (fn [agg ast]
     (reducer agg ast (apply subs raw (insta/span ast)))))
 
-
 (defn transform [x]
   (->> x
+       (insta/transform
+        {:text merge-consecutive-text-normal
+         :title merge-consecutive-text-normal ;; :title just a synonym for :text in a headline
+         :stars #(vector :level (count %))
+         :timestamp identity
+         })
        (drop 1) ;; drops the initial `:S`
        (reduce (wrap-raw reducer (-> x meta :raw)) {})))

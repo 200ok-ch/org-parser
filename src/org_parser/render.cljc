@@ -21,12 +21,12 @@
 
 (defn- serialize-text-element [[tag text]]
   (case tag
-    :text-bold (str "*" text "*")
-    :text-bold (str "/" text "/")
-    :text-bold (str "_" text "_")
-    :text-bold (str "+" text "+")
-    :text-bold (str "=" text "=")
-    :text-bold (str "~" text "~")
+    :text-sty-bold (str "*" text "*")
+    :text-sty-italic (str "/" text "/")
+    :text-sty-underlined (str "_" text "_")
+    :text-sty-strikethrough (str "+" text "+")
+    :text-sty-verbatim (str "=" text "=")
+    :text-sty-code (str "~" text "~")
     text))
 
 (defn- serialize-text [elements]
@@ -37,7 +37,7 @@
 (defn- serialize-headline* [headline]
   (str/join " "
             [(apply str (repeat (:level headline) "*"))
-             (serialize-text (:text headline))]))
+             (serialize-text (:title headline))]))
 
 (defn- serialize-section [{:keys [ast]}]
   ast)
