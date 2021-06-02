@@ -52,32 +52,42 @@
   (let [[tags & _] (re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" s)] ;; find tags by regex
     (if (nil? tags)
       [[:text-normal s] []]
-      [[:text-normal (subs s (- (count s) (count tags)))]
-       (->> tags str/trim #(str/split % #":") (filter #(not (= % ""))))])))
-;; trim the string, then split by ":", then only take tags that are =! ""
-#_(->> "   :tag1:tag2:  " str/trim #(str/split % #":") (filter #(not (= % ""))))
+      [[:text-normal (subs s 0 (- (count s) (count tags)))]
+       (vec (filter #(not (= % "")) (str/split (str/trim tags) #":" )))])))
 
+#_(->> "test-input" str/trim #(str/split % #":"))
+#_(str/split (->> "   :tag1:tag2: " str/trim) #":")
+#_(->> "   :tag1:tag2: " str/trim (fn [x] str/split x #":"))
+#_(let [[x & _] nil] x)
 
+#_(extract-tags [:text-normal "title   :tag1:tag2:"])
+
+#_(re-find #"\s+(:[a-zA-Z0-9_@#%]+)+:\s*$" "title    :tag:tag:")
+
+(defn- extract-tags-from-text [texts]
+  (let [ltext (last texts)]
+    (if (= (first ltext) :text-normal)
+      (let [[text tags] (extract-tags ltext)]
+        [(cons (butlast texts) [text]) tags])
+      [texts []])))
+
+#_(extract-tags-from-text [[:text-bold "bold"] [:text-normal "und  :tag:"]])
 
 (defmethod reducer :headline [state [_ & properties] raw]
   (let [level (->> properties
                    (property :stars)
                    first
                    count)
-        title (->> properties
-                   (property :text))
-        tags (->>  []) ;; TODO extract tags from the last element of :text if it's a :text-normal; empty otherwise;
-        ;; use regex #'\s+(:[a-zA-Z0-9_@#%]+)+:\s*$' (see EBNF), if it is matching remove it from the :text-normal, trim it and split by ':'
+        [title tags] (->> properties (property :text) extract-tags-from-text)
+        ;; title2 (reduce text-reducer [] (property :text title))
         ]
-    ;; a headline introduces a new headline
     (update state :headlines conjv {:headline {:level level
-                                               :title title
+                                               :title title ;; TODO use reduced title2 instead
                                                :planning (->> properties (property :planning))
-                                               ;;:tags  tags
-                                               ;; TODO much more to come, e.g. planning info (already parsed)
+                                               :tags  tags
                                                }})))
 
-#_(reducer {} [:headline [:stars "*"] [:text [:text-normal "hello"]]
+#_(reducer {} [:headline [:stars "*"] [:text [:text-normal "hello  :tag:"]]
                [:planning
                 [:planning-info
                  [:planning-keyword [:planning-kw-closed]]
