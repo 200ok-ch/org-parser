@@ -1,5 +1,5 @@
 
-.PHONY: build test testjs testjar clean
+.PHONY: build test testcode testjs testjar clean
 
 build: buildjs.sh buildjar.sh
 	bash buildjar.sh
@@ -8,9 +8,12 @@ build: buildjs.sh buildjar.sh
 # Also, not sure if this would stop correctly on error:
 # echo $^ | xargs -n 1 bash
 
-test: testjs testjar
-# Test by executing parser on test file and expect at least one line of output (grep .)
+test: testcode testjs testjar
 
+testcode:
+	lein test
+
+# Test by executing parser on test file and expect at least one line of output (grep .)
 testjs: testjs.sh
 	bash testjs.sh | grep .
 
@@ -25,3 +28,4 @@ buildjs.sh buildjar.sh testjs.sh testjar.sh: README.org
 clean:
 	$(RM) build*.sh
 	$(RM) test*.sh
+	$(RM) target/
