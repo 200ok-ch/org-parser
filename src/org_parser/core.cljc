@@ -22,7 +22,7 @@
 (defn write-str
   "Converts x to a ORG-formatted string. Takes optional Options."
   [x & options]
-  (render/org x))
+  (render/render x))
 
 (defn -main [path & args]
   (->> path

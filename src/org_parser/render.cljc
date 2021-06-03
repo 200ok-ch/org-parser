@@ -47,7 +47,7 @@
             [(serialize-headline* headline)
              (serialize-section section)]))
 
-(defn org [{:keys [settings preamble headlines]}]
+(defn render [{:keys [settings preamble headlines]}]
   (str/join "\n"
             (remove nil?
                     (cons
@@ -56,4 +56,4 @@
                      (map serialize-headline headlines)))))
 
 
-#_(org {:headlines [{:headline {:level 1 :title "foo"}}]})
+#_(render {:headlines [{:headline {:level 1 :title "foo"}}]})
