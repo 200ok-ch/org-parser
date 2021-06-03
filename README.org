@@ -202,13 +202,13 @@ Run =lein run file.org=, for example:
 
 First, compile =org-parser= with:
 
-#+begin_src sh :exports code :results silent
+#+begin_src sh :exports code :results silent :tangle buildjs.sh
   lein cljsbuild once main && chmod +x ./target/org-parser.js
 #+end_src
 
 Then run =./target/org-parser.js file.org=, for example:
 
-#+begin_src sh :results verbatim :exports both
+#+begin_src sh :results verbatim :exports both :tangle testjs.sh
   ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
@@ -219,13 +219,13 @@ Then run =./target/org-parser.js file.org=, for example:
 
 First, compile =org-parser= with:
 
-#+begin_src sh :exports code :results silent
+#+begin_src sh :exports code :results silent :tangle buildjar.sh
   lein uberjar
 #+end_src
 
 Then run =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
-#+begin_src sh :results verbatim :exports both
+#+begin_src sh :results verbatim :exports both :tangle testjar.sh
   java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
