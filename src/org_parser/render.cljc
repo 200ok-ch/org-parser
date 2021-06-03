@@ -2,6 +2,8 @@
   (:require [clojure.string :as str]
             #?(:clj [clojure.data.json :as json])))
 
+;; See also export_org.js in https://github.com/200ok-ch/organice for inspirations
+
 
 ;; FIXME: delete the next 2 functions because it's not the
 ;; responsiblity of org-parser to render edn or json
@@ -17,11 +19,25 @@
 ;; deserialized org data structure back to an org string. This needs
 ;; to be extenden to the full feature scope.
 
+(defn- serialize-text-element [[tag text]]
+  (case tag
+    :text-sty-bold (str "*" text "*")
+    :text-sty-italic (str "/" text "/")
+    :text-sty-underlined (str "_" text "_")
+    :text-sty-strikethrough (str "+" text "+")
+    :text-sty-verbatim (str "=" text "=")
+    :text-sty-code (str "~" text "~")
+    text))
+
+(defn- serialize-text [elements]
+  (apply str (map serialize-text-element elements)))
+
+#_(serialize-text [[:text-normal "hello "] [:text-bold "world"] [:asdf "!"]])
 
 (defn- serialize-headline* [headline]
   (str/join " "
             [(apply str (repeat (:level headline) "*"))
-             (:title headline)]))
+             (serialize-text (:title headline))]))
 
 (defn- serialize-section [{:keys [ast]}]
   ast)

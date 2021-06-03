@@ -17,7 +17,7 @@
 
     :ast
     [:S
-     [:headline [:stars "*"] [:title "hello" "world"]]
+     [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
      [:content-line [:text [:text-normal "this is the first section"]]]
      [:content-line
       [:text
@@ -26,14 +26,18 @@
 
     :result
     {:headlines
-     [{:headline {:level 1
-                  :title "hello world"}
+     [{:headline
+       {:level 1,
+        :title [[:text-normal "hello world"]],
+        :planning [],
+        :tags []},
        :section
-       {:raw ["this is the first section" "this line has *bold text*"]
-        :ast [[:text [:text-normal "this is the first section"]]
-              [:text
-               [:text-normal "this line has "]
-               [:text-sty-bold "bold text"]]]}}]}}
+       {:ast
+        [[:text [:text-normal "this is the first section"]]
+         [:text
+          [:text-normal "this line has "]
+          [:text-sty-bold "bold text"]]],
+        :raw ["this is the first section" "this line has *bold text*"]}}]}}
 
    ;; next sample here:
    ;; {:input ...
@@ -45,8 +49,8 @@
 (deftest section
   (doseq [{:keys [input ast result output]} samples]
     (let [ast* (parser/org input)]
-      (if ast (is (= ast ast*)))
-      (if result (is (= result (transform/transform ast*)))))))
+      (testing "AST matches expected AST" (is (= ast ast*)))
+      (testing "transformed AST matches expected transformed AST" (is (= result (transform/transform ast*)))))))
 
 
 #_(-> samples first :input parser/org transform/transform)

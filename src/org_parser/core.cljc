@@ -15,6 +15,10 @@
       parser/org
       transform/transform))
 
+#_(read-str "** headline _underlined_ / +strikethrough+  :tag:baz:  \n foo/bar")
+#_(read-str "* headline/foo")
+#_(read-str "foo/bar")
+
 (defn write-str
   "Converts x to a ORG-formatted string. Takes optional Options."
   [x & options]

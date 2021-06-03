@@ -7,7 +7,13 @@
 
 S = line*
 
-<line> = (empty-line / headline / clock / diary-sexp / affiliated-keyword-line / keyword-line / comment-line / todo-line / block-begin-line / block-end-line / dynamic-block-begin-line / dynamic-block-end-line / drawer-end-line / drawer-begin-line / list-item-line / footnote-line / fixed-width-line / horizontal-rule / table-line / content-line) eol
+<line> = (empty-line / headline / clock / diary-sexp /
+          affiliated-keyword-line / keyword-line / comment-line / todo-line /
+          block-begin-line / block-end-line /
+          dynamic-block-begin-line / dynamic-block-end-line /
+          drawer-end-line / drawer-begin-line /
+          list-item-line / footnote-line / fixed-width-line /
+          horizontal-rule / table-line / content-line) eol
 
 (* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
@@ -27,13 +33,17 @@ comment-line-rest = #".*"
 <anything-but-whitespace> = #"\S+"
 <anything-but-newline> = #"[^\n]+"
 
-headline = stars [s keyword] [s priority] [s comment-token] s title [s tags] [ eol planning ]
+(* It's impractical to parse tags here because the title has to be
+   parsed as text and text does not know where tags start.
+   Even if I make text-normal stopping at ':', it still would parse
+   more text after that.
+   No problem, tags are extracted in the transformation step. *)
+headline = stars [s keyword] [s priority] [s comment-token] s title [ eol planning ]
 stars = #'\*+'
 keyword = #"[A-Z]+"
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
-(* TODO title text is more than just words; e.g. formatting and timestamps are allowed. *)
-title = !tags word {s !tags word}
+<title> = text
 tags = <':'> ( tag <':'> )+
 <tag> = #'[a-zA-Z0-9_@#%]+'
 
@@ -89,6 +99,7 @@ noparse-block-content = #'((.|[\r\n])*?[\r\n](?=[\t ]*#\+(END|end)_))|'
 
 (* Greater "normal" blocks where content is parsed *)
 greater-block = block-begin-line <eol> line* block-end-line
+(* TODO use negative look-ahead to stop before first block-end-line *)
 block-begin-line = [s] <block-begin-marker> block-name [s block-parameters] [s]
 block-name = #"\S+"
 block-parameters = anything-but-newline

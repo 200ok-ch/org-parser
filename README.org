@@ -179,14 +179,14 @@ possible.
 
 ** Clojure
 
-=lein run file.org=, for example:
+Run =lein run file.org=, for example:
 
 #+begin_src sh :results verbatim :exports both
   lein run test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
+: {:headlines [{:headline {:level 1, :title [[:text-sty-bold "Header"] [:text-normal " with repeater"]], :planning [[:planning-info [:planning-keyword [:planning-kw-scheduled]] [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]], :tags []}}]}
 
 ** NodeJS
 
@@ -194,14 +194,14 @@ First, compile =org-parser= with:
 
 : lein cljsbuild once main; chmod +x ./target/org-parser.js
 
-=./target/org-parser.js file.org=, for example:
+Then run =./target/org-parser.js file.org=, for example:
 
 #+begin_src sh :results verbatim :exports both
   ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
 #+RESULTS:
-: {"headlines":[{"headline":{"level":1,"title":"Header with repeater"}}]}
+: {"headlines":[{"headline":{"level":1,"title":[["text-sty-bold","Header"],["text-normal"," with repeater"]],"planning":[["planning-info",["planning-keyword",["planning-kw-scheduled"]],["timestamp-active",["ts-inner",["ts-inner-wo-time",["ts-date","2019-11-27"],["ts-day","Wed"]],["ts-modifiers",["ts-repeater",["ts-repeater-type","+"],["ts-mod-value","1"],["ts-mod-unit","d"]]]]]]],"tags":[]}}]}
 
 ** Java
 
@@ -209,14 +209,14 @@ First, compile =org-parser= with:
 
 : lein uberjar
 
-=java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
+Then run =java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar file.org=, for example:
 
 #+begin_src sh :results verbatim :exports both
   java -jar target/uberjar/org-parser-*-SNAPSHOT-standalone.jar test/org_parser/fixtures/schedule_with_repeater.org
 #+end_src
 
 #+RESULTS:
-: {:headlines [{:headline {:level 1, :title "Header with repeater"}}]}
+: {:headlines [{:headline {:level 1, :title [[:text-sty-bold "Header"] [:text-normal " with repeater"]], :planning [[:planning-info [:planning-keyword [:planning-kw-scheduled]] [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]], :tags []}}]}
 
 Note: The =*= character must be replaced with the current version number of org-parser.
 See the clojars badge at the [[https://github.com/200ok-ch/org-parser#general][top of this README]].
