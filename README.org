@@ -171,17 +171,21 @@ possible.
 
 ** Clojure Library
 
- #+BEGIN_SRC clojure :results verbatim :exports both
+ #+BEGIN_SRC clojure :exports both
    (ns hello-world.core
-     (:require [org-parser.parser :refer [org]]))
-
+     (:require [org-parser.parser :refer [org]])
+     (:require [org-parser.core :refer [read-str write-str]]))
+   
    (org "* Headline")
-
-   ;; TODO: also demonstrate use of read-str and write-str
+   
+   (read-str "* Headline")
+   (write-str (read-str "* Headline"))
  #+END_SRC
 
  #+RESULTS:
- : [:S [:headline [:stars "*"] [:title "Headline"]]]
+ | [:S [:headline [:stars "*"] [:title "Headline"]]]        |
+ | {:headlines [{:headline {:level 1, :title "Headline"}}]} |
+ | "* Headline\n"                                           |
 
 ** Clojure
 
