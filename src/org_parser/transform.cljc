@@ -157,6 +157,7 @@
          :title merge-consecutive-text-normal ;; :title just a synonym for :text in a headline
          :stars #(vector :level (count %))
          :timestamp identity
+         :macro-args #(vector :macro-args (map str/trim %&))
          })
        (drop 1) ;; drops the initial `:S`
        (reduce (wrap-raw reducer (-> x meta :raw)) {})))
