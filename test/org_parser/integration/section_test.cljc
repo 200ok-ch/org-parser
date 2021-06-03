@@ -48,9 +48,9 @@
 
 (deftest section
   (doseq [{:keys [input ast result output]} samples]
-    (let [ast* (parser/org input)]
+    (let [ast* (parser/parse input)]
       (testing "AST matches expected AST" (is (= ast ast*)))
       (testing "transformed AST matches expected transformed AST" (is (= result (transform/transform ast*)))))))
 
 
-#_(-> samples first :input parser/org transform/transform)
+#_(-> samples first :input parser/parse transform/transform)

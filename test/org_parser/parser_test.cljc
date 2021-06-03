@@ -37,17 +37,17 @@
 
 (deftest basic-terminals
   (testing "newline as <eol>"
-    (is (= () (#(parser/org % :start :eol) "\n"))))
+    (is (= () (#(parser/parse % :start :eol) "\n"))))
   (testing "carriage return as <eol>"
-    (is (= () (#(parser/org % :start :eol) "\r"))))
+    (is (= () (#(parser/parse % :start :eol) "\r"))))
   (testing "horizontal space <s> does not match form feed"
-    (is (insta/failure? (#(parser/org % :start :s) "\f"))))
+    (is (insta/failure? (#(parser/parse % :start :s) "\f"))))
   (testing "horizontal space <s> does not match CR"
-    (is (insta/failure? (#(parser/org % :start :s) "\r"))))
+    (is (insta/failure? (#(parser/parse % :start :s) "\r"))))
   )
 
 (deftest word
-  (let [parse #(parser/org % :start :word)]
+  (let [parse #(parser/parse % :start :word)]
     (testing "single"
       (is (= ["a"]
              (parse "a"))))
@@ -58,7 +58,7 @@
 
 
 (deftest tags
-  (let [parse #(parser/org % :start :tags)]
+  (let [parse #(parser/parse % :start :tags)]
     (testing "single"
       (is (= [:tags "a"]
              (parse ":a:"))))
@@ -71,7 +71,7 @@
 
 
 (deftest headline
-  (let [parse #(parser/org % :start :headline)]
+  (let [parse #(parser/parse % :start :headline)]
     (testing "boring"
       (is (= [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
              (parse "* hello world"))))
@@ -106,7 +106,7 @@
 
 
 (deftest line
-  (let [parse #(parser/org % :start :line)]
+  (let [parse #(parser/parse % :start :line)]
     (testing "horizontal rule"
       (is (= [[:horizontal-rule "-----"]]
              (parse "-----"))))
@@ -133,14 +133,14 @@
     ))
 
 (deftest comment-line
-  (let [parse #(parser/org % :start :comment-line)]
+  (let [parse #(parser/parse % :start :comment-line)]
     (testing "no valid comment line"
       (is (insta/failure? (parse "#comment"))))
     (testing "no valid comment line"
       (is (insta/failure? (parse "#\tcomment"))))))
 
 ;; (deftest content
-;;   (let [parse #(parser/org % :start :content-line)]
+;;   (let [parse #(parser/parse % :start :content-line)]
 ;;     (testing "boring"
 ;;       (is (= [[:content-line "anything"]
 ;;               [:content-line "goes"]]
@@ -148,7 +148,7 @@
 
 
 (deftest sections
-  (let [parse parser/org]
+  (let [parse parser/parse]
     (testing "boring org file"
       (is (= [:S
               [:headline [:stars "*"] [:text [:text-normal "hello world"]]]
@@ -176,7 +176,7 @@ is another section"))))))
 
 
 (deftest affiliated-keyword
-  (let [parse #(parser/org % :start :affiliated-keyword-line)]
+  (let [parse #(parser/parse % :start :affiliated-keyword-line)]
     (testing "header"
       (is (= [:affiliated-keyword-line [:key "HEADER"] [:value "hello world"]]
              (parse "#+HEADER: hello world"))))
@@ -202,13 +202,13 @@ is another section"))))))
 
 ;; this is a special case of in-buffer-settings
 (deftest todo
-  (let [parse #(parser/org % :start :todo-line)]
+  (let [parse #(parser/parse % :start :todo-line)]
     (testing "todos"
       (is (= [:todo-line [:todo-state "TODO"] [:done-state "DONE"]]
              (parse "#+TODO: TODO | DONE"))))))
 
 (deftest blocks
-  (let [parse #(parser/org % :start :block)]
+  (let [parse #(parser/parse % :start :block)]
     (testing "no content"
       (is (= [:block [:greater-block
               [:block-begin-line [:block-name "center"] [:block-parameters "params! "]]
@@ -237,7 +237,7 @@ is another section"))))))
 
 (deftest noparse-blocks-alone
   ;; The parsing of multi-line content with the look-ahead regex wasn't easy...
-  (let [parse #(parser/org % :start :noparse-block)]
+  (let [parse #(parser/parse % :start :noparse-block)]
     (testing "no content"
       (is (= [:noparse-block
               [:noparse-block-begin-line [:block-name-noparse "src"]]
@@ -265,7 +265,7 @@ is another section"))))))
     ))
 
 (deftest noparse-blocks
-  (let [parse #(parser/org % :start :block)]
+  (let [parse #(parser/parse % :start :block)]
     (testing "no content"
       (is (= [:block [:noparse-block
               [:noparse-block-begin-line [:block-name-noparse "example"] [:block-parameters "params! "]]
@@ -292,19 +292,19 @@ is another section"))))))
     ))
 
 (deftest block-begin
-  (let [parse #(parser/org % :start :block-begin-line)]
+  (let [parse #(parser/parse % :start :block-begin-line)]
     (testing "block-begin"
       (is (= [:block-begin-line [:block-name "CENTER"] [:block-parameters "some params"]]
              (parse "#+BEGIN_CENTER some params"))))))
 
 (deftest block-end
-  (let [parse #(parser/org % :start :block-end-line)]
+  (let [parse #(parser/parse % :start :block-end-line)]
     (testing "block-end"
       (is (= [:block-end-line [:block-name "CENTER"]]
              (parse "#+END_CENTER"))))))
 
 (deftest dynamic-block
-  (let [parse #(parser/org % :start :dynamic-block)]
+  (let [parse #(parser/parse % :start :dynamic-block)]
     (testing "no content"
       (is (= [:dynamic-block [:dynamic-block-begin-line
                               [:dynamic-block-name "na.me"]
@@ -327,13 +327,13 @@ is another section"))))))
 
 
 (deftest drawer-begin
-  (let [parse #(parser/org % :start :drawer-begin-line)]
+  (let [parse #(parser/parse % :start :drawer-begin-line)]
     (testing "drawer-begin"
       (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
              (parse ":SOMENAME:"))))))
 
 (deftest drawer-end
-  (let [parse #(parser/org % :start :drawer-end-line)]
+  (let [parse #(parser/parse % :start :drawer-end-line)]
     (testing "drawer-end"
       (is (= [:drawer-end-line]
              (parse ":END:"))))))
@@ -341,17 +341,17 @@ is another section"))))))
 (deftest drawer
   (testing "simple drawer"
     (is (= [:S [:drawer-begin-line [:drawer-name "SOMENAME"]] [:drawer-end-line]]
-           (parser/org ":SOMENAME:
+           (parser/parse ":SOMENAME:
 :END:"))))
   (testing "drawer with a bit of content"
     (is (= [:S
             [:drawer-begin-line [:drawer-name "PROPERTIES"]]
             [:content-line [:text [:text-normal ":foo: bar"]]]
             [:drawer-end-line]]
-           (parser/org ":PROPERTIES:\n:foo: bar\n:END:")))))
+           (parser/parse ":PROPERTIES:\n:foo: bar\n:END:")))))
 
 (deftest drawer-semantic-block
-  (let [parse #(parser/org % :start :drawer)]
+  (let [parse #(parser/parse % :start :drawer)]
     (testing "drawer"
       (is (= [:drawer [:drawer-begin-line [:drawer-name "MYDRAWER"]]
               [:content-line [:text [:text-normal "any"]]]
@@ -359,7 +359,7 @@ is another section"))))))
              (parse ":MYDRAWER:\nany\ntext\n:END:"))))))
 
 (deftest property-drawer-semantic-block
-  (let [parse #(parser/org % :start :property-drawer)]
+  (let [parse #(parser/parse % :start :property-drawer)]
     (testing "no properties"
       (is (= [:property-drawer]
              (parse ":PROPERTIES:\n:END:"))))
@@ -384,21 +384,21 @@ is another section"))))))
     ))
 
 (deftest dynamic-block-begin
-  (let [parse #(parser/org % :start :dynamic-block-begin-line)]
+  (let [parse #(parser/parse % :start :dynamic-block-begin-line)]
     (testing "dynamic-block-begin"
       (is (= [:dynamic-block-begin-line [:dynamic-block-name "SOMENAME"] [:dynamic-block-parameters "some params"]]
              (parse "#+BEGIN: SOMENAME some params"))))))
 
 
 (deftest dynamic-block-end
-  (let [parse #(parser/org % :start :dynamic-block-end-line)]
+  (let [parse #(parser/parse % :start :dynamic-block-end-line)]
     (testing "dynamic-block-end"
       (is (= [:dynamic-block-end-line]
              (parse "#+END:"))))))
 
 
 (deftest footnote-line
-  (let [parse #(parser/org % :start :footnote-line)]
+  (let [parse #(parser/parse % :start :footnote-line)]
     (testing "footnote with fn label"
       (is (= [:footnote-line [:fn-label "some-label"] [:text [:text-normal "some contents"]]]
              (parse "[fn:some-label] some contents"))))
@@ -410,7 +410,7 @@ is another section"))))))
     ))
 
 (deftest footnote-link
-  (let [parse #(parser/org % :start :footnote-link)]
+  (let [parse #(parser/parse % :start :footnote-link)]
     ;; TODO styled text inside footnote-link is not yet possible because text parses the closing bracket ]
     (testing "footnote link with label"
       (is (= [:footnote-link [:fn-label "123"]]
@@ -433,7 +433,7 @@ is another section"))))))
 
 
 (deftest list-item-line
-  (let [parse #(parser/org % :start :list-item-line)]
+  (let [parse #(parser/parse % :start :list-item-line)]
 
     (testing "list-item-line with asterisk"
       (is (= [:list-item-line [:indent ""] [:list-item-bullet "*"] [:text [:text-normal "a simple list item"]]]
@@ -497,14 +497,14 @@ is another section"))))))
     ))
 
 (deftest keyword
-  (let [parse #(parser/org % :start :keyword-line)]
+  (let [parse #(parser/parse % :start :keyword-line)]
     (testing "keyword"
       (is (= [:keyword-line [:keyword-key "HELLO"] [:keyword-value "hello world"]]
              (parse "#+HELLO: hello world"))))))
 
 
 (deftest node-property
-  (let [parse #(parser/org % :start :node-property-line)]
+  (let [parse #(parser/parse % :start :node-property-line)]
     (testing "node-property"
       (is (= [:node-property-line [:node-property-name "HELLO"]]
              (parse ":HELLO:"))))
@@ -525,7 +525,7 @@ is another section"))))))
     ))
 
 (deftest timestamp
-  (let [parse #(parser/org % :start :timestamp)]
+  (let [parse #(parser/parse % :start :timestamp)]
     (testing "diary timestamp"
       (is (= [:timestamp [:timestamp-diary "(( <(sexp)().))"]]
              (parse "<%%(( <(sexp)().))>"))))
@@ -648,7 +648,7 @@ is another section"))))))
 
 
 (deftest timestamp-ts-time
-  (let [parse #(parser/org % :start :ts-time)]
+  (let [parse #(parser/parse % :start :ts-time)]
     (testing "parse time"
       (is (= [:ts-time "08:00"]
              (parse "08:00"))))
@@ -666,7 +666,7 @@ is another section"))))))
              (parse "08:00pm"))))))
 
 (deftest timestamp-inactive-ranges
-  (let [parse #(parser/org % :start :timestamp-inactive-range)]
+  (let [parse #(parser/parse % :start :timestamp-inactive-range)]
     (testing "parse inactive range"
       (is (= [:timestamp-inactive-range [:ts-inner-span
                [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
@@ -685,7 +685,7 @@ is another section"))))))
     ))
 
 (deftest literal-line
-  (let [parse #(parser/org % :start :fixed-width-line)]
+  (let [parse #(parser/parse % :start :fixed-width-line)]
     (testing "parse empty fixed-width line starting with colon (discards single trailing space)"
       (is (= [:fixed-width-line ""]
              (parse ": "))))
@@ -703,7 +703,7 @@ is another section"))))))
     ))
 
 (deftest fixed-width-area
-  (let [parse #(parser/org % :start :fixed-width-area)]
+  (let [parse #(parser/parse % :start :fixed-width-area)]
     (testing "parse fixed-width area starting with colon"
       (is (= [:fixed-width-area
               [:fixed-width-line "foo "]
@@ -712,7 +712,7 @@ is another section"))))))
     ))
 
 (deftest links
-  (let [parse #(parser/org % :start :link-format)]
+  (let [parse #(parser/parse % :start :link-format)]
     (testing "parse simple link"
       (is (= [:link-format [:link [:link-ext [:link-ext-other
 	                                      [:link-url-scheme "https"]
@@ -742,7 +742,7 @@ is another section"))))))
     ))
 
 (deftest id-links
-  (let [parse #(parser/org % :start :link-ext-id)]
+  (let [parse #(parser/parse % :start :link-ext-id)]
     (testing "invalid id link"
       (is (insta/failure? (parse "[[id:]]"))))
     (testing "invalid id link"
@@ -750,7 +750,7 @@ is another section"))))))
     ))
 
 (deftest links-with-escapse
-  (let [parse #(parser/org % :start :link-format)]
+  (let [parse #(parser/parse % :start :link-format)]
     ;; remember that "\\" is one backslash!
     (testing "parse link with just one literal backslash"
       (is (insta/failure? (parse "[[\\]]"))))
@@ -771,7 +771,7 @@ is another section"))))))
     ))
 
 (deftest links-external-file
-  (let [parse #(parser/org % :start :link-ext-file)]
+  (let [parse #(parser/parse % :start :link-ext-file)]
     (testing "parse file link"
       (is (= [:link-ext-file "folder/file.txt"]
              (parse "file:folder/file.txt"))))
@@ -805,7 +805,7 @@ is another section"))))))
              (parse "./file.org::#custom-id"))))))
 
 (deftest links-external-other-url
-  (let [parse #(parser/org % :start :link-ext-other)]
+  (let [parse #(parser/parse % :start :link-ext-other)]
     (testing "parse simple link that looks like an web address but is not valid"
       (is (insta/failure? (parse "www.example.com"))))
     (testing "parse other http link"
@@ -819,7 +819,7 @@ is another section"))))))
              (parse "zyx:rest-of uri ..."))))))
 
 (deftest embedded-in-text
-  (let [parse #(parser/org % :start :text)]
+  (let [parse #(parser/parse % :start :text)]
     (testing "parse timestamp after text"
       (is (= [:text
               [:text-normal "text before "]
@@ -848,7 +848,7 @@ is another section"))))))
 
 
 (deftest text-styled
-  (let [parse #(parser/org % :start :text-styled)]
+  (let [parse #(parser/parse % :start :text-styled)]
     (testing "parse bold text"
       (is (= [[:text-sty-bold "bold text"]]
              (parse "*bold text*"))))
@@ -892,7 +892,7 @@ is another section"))))))
     ))
 
 (deftest text-link
-  (let [parse #(parser/org % :start :text-link)]
+  (let [parse #(parser/parse % :start :text-link)]
     (testing "parse angled link"
       (is (= [:text-link [:text-link-angle
                           [:link-url-scheme "http"]
@@ -906,7 +906,7 @@ is another section"))))))
     ))
 
 (deftest text
-  (let [parse #(parser/org % :start :text)]
+  (let [parse #(parser/parse % :start :text)]
     (testing "stop parsing text at EOL"
       (is (= [:text [:text-normal "abc "]]
              (parse "abc "))))
@@ -1029,7 +1029,7 @@ is another section"))))))
 
 
 (deftest text-macros
-  (let [parse #(parser/org % :start :text-macro)]
+  (let [parse #(parser/parse % :start :text-macro)]
     (testing "parse macro without args"
       (is (= [:text-macro [:macro-name "my_macro5"] [:macro-args ""]]
              (parse "{{{my_macro5()}}}"))))
@@ -1042,7 +1042,7 @@ is another section"))))))
     ))
 
 (deftest text-entities
-  (let [parse #(parser/org % :start :text-entity)]
+  (let [parse #(parser/parse % :start :text-entity)]
     (testing "parse entity"
       (is (= [:text-entity [:entity-name "Alpha"]]
              (parse "\\Alpha"))))
@@ -1052,7 +1052,7 @@ is another section"))))))
     ))
 
 (deftest text-targets
-  (let [parse #(parser/org % :start :text-target)]
+  (let [parse #(parser/parse % :start :text-target)]
     (testing "parse target"
       (is (= [:text-target [:text-target-name "t"]]
              (parse "<<t>>"))))
@@ -1068,7 +1068,7 @@ is another section"))))))
     ))
 
 (deftest text-subscript
-  (let [parse #(parser/org % :start :text-sub)]
+  (let [parse #(parser/parse % :start :text-sub)]
     ;; TODO make sure preceeding character is non-whitespace
     (testing "parse subscript word"
       (is (= [:text-sub [:text-subsup-word "abc"]]
@@ -1099,7 +1099,7 @@ is another section"))))))
     ))
 
 (deftest tables
-  (let [parse #(parser/org % :start :table)]
+  (let [parse #(parser/parse % :start :table)]
     (testing "parse table.el table"
       (is (= [:table [:table-tableel
                       [:table-tableel-sep "+---+"]
@@ -1131,7 +1131,7 @@ is another section"))))))
 
 
 (deftest clock
-  (let [parse #(parser/org % :start :clock)]
+  (let [parse #(parser/parse % :start :clock)]
     (testing "a simple clock line"
       (is (= [:clock [:timestamp-inactive-range
                [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:26"]]
@@ -1151,7 +1151,7 @@ is another section"))))))
 
 
 (deftest diary-sexp
-  (let [parse #(parser/org % :start :diary-sexp)]
+  (let [parse #(parser/parse % :start :diary-sexp)]
     (testing "a simple diary sexp line"
       (is (= [:diary-sexp "nr()<n)-h"]
              (parse "%%(nr()<n)-h"))))
@@ -1161,7 +1161,7 @@ is another section"))))))
 
 
 (deftest planning
-  (let [parse #(parser/org % :start :planning)]
+  (let [parse #(parser/parse % :start :planning)]
     (testing "a simple planning info"
       (is (= [:planning [:planning-info
                          [:planning-keyword [:planning-kw-scheduled]]

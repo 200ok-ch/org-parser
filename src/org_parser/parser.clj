@@ -7,7 +7,7 @@
       insta/parser))
 
 
-(defn org [& args]
+(defn parse [& args]
   (-> parser
       (apply args)
       (vary-meta merge {:raw (first args)})))

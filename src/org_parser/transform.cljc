@@ -33,7 +33,7 @@
   (append-to-document state ast raw))
 
 
-#_(transform (org-parser.parser/org "* hello\n** world\n\nasdf"))
+#_(transform (org-parser.parser/parse "* hello\n** world\n\nasdf"))
 
 
 (defn- property

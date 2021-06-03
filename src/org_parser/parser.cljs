@@ -7,6 +7,6 @@
 
 (defparser org* (.readFileSync fs "resources/org.ebnf" "utf8"))
 
-(defn org [& args]
+(defn parse [& args]
   (-> (apply org* args)
       (vary-meta merge {:raw (first args)})))
