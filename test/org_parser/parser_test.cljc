@@ -2,9 +2,9 @@
   (:refer-clojure :exclude [keyword])
   (:require [org-parser.parser :as parser]
             [instaparse.core :as insta]
-            #?(:clj [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing]]
-                     [cljs-node-io.core :refer [slurp]])))
+            #?(:clj [clojure.test :refer :all])
+            #?(:cljs [cljs.test :refer-macros [deftest is testing]])
+            #?(:cljs [cljs-node-io.core :refer [slurp]])))
 
 
 ;; if parse is successful it returns a vector otherwise a map
