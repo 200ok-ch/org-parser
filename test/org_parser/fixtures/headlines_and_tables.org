@@ -1,0 +1,32 @@
+* Headline 1
+
+  | first column 1 | first column 2 |
+  | first value 1  | first value 2  |
+
+  | second column 1 | second column 2 |
+  | second value 1  | second value 2  |
+
+* Headline 2
+
+  | people     | age |
+  |------------+-----|
+  | bob        |  38 |
+  | max        |  42 |
+  |------------+-----|
+  | median age |  40 |
+  #+TBLFM: @4$2=vmean(@2..@-1)
+
+* table.el style table
+
+  The option to use org tables and table.el tables is documented in
+  the spec: https://orgmode.org/worg/dev/org-syntax.html#Tables
+
+  Hence, =org-parser= should and does parse it!
+
+  +-----+-----+
+  | people | age |
+  +-----+-----+
+  | bob | 38 |
+  +-----+-----+
+  | max | 42 |
+  +-----+-----+

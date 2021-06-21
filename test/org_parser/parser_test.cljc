@@ -2,8 +2,9 @@
   (:refer-clojure :exclude [keyword])
   (:require [org-parser.parser :as parser]
             [instaparse.core :as insta]
-            #?(:clj [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing]])))
+            #?(:clj [clojure.test :refer :all])
+            #?(:cljs [cljs.test :refer-macros [deftest is testing]])
+            #?(:cljs [cljs-node-io.core :refer [slurp]])))
 
 
 ;; if parse is successful it returns a vector otherwise a map
@@ -1185,3 +1186,86 @@ is another section"))))))
                [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-21"] [:ts-day "Fri"]] [:ts-modifiers]]]]]]
              (parse "SCHEDULED: [2021-05-22 Sat 23:26]  DEADLINE: <2021-05-22 Sat>  CLOSED: [2021-05-21 Fri] "))))
     ))
+
+(deftest whole-files
+  (testing "headlines and tables"
+    (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")]
+      (is (= [:S
+              [:headline [:stars "*"] [:text [:text-normal "Headline 1"]]]
+              [:empty-line]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " first column 1 "]
+                  [:table-cell " first column 2 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " first value 1  "]
+                  [:table-cell " first value 2  "]]]]]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " second column 1 "]
+                  [:table-cell " second column 2 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " second value 1  "]
+                  [:table-cell " second value 2  "]]]]]
+              [:headline [:stars "*"] [:text [:text-normal "Headline 2"]]]
+              [:empty-line]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " people     "]
+                  [:table-cell " age "]]]
+                [:table-row [:table-row-sep "|------------+-----|"]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " bob        "]
+                  [:table-cell "  38 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " max        "]
+                  [:table-cell "  42 "]]]
+                [:table-row [:table-row-sep "|------------+-----|"]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " median age "]
+                  [:table-cell "  40 "]]]
+                [:table-formula "@4$2=vmean(@2..@-1)"]]]
+              [:headline [:stars "*"] [:text [:text-normal "table.el style table"]]]
+              [:empty-line]
+              [:content-line
+               [:text
+                [:text-normal
+                 "  The option to use org tables and table.el tables is documented in"]]]
+              [:content-line
+               [:text
+                ;; FIXME: URLs seem to get mangled. Ignoring it here,
+                ;; because this test is about org and table.el tables.
+                [:text-normal "  the spec: https:"]
+                [:text-normal "/"]
+                [:text-normal "/orgmode.org"]
+                [:text-normal "/worg"]
+                [:text-normal "/dev"]
+                [:text-normal "/org-syntax.html#Tables"]]]
+              [:empty-line]
+              [:content-line
+               [:text
+                [:text-normal "  Hence, "]
+                [:text-sty-verbatim "org-parser"]
+                [:text-normal " should and does parse it!"]]]
+              [:empty-line]
+              [:table
+               [:table-tableel
+                [:table-tableel-sep "+-----+-----+"]
+                [:table-tableel-line "| people | age |"]
+                [:table-tableel-sep "+-----+-----+"]
+                [:table-tableel-line "| bob | 38 |"]
+                [:table-tableel-sep "+-----+-----+"]
+                [:table-tableel-line "| max | 42 |"]
+                [:table-tableel-sep "+-----+-----+"]]]]
+             (parser/parse content))))))
