@@ -1,0 +1,12 @@
+* Headline 1
+
+  | first column 1 | first column 2 |
+  | first value 1  | first value 2  |
+
+  | second column 1 | second column 2 |
+  | second value 1  | second value 2  |
+
+* Headline 2
+
+  | column 1 | column 2 |
+  | value 1  | value 2  |

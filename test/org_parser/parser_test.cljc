@@ -3,7 +3,8 @@
   (:require [org-parser.parser :as parser]
             [instaparse.core :as insta]
             #?(:clj [clojure.test :refer :all]
-               :cljs [cljs.test :refer-macros [deftest is testing]])))
+               :cljs [cljs.test :refer-macros [deftest is testing]]
+                     [cljs-node-io.core :refer [slurp]])))
 
 
 ;; if parse is successful it returns a vector otherwise a map
@@ -1185,3 +1186,43 @@ is another section"))))))
                [:timestamp [:timestamp-inactive [:ts-inner [:ts-inner-wo-time [:ts-date "2021-05-21"] [:ts-day "Fri"]] [:ts-modifiers]]]]]]
              (parse "SCHEDULED: [2021-05-22 Sat 23:26]  DEADLINE: <2021-05-22 Sat>  CLOSED: [2021-05-21 Fri] "))))
     ))
+
+(deftest whole-files
+  (testing "headlines and tables"
+    (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")]
+      (is (= [:S
+              [:headline [:stars "*"] [:text [:text-normal "Headline 1"]]]
+              [:empty-line]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " first column 1 "]
+                  [:table-cell " first column 2 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " first value 1  "]
+                  [:table-cell " first value 2  "]]]]]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " second column 1 "]
+                  [:table-cell " second column 2 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " second value 1  "]
+                  [:table-cell " second value 2  "]]]]]
+              [:headline [:stars "*"] [:text [:text-normal "Headline 2"]]]
+              [:empty-line]
+              [:table
+               [:table-org
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " column 1 "]
+                  [:table-cell " column 2 "]]]
+                [:table-row
+                 [:table-row-cells
+                  [:table-cell " value 1  "]
+                  [:table-cell " value 2  "]]]]]]
+             (parser/parse content))))))
