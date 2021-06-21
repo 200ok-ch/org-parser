@@ -1191,38 +1191,49 @@ is another section"))))))
   (testing "headlines and tables"
     (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")]
       (is (= [:S
-              [:headline [:stars "*"] [:text [:text-normal "Headline 1"]]]
-              [:empty-line]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " first column 1 "]
-                  [:table-cell " first column 2 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " first value 1  "]
-                  [:table-cell " first value 2  "]]]]]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " second column 1 "]
-                  [:table-cell " second column 2 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " second value 1  "]
-                  [:table-cell " second value 2  "]]]]]
-              [:headline [:stars "*"] [:text [:text-normal "Headline 2"]]]
-              [:empty-line]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " column 1 "]
-                  [:table-cell " column 2 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " value 1  "]
-                  [:table-cell " value 2  "]]]]]]
+           [:headline [:stars "*"] [:text [:text-normal "Headline 1"]]]
+           [:empty-line]
+           [:table
+            [:table-org
+             [:table-row
+              [:table-row-cells
+               [:table-cell " first column 1 "]
+               [:table-cell " first column 2 "]]]
+             [:table-row
+              [:table-row-cells
+               [:table-cell " first value 1  "]
+               [:table-cell " first value 2  "]]]]]
+           [:table
+            [:table-org
+             [:table-row
+              [:table-row-cells
+               [:table-cell " second column 1 "]
+               [:table-cell " second column 2 "]]]
+             [:table-row
+              [:table-row-cells
+               [:table-cell " second value 1  "]
+               [:table-cell " second value 2  "]]]]]
+           [:headline [:stars "*"] [:text [:text-normal "Headline 2"]]]
+           [:empty-line]
+           [:table
+            [:table-org
+             [:table-row
+              [:table-row-cells
+               [:table-cell " people     "]
+               [:table-cell " age "]]]
+             [:table-row [:table-row-sep "|------------+-----|"]]
+             [:table-row
+              [:table-row-cells
+               [:table-cell " bob        "]
+               [:table-cell "  38 "]]]
+             [:table-row
+              [:table-row-cells
+               [:table-cell " max        "]
+               [:table-cell "  42 "]]]
+             [:table-row [:table-row-sep "|------------+-----|"]]
+             [:table-row
+              [:table-row-cells
+               [:table-cell " median age "]
+               [:table-cell "  40 "]]]
+             [:table-formula "@4$2=vmean(@2..@-1)"]]]]
              (parser/parse content))))))

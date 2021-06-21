@@ -8,5 +8,10 @@
 
 * Headline 2
 
-  | column 1 | column 2 |
-  | value 1  | value 2  |
+  | people     | age |
+  |------------+-----|
+  | bob        |  38 |
+  | max        |  42 |
+  |------------+-----|
+  | median age |  40 |
+  #+TBLFM: @4$2=vmean(@2..@-1)
