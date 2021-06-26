@@ -173,19 +173,19 @@ possible.
 
  #+BEGIN_SRC clojure :exports both
    (ns hello-world.core
-     (:require [org-parser.parser :refer [org]])
+     (:require [org-parser.parser :refer [parse]])
      (:require [org-parser.core :refer [read-str write-str]]))
    
-   (org "* Headline")
+   (parse "* Headline")
    
    (read-str "* Headline")
    (write-str (read-str "* Headline"))
  #+END_SRC
 
  #+RESULTS:
- | [:S [:headline [:stars "*"] [:title "Headline"]]]        |
- | {:headlines [{:headline {:level 1, :title "Headline"}}]} |
- | "* Headline\n"                                           |
+ | [:S [:headline [:stars "*"] [:text [:text-normal "Headline"]]]]                               |
+ | {:headlines [{:headline {:level 1, :title [[:text-normal "Headline"]], :planning [], :tags []}}]} |
+ | "* Headline\n"                                                                                |
 
 ** Clojure
 
