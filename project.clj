@@ -4,7 +4,7 @@
   :license {:name "GNU Affero General Public License v3.0"
             :url "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [org.clojure/clojurescript "1.10.520"]
+                 [org.clojure/clojurescript "1.10.866"]
                  [cljs-node-io "1.1.2"]
                  [org.clojure/data.json "1.0.0"]
                  [instaparse "1.4.10"]]
