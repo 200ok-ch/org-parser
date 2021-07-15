@@ -8,10 +8,13 @@ build: buildjs.sh buildjar.sh
 # Also, not sure if this would stop correctly on error:
 # echo $^ | xargs -n 1 bash
 
-test: testcode testjs testjar
+test: testcode-clj testcode-cljs testjs testjar
 
-testcode:
+testcode-clj:
 	lein test
+
+testcode-cljs:
+	lein doo node once
 
 # Test by executing parser on test file and expect at least one line of output (grep .)
 testjs: testjs.sh
