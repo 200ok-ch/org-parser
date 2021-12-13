@@ -6,7 +6,7 @@ version: 2
 jobs:
   test-clj:
     docker:
-      - image: circleci/clojure:lein-2.7.1
+      - image: circleci/clojure:openjdk-8-lein
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
@@ -33,7 +33,7 @@ jobs:
 
   test-cljs:
     docker:
-      - image: circleci/clojure:openjdk-8-lein-2.9.3-buster
+      - image: circleci/clojure:openjdk-8-lein-node
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
@@ -49,9 +49,6 @@ jobs:
             - v1-dependencies-{{ checksum "project.clj" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-      - run:
-          name: Install Node
-          command: sudo apt-get update -y && sudo apt install -y nodejs
 
       - run: lein deps
       - run: lein doo node once
@@ -63,7 +60,7 @@ jobs:
 
   release:
     docker:
-      - image: clojure:lein-2.9.5-slim-buster
+      - image: circleci/clojure:openjdk-8-lein-bullseye
     steps:
       - checkout
       - restore_cache:
