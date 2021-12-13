@@ -7,7 +7,8 @@
                  [org.clojure/clojurescript "1.10.866"]
                  [cljs-node-io "1.1.2"]
                  [org.clojure/data.json "1.0.0"]
-                 [instaparse "1.4.10"]]
+                 [instaparse "1.4.10"]
+                 [thheller/shadow-cljs "2.16.8"]]
   :main ^:skip-aot org-parser.core
   :target-path "target/%s"
   :repl-options {:init-ns org-parser.core}
