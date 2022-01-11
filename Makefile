@@ -17,10 +17,10 @@ testcode-cljs:
 	lein doo node once
 
 # Test by executing parser on test file and expect at least one line of output (grep .)
-testjs: testjs.sh
+testjs: build testjs.sh
 	bash testjs.sh | grep .
 
-testjar: testjar.sh
+testjar: build testjar.sh
 	bash testjar.sh | grep .
 
 
