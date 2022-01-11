@@ -69,7 +69,7 @@ jobs:
             - v1-dependencies-
       - run:
           name: Install dependencies
-          command: apt-get update -yq && apt install -yq git
+          command: sudo apt-get update -yq && sudo apt install -yq git
       - run:
           name: Configure Git
           command: |
