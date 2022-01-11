@@ -5,10 +5,9 @@
             :url "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.866"]
-                 [cljs-node-io "1.1.2"]
                  [org.clojure/data.json "1.0.0"]
                  [instaparse "1.4.10"]]
-  :main ^:skip-aot org-parser.core
+  :main ^:skip-aot org-parser.cli
   :target-path "target/%s"
   :repl-options {:init-ns org-parser.core}
   :plugins [[lein-cljsbuild "1.1.8"]
