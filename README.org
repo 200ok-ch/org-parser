@@ -159,27 +159,25 @@ org-parser/org-parser {:mvn/version "0.1.4"}
 [org-parser "0.1.4"]
 #+END_SRC
 
-
 * Usage
   :PROPERTIES:
   :CUSTOM_ID: usage
   :END:
 
-At the moment, you can run =org-parser= from Clojure, Java or from
-NodeJS. Other targets which are hosted on the JVM or on JavaScript are
-possible.
+At the moment, you can run =org-parser= from Clojure, ClojureScript,
+or Java. Other targets which are hosted on the JVM or on JavaScript
+are possible.
 
 ** Clojure Library
 
  #+BEGIN_SRC clojure :exports both
    (ns hello-world.core
-     (:require [org-parser.parser :refer [parse]])
-     (:require [org-parser.core :refer [read-str write-str]]))
-   
-   (parse "* Headline")
-   
-   (read-str "* Headline")
-   (write-str (read-str "* Headline"))
+     (:require [org-parser.parser :refer [parse]]
+               [org-parser.core :refer [read-str write-str]]))
+
+   (prn (parse "* Headline"))
+   (prn (read-str "* Headline"))
+   (println (write-str (read-str "* Headline")))
  #+END_SRC
 
  #+RESULTS:
@@ -197,23 +195,6 @@ Run =lein run file.org=, for example:
 
 #+RESULTS:
 : {:headlines [{:headline {:level 1, :title [[:text-sty-bold "Header"] [:text-normal " with repeater"]], :planning [[:planning-info [:planning-keyword [:planning-kw-scheduled]] [:timestamp-active [:ts-inner [:ts-inner-wo-time [:ts-date "2019-11-27"] [:ts-day "Wed"]] [:ts-modifiers [:ts-repeater [:ts-repeater-type "+"] [:ts-mod-value "1"] [:ts-mod-unit "d"]]]]]]], :tags []}}]}
-
-** NodeJS
-
-First, compile =org-parser= with:
-
-#+begin_src sh :exports code :results silent :tangle buildjs.sh
-  lein cljsbuild once main && chmod +x ./target/org-parser.js
-#+end_src
-
-Then run =./target/org-parser.js file.org=, for example:
-
-#+begin_src sh :results verbatim :exports both :tangle testjs.sh
-  ./target/org-parser.js test/org_parser/fixtures/schedule_with_repeater.org
-#+end_src
-
-#+RESULTS:
-: {"headlines":[{"headline":{"level":1,"title":[["text-sty-bold","Header"],["text-normal"," with repeater"]],"planning":[["planning-info",["planning-keyword",["planning-kw-scheduled"]],["timestamp-active",["ts-inner",["ts-inner-wo-time",["ts-date","2019-11-27"],["ts-day","Wed"]],["ts-modifiers",["ts-repeater",["ts-repeater-type","+"],["ts-mod-value","1"],["ts-mod-unit","d"]]]]]]],"tags":[]}}]}
 
 ** Java
 
