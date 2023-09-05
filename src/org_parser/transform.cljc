@@ -85,13 +85,22 @@
 #_(extract-tags-from-text [[:text-bold "bold"] [:text-x "foo"] [:text-normal "und  :tag:"]])
 
 (defmethod reducer :headline [state [_ & properties] raw]
-  (let [[title tags] (->> properties (property :text) extract-tags-from-text)
-        ]
-    (update state :headlines conjv {:headline {:level (->> properties (property :level) first)
-                                               :title title
-                                               :planning (->> properties (property :planning))
-                                               :tags tags
-                                               }})))
+  (let [[title tags] (->> properties (property :text) extract-tags-from-text)]
+    (update state :headlines
+            conjv {:headline {:level (->> properties (property :level) first)
+                              :title title
+                              :planning (->> properties (property :planning))
+                              :keyword (->> properties
+                                            (property :keyword)
+                                            first)
+                              :priority (->> properties
+                                             (property :priority)
+                                             first)
+                              ;; :commented? (->> properties
+                              ;;                  (property :comment-token)
+                              ;;                  (seq)
+                              ;;                  #_(not))
+                              :tags tags}})))
 
 
 ;; content-line needs to simply drop the keyword
