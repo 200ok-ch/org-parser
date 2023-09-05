@@ -19,6 +19,24 @@
                                   :priority nil,
                                   :commented? false
                                   :tags []}}]}))
+  (is (= (core/read-str "* TODO foo bar")
+         {:headlines [{:headline
+                       {:level 1,
+                        :title [[:text-normal "foo bar"]],
+                        :planning [],
+                        :keyword "TODO",
+                        :priority nil,
+                        :commented? false
+                        :tags []}}]}))
+  #_(is (= (core/read-str "* COMMENT foo bar")
+         {:headlines [{:headline
+                       {:level 1,
+                        :title [[:text-normal "foo bar"]],
+                        :planning [],
+                        :keyword nil,
+                        :priority nil,
+                        :commented? true
+                        :tags []}}]}))
   (is (= (core/read-str "* TODO COMMENT foo bar")
          {:headlines [{:headline
                        {:level 1,
@@ -28,6 +46,14 @@
                         :priority nil,
                         :commented? true
                         :tags []}}]}))
+  (is (= (core/read-str "* [#B] foo bar")
+         {:headlines [{:headline {:level 1,
+                                  :title [[:text-normal "foo bar"]],
+                                  :planning [],
+                                  :keyword nil,
+                                  :priority "B",
+                                  :commented? false
+                                  :tags []}}]}))
   (is (= (core/read-str "* TODO [#B] foo bar")
          {:headlines [{:headline {:level 1,
                                   :title [[:text-normal "foo bar"]],
