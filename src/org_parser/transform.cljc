@@ -103,7 +103,7 @@
                               :priority (->> properties
                                              (property :priority)
                                              first)
-                              :commented? (->> (doto properties prn)
+                              :commented? (->> properties
                                                (property-node :comment-token)
                                                (seq)
                                                (boolean))
