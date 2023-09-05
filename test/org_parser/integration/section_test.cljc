@@ -30,6 +30,9 @@
        {:level 1,
         :title [[:text-normal "hello world"]],
         :planning [],
+        :keyword nil
+        :priority nil
+        :commented? false
         :tags []},
        :section
        {:ast
