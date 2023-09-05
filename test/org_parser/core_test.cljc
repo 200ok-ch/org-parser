@@ -11,6 +11,14 @@
 
 
 (deftest headline-data
+  (is (= (core/read-str "* foo bar")
+         {:headlines [{:headline {:level 1,
+                                  :title [[:text-normal "foo bar"]],
+                                  :planning [],
+                                  :keyword nil,
+                                  :priority nil,
+                                  :commented? false
+                                  :tags []}}]}))
   (is (= (core/read-str "* TODO COMMENT foo bar")
          {:headlines [{:headline
                        {:level 1,
