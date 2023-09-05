@@ -36,13 +36,20 @@
 #_(transform (org-parser.parser/parse "* hello\n** world\n\nasdf"))
 
 
+(defn- property-node
+  "Takes a PROP (a keyword) and a seq PROPS. Finds the occurence of
+  PROP in PROPS and returns the node."
+  [prop props]
+  (->> props
+       (filter #(= prop (first %)))
+       first))
+
 (defn- property
   "Takes a PROP (a keyword) and a seq PROPS. Finds the occurence of
   PROP in PROPS and returns a seq of its values."
   [prop props]
   (->> props
-       (filter #(= prop (first %)))
-       first
+       (property-node prop)
        (drop 1)
        vec))
 
@@ -96,10 +103,10 @@
                               :priority (->> properties
                                              (property :priority)
                                              first)
-                              ;; :commented? (->> properties
-                              ;;                  (property :comment-token)
-                              ;;                  (seq)
-                              ;;                  #_(not))
+                              :commented? (->> (doto properties prn)
+                                               (property-node :comment-token)
+                                               (seq)
+                                               (boolean))
                               :tags tags}})))
 
 

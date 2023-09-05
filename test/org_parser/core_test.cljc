@@ -18,6 +18,7 @@
                         :planning [],
                         :keyword "TODO",
                         :priority nil,
+                        :commented? true
                         :tags []}}]}))
   (is (= (core/read-str "* TODO [#B] foo bar")
          {:headlines [{:headline {:level 1,
@@ -25,4 +26,5 @@
                                   :planning [],
                                   :keyword "TODO",
                                   :priority "B",
+                                  :commented? false
                                   :tags []}}]})))
