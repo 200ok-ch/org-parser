@@ -28,7 +28,7 @@
                         :priority nil,
                         :commented? false
                         :tags []}}]}))
-  #_(is (= (core/read-str "* COMMENT foo bar")
+  (is (= (core/read-str "* COMMENT foo bar")
          {:headlines [{:headline
                        {:level 1,
                         :title [[:text-normal "foo bar"]],
