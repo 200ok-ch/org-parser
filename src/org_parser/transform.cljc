@@ -36,13 +36,20 @@
 #_(transform (org-parser.parser/parse "* hello\n** world\n\nasdf"))
 
 
+(defn- property-node
+  "Takes a PROP (a keyword) and a seq PROPS. Finds the occurence of
+  PROP in PROPS and returns the node."
+  [prop props]
+  (->> props
+       (filter #(= prop (first %)))
+       first))
+
 (defn- property
   "Takes a PROP (a keyword) and a seq PROPS. Finds the occurence of
   PROP in PROPS and returns a seq of its values."
   [prop props]
   (->> props
-       (filter #(= prop (first %)))
-       first
+       (property-node prop)
        (drop 1)
        vec))
 
@@ -85,13 +92,22 @@
 #_(extract-tags-from-text [[:text-bold "bold"] [:text-x "foo"] [:text-normal "und  :tag:"]])
 
 (defmethod reducer :headline [state [_ & properties] raw]
-  (let [[title tags] (->> properties (property :text) extract-tags-from-text)
-        ]
-    (update state :headlines conjv {:headline {:level (->> properties (property :level) first)
-                                               :title title
-                                               :planning (->> properties (property :planning))
-                                               :tags tags
-                                               }})))
+  (let [[title tags] (->> properties (property :text) extract-tags-from-text)]
+    (update state :headlines
+            conjv {:headline {:level (->> properties (property :level) first)
+                              :title title
+                              :planning (->> properties (property :planning))
+                              :keyword (->> properties
+                                            (property :keyword)
+                                            first)
+                              :priority (->> properties
+                                             (property :priority)
+                                             first)
+                              :commented? (->> properties
+                                               (property-node :comment-token)
+                                               (seq)
+                                               (boolean))
+                              :tags tags}})))
 
 
 ;; content-line needs to simply drop the keyword

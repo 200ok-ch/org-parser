@@ -94,7 +94,7 @@
       (is (= [:headline [:stars "*"] [:keyword "TODO"] [:comment-token] [:text [:text-normal "hello world"]]]
              (parse "* TODO COMMENT hello world"))))
     (testing "with comment flag but without todo keyword or prio: interpret COMMENT as keyword"
-      (is (= [:headline [:stars "*****"] [:keyword "COMMENT"] [:text [:text-normal "hello world"]]]
+      (is (= [:headline [:stars "*****"] [:comment-token] [:text [:text-normal "hello world"]]]
              (parse "***** COMMENT hello world"))))
     (testing "headline with planning info in next line"
       (is (= [:headline [:stars "*"] [:text [:text-normal "hello"]]

@@ -41,7 +41,7 @@ indent = #"[\t ]*"
    No problem, tags are extracted in the transformation step. *)
 headline = stars [s keyword] [s priority] [s comment-token] s title [ eol planning ]
 stars = #'\*+'
-keyword = #"[A-Z]+"
+keyword = !comment-token #"[A-Z]+"
 priority = <"[#"> #"[A-Z]" <"]">
 comment-token = <"COMMENT">
 <title> = text
