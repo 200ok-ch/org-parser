@@ -16,6 +16,7 @@
 #_(read-str "** headline _underlined_ / +strikethrough+  :tag:baz:  \n foo/bar")
 #_(read-str "* headline/foo")
 #_(read-str "foo/bar")
+#_(read-str "{{{my( arg1  , {'arg 2'  }  )}}}")
 
 (defn write-str
   "Converts x to a ORG-formatted string. Takes optional Options."

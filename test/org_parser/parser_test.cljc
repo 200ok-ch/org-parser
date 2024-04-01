@@ -116,7 +116,7 @@
              (parse " --------"))))
 
     (testing "keyword line"
-      (is (= [[:keyword-line [:keyword-key "KEY"] [:keyword-value "VALUE"]]]
+      (is (= [[:other-keyword-line [:kw-name "KEY"] [:kw-value "VALUE"]]]
              (parse "#+KEY: VALUE"))))
 
     (testing "comment line"
@@ -179,25 +179,25 @@ is another section"))))))
 (deftest affiliated-keyword
   (let [parse #(parser/parse % :start :affiliated-keyword-line)]
     (testing "header"
-      (is (= [:affiliated-keyword-line [:key "HEADER"] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "HEADER"] [:kw-value "hello world"]]
              (parse "#+HEADER: hello world"))))
     (testing "name"
-      (is (= [:affiliated-keyword-line [:key "NAME"] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "NAME"] [:kw-value "hello world"]]
              (parse "#+NAME: hello world"))))
     (testing "PLOT"
-      (is (= [:affiliated-keyword-line [:key "PLOT"] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "PLOT"] [:kw-value "hello world"]]
              (parse "#+PLOT: hello world"))))
     (testing "results"
-      (is (= [:affiliated-keyword-line [:key "RESULTS"] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "RESULTS"] [:kw-value "hello world"]]
              (parse "#+RESULTS: hello world"))))
     (testing "results"
-      (is (= [:affiliated-keyword-line [:key "RESULTS" [:optional "asdf"]] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "RESULTS" [:affil-kw-optional "asdf"]] [:kw-value "hello world"]]
              (parse "#+RESULTS[asdf]: hello world"))))
     (testing "caption"
-      (is (= [:affiliated-keyword-line [:key "CAPTION"] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "CAPTION"] [:kw-value "hello world"]]
              (parse "#+CAPTION: hello world"))))
     (testing "caption"
-      (is (= [:affiliated-keyword-line [:key "CAPTION" [:optional "qwerty"]] [:value "hello world"]]
+      (is (= [:affiliated-keyword-line [:affil-kw-key "CAPTION" [:affil-kw-optional "qwerty"]] [:kw-value "hello world"]]
              (parse "#+CAPTION[qwerty]: hello world"))))))
 
 
@@ -498,9 +498,9 @@ is another section"))))))
     ))
 
 (deftest keyword
-  (let [parse #(parser/parse % :start :keyword-line)]
+  (let [parse #(parser/parse % :start :other-keyword-line)]
     (testing "keyword"
-      (is (= [:keyword-line [:keyword-key "HELLO"] [:keyword-value "hello world"]]
+      (is (= [:other-keyword-line [:kw-name "HELLO"] [:kw-value "hello world"]]
              (parse "#+HELLO: hello world"))))))
 
 
