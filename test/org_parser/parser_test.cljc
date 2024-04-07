@@ -58,11 +58,16 @@
       (is (insta/failure? (parse "a\n"))))))
 
 
+;; NOTE: Tags are defined in EBNF but currently not effective. Tags
+;; are extracted in the transform phase.
 (deftest tags
   (let [parse #(parser/parse % :start :tags)]
     (testing "single"
       (is (= [:tags "a"]
              (parse ":a:"))))
+    (testing "single underscore"
+      (is (= [:tags "_"]
+             (parse ":_:"))))
     (testing "multiple"
       (is (= [:tags "a" "b" "c"]
              (parse ":a:b:c:"))))
