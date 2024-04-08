@@ -19,6 +19,15 @@
                                   :priority nil,
                                   :commented? false
                                   :tags []}}]}))
+  (is (= (core/read-str "* foo bar :a:b:")
+         {:headlines [{:headline
+                       {:level 1,
+                        :title [[:text-normal "foo bar"]],
+                        :planning [],
+                        :keyword nil,
+                        :priority nil,
+                        :commented? false
+                        :tags ["a" "b"]}}]}))
   (is (= (core/read-str "* TODO foo bar")
          {:headlines [{:headline
                        {:level 1,
