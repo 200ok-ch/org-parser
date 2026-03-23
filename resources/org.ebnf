@@ -19,7 +19,7 @@ S = line*
 
 (* TODO delete empty-line token? because it discards whitespace which may not be desired. *)
 empty-line = "" | #"\s+"
-content-line = text
+content-line = !planning text
 
 (* "Comments consist of one or more consecutive comment lines."
    https://orgmode.org/worg/dev/org-syntax.html#Comments *)
@@ -75,7 +75,7 @@ affil-kw-backend = #"[a-zA-Z0-9-_]+"
 
 (* These are related to Affiliated Keywords but not limited to the
    well-known keywords like TITLE, AUTHOR, etc. *)
-other-keyword-line = [s] <"#+"> kw-name <":"> s kw-value
+other-keyword-line = !todo-line !macro-definition !affiliated-keyword-line !dynamic-block-begin-line !dynamic-block-end-line [s] <"#+"> kw-name <":"> s kw-value
 kw-name = #"[a-zA-Z0-9-_]+"
 kw-value = #"[^\r\n]*"
 
@@ -381,8 +381,7 @@ macro-args = <''> |  macro-arg { <','> [s] macro-arg }
         \command[x]{y}{z}, \( \), \[ \], $$ $$, $ $
 	text-entity must be edited to also match \command[]{}s
  *)
-text-entity = ""
-text-entity = <'\\'> entity-name ( entity-braces | ε & <#"[^a-zA-Z]|$"> )
+text-entity = <'\\'> entity-name entity-braces | <'\\'> entity-name <#"(?![a-zA-Z{])">
 entity-name = #"[a-zA-Z]+"
 entity-braces = <'{}'>
 

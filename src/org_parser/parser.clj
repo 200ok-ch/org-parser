@@ -1,13 +1,14 @@
 (ns org-parser.parser
-  (:require [instaparse.core :as insta]))
+  (:require [instaparse.core :as insta :refer [defparser]]))
 
-(def parser
-  (-> "org.ebnf"
-      clojure.java.io/resource
-      insta/parser))
+(defparser parser "resources/org.ebnf")
 
+(defn- ensure-optimize-memory [options]
+  (if (some #{:optimize} (take-nth 2 options))
+    options
+    (concat options [:optimize :memory])))
 
-(defn parse [& args]
+(defn parse [raw & options]
   (-> parser
-      (apply args)
-      (vary-meta merge {:raw (first args)})))
+      (apply raw (ensure-optimize-memory options))
+      (vary-meta merge {:raw raw})))
