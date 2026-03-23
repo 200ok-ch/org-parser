@@ -14,7 +14,11 @@ jobs:
       JVM_OPTS: -Xmx3200m
 
     steps:
-      - checkout
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            git clone https://github.com/200ok-ch/org-parser.git .
+            git checkout "$CIRCLE_SHA1"
 
       # Download and cache dependencies
       - restore_cache:
@@ -41,7 +45,11 @@ jobs:
       JVM_OPTS: -Xmx3200m
 
     steps:
-      - checkout
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            git clone https://github.com/200ok-ch/org-parser.git .
+            git checkout "$CIRCLE_SHA1"
 
       # Download and cache dependencies
       - restore_cache:
@@ -62,7 +70,11 @@ jobs:
     docker:
       - image: circleci/clojure:openjdk-8-lein-bullseye
     steps:
-      - checkout
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            git clone https://github.com/200ok-ch/org-parser.git .
+            git checkout "$CIRCLE_SHA1"
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "project.clj" }}
