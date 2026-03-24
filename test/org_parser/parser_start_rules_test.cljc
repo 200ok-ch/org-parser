@@ -1,6 +1,8 @@
 (ns org-parser.parser-start-rules-test
-  (:require [clojure.test :refer :all]
-            [org-parser.parser :as parser]))
+  (:require [org-parser.parser :as parser]
+            #?(:clj [clojure.test :refer :all]
+               :cljs [cljs.test :refer-macros [deftest is]])
+            #?(:cljs [cljs-node-io.core :refer [slurp]])))
 
 (defn- ast-contains-tag? [ast tag]
   (cond
@@ -80,6 +82,22 @@
   (let [content "* hello\n| col | val |\n| a   | b   |"
         result (parser/parse content)]
     (is (= :S (first result)))))
+
+(deftest default-s-attaches-headline-planning
+  (let [result (parser/parse "* hello\nSCHEDULED: <2021-05-22 Sat>")]
+    (is (= :S (first result)))
+    (is (= :headline (-> result second first)))
+    (is (ast-contains-tag? result :planning))))
+
+(deftest default-s-collapses-table-lines
+  (let [result (parser/parse "* h\n| a | b |\n| 1 | 2 |")]
+    (is (= :S (first result)))
+    (is (= 1 (count (filter #(and (vector? %) (= :table (first %))) (rest result)))))))
+
+(deftest unsupported-start-rule-fails
+  (let [result (parser/parse "hello" :start :title)]
+    (is (parser/failure? result))
+    (is (= :unsupported-start (:reason result)))))
 
 (deftest comment-line-start-rule
   (is (= [:comment-line [:comment-line-head "#"] [:comment-line-rest " comment"]]
@@ -242,9 +260,9 @@
          (parser/parse "- [X] a tag :: a simple list item" :start :list-item-line)))
   (is (= [:table
           [:table-tableel
-          [:table-tableel-sep "+---+"]
-          [:table-tableel-line "| x |"]
-          [:table-tableel-sep "+---+"]]]
+           [:table-tableel-sep "+---+"]
+           [:table-tableel-line "| x |"]
+           [:table-tableel-sep "+---+"]]]
          (parser/parse "+---+\n| x |\n+---+\n" :start :table))))
 
 (deftest link-and-text-style-start-rules

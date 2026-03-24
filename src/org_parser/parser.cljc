@@ -1,15 +1,81 @@
 (ns org-parser.parser
   (:require [org-parser.antlr.parser :as antlr]))
 
-(defn- option-value [options k default]
-  (let [pairs (partition 2 options)
-        found (reduce (fn [acc [k* v]]
-                        (if (and (= acc ::not-found) (= k k*))
-                          v
-                          acc))
-                      ::not-found
-                      pairs)]
-    (if (= found ::not-found) default found)))
+(def ^:private supported-starts
+  #{:S
+    :s
+    :line
+    :eol
+    :word
+    :tags
+    :diary-sexp
+    :headline
+    :content-line
+    :affiliated-keyword-line
+    :todo-line
+    :block
+    :block-begin-line
+    :block-end-line
+    :dynamic-block
+    :dynamic-block-begin-line
+    :dynamic-block-end-line
+    :drawer
+    :drawer-begin-line
+    :drawer-end-line
+    :property-drawer
+    :node-property-line
+    :fixed-width-line
+    :fixed-width-area
+    :link-format
+    :link-ext-id
+    :link-ext-file
+    :link-ext-other
+    :text
+    :text-styled
+    :text-link
+    :text-macro
+    :text-entity
+    :text-target
+    :text-sub
+    :footnote-line
+    :footnote-link
+    :other-keyword-line
+    :list-item-line
+    :table
+    :timestamp
+    :timestamp-inactive-range
+    :ts-time
+    :clock
+    :planning
+    :noparse-block})
+
+(defn supported-start-rules
+  "Returns the set of parser start rules supported by org-parser/parse."
+  []
+  supported-starts)
+
+(defn- invalid-options! [message data]
+  (throw (ex-info message (merge {:type ::invalid-options} data))))
+
+(defn- parse-options [options]
+  (when (odd? (count options))
+    (invalid-options! "parse options must be key/value pairs"
+                      {:options options}))
+  (let [pairs (partition 2 options)]
+    (reduce (fn [acc [k v]]
+              (when-not (keyword? k)
+                (invalid-options! "parse option keys must be keywords"
+                                  {:option-key k :options options}))
+              (case k
+                :start (do
+                         (when-not (keyword? v)
+                           (invalid-options! "parse :start option must be a keyword"
+                                             {:start v :options options}))
+                         (assoc acc :start v))
+                (invalid-options! "unsupported parse option"
+                                  {:option-key k :option-value v :options options})))
+            {:start :S}
+            pairs)))
 
 (defn- parse-antlr [raw start]
   (let [antlr-start (keyword (name start))]
@@ -19,18 +85,27 @@
 (defn- normalize-top-level-s [ast]
   (if (and (sequential? ast)
            (= :S (first ast)))
-    (or (some #(when (and (sequential? %)
-                          (= :S (first %)))
-                 %)
-              (rest ast))
-        ast)
+    (if-let [nested (some #(when (and (sequential? %)
+                                      (= :S (first %)))
+                             %)
+                          (rest ast))]
+      (vary-meta nested merge (meta ast))
+      ast)
     ast))
 
 (defn- failure-result? [x]
   (true? (:failure? x)))
 
-(defn parse [raw & options]
-  (let [start (option-value options :start :S)
+(defn parse
+  "Parses RAW and returns either an AST vector or a failure map.
+
+  Options:
+  - :start <keyword> parser start rule (defaults to :S)
+
+  Invalid option shapes (odd option count, unknown option keys, or
+  non-keyword :start values) throw ex-info."
+  [raw & options]
+  (let [start (:start (parse-options options))
         antlr-result (parse-antlr raw start)]
     (if (= start :S)
       (normalize-top-level-s antlr-result)

@@ -50,10 +50,7 @@
 
 
 (deftest section
-  (doseq [{:keys [input ast result output]} samples]
+  (doseq [{:keys [input ast result]} samples]
     (let [ast* (parser/parse input)]
       (testing "AST matches expected AST" (is (= ast ast*)))
       (testing "transformed AST matches expected transformed AST" (is (= result (transform/transform ast*)))))))
-
-
-#_(-> samples first :input parser/parse transform/transform)

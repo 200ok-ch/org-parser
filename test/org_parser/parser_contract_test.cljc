@@ -15,6 +15,53 @@
         (str result))
     (is (= :antlr (-> result meta :backend-used)))))
 
+(deftest parser-metadata-contract
+  (let [raw "* headline\nbody"
+        result (parser/parse raw)]
+    (is (= :S (first result)))
+    (is (= raw (-> result meta :raw)))
+    (is (= :antlr (-> result meta :backend-used)))))
+
+(deftest parser-supported-start-rules-contract
+  (let [supported (parser/supported-start-rules)]
+    (is (set? supported))
+    (is (contains? supported :S))
+    (is (contains? supported :headline))
+    (is (contains? supported :table))))
+
+(deftest parser-invalid-options-contract
+  #?(:clj
+     (do
+       (is (thrown-with-msg?
+            clojure.lang.ExceptionInfo
+            #"key/value pairs"
+            (parser/parse "hello" :start)))
+       (is (thrown-with-msg?
+            clojure.lang.ExceptionInfo
+            #"unsupported parse option"
+            (parser/parse "hello" :backend :antlr)))
+       (is (thrown-with-msg?
+            clojure.lang.ExceptionInfo
+            #"must be a keyword"
+            (parser/parse "hello" :start "headline"))))
+     :cljs
+     (do
+       (is (try
+             (parser/parse "hello" :start)
+             false
+             (catch js/Error e
+               (re-find #"key/value pairs" (.-message e)))))
+       (is (try
+             (parser/parse "hello" :backend :antlr)
+             false
+             (catch js/Error e
+               (re-find #"unsupported parse option" (.-message e)))))
+       (is (try
+             (parser/parse "hello" :start "headline")
+             false
+             (catch js/Error e
+               (re-find #"must be a keyword" (.-message e))))))))
+
 (deftest parser-unsupported-start-contract
   #?(:cljs
      (testing "cljs reports unsupported start"

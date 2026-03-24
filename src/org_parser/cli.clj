@@ -4,7 +4,7 @@
             [org-parser.render :as render]
             [clojure.string :as str]))
 
-(defn -main [path & args]
+(defn -main [path & _args]
   (->> path
        slurp
        core/read-str
