@@ -1,6 +1,6 @@
 (ns org-parser.transform
   (:require [clojure.string :as str]
-            [instaparse.core :as insta]))
+            [org-parser.parser :as parser]))
 
 ;; See also parse_org.js in https://github.com/200ok-ch/organice for inspirations
 
@@ -148,16 +148,28 @@
 
 (defn- wrap-raw [reducer raw]
   (fn [agg ast]
-    (reducer agg ast (apply subs raw (insta/span ast)))))
+    (reducer agg ast (apply subs raw (parser/span ast)))))
+
+(defn- transform-ast [rules node]
+  (if (and (vector? node) (keyword? (first node)))
+    (let [tag (first node)
+          children (map #(transform-ast rules %) (rest node))
+          f (get rules tag)]
+      (if f
+        (let [result (apply f children)]
+          (if (vector? result)
+            (with-meta result (meta node))
+            result))
+        (with-meta (into [tag] children) (meta node))))
+    node))
 
 (defn transform [x]
   (->> x
-       (insta/transform
+       (transform-ast
         {:text merge-consecutive-text-normal
          :title merge-consecutive-text-normal ;; :title just a synonym for :text in a headline
          :stars #(vector :level (count %))
          :timestamp identity
-         :macro-args #(vector :macro-args (map str/trim %&))
-         })
+         :macro-args #(vector :macro-args (map str/trim %&))})
        (drop 1) ;; drops the initial `:S`
        (reduce (wrap-raw reducer (-> x meta :raw)) {})))

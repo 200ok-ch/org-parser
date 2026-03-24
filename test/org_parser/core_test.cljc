@@ -63,11 +63,11 @@
                                   :priority "B",
                                   :commented? false
                                   :tags []}}]}))
-  (is (= (core/read-str "* TODO [#B] foo bar")
-         {:headlines [{:headline {:level 1,
-                                  :title [[:text-normal "foo bar"]],
-                                  :planning [],
-                                  :keyword "TODO",
-                                  :priority "B",
-                                  :commented? false
-                                  :tags []}}]})))
+   (is (= (core/read-str "* TODO [#B] foo bar")
+          {:headlines [{:headline {:level 1,
+                                   :title [[:text-normal "foo bar"]],
+                                   :planning [],
+                                   :keyword "TODO",
+                                   :priority "B",
+                                   :commented? false
+                                   :tags []}}]})))

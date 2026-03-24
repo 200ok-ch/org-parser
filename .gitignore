@@ -12,3 +12,11 @@ pom.xml.asc
 .hg/
 
 /out
+node_modules/
+src/java/org_parser/antlr/*.java
+src/java/org_parser/antlr/*.tokens
+src/java/org_parser/antlr/*.interp
+src/js/antlr/*.js
+src/js/antlr/*.cjs
+src/js/antlr/*.tokens
+src/js/antlr/*.interp

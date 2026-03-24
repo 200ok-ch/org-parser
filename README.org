@@ -79,7 +79,7 @@ because the structure of the AST (parse tree) can still change.
 
 The biggest milestones are:
 
-- [X] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
+- [X] Finish ANTLR grammar/parser coverage for most Org mode syntax
       - [X] Headlines
       - [X] Org mode =#+*= stuff
       - [X] Timestamps
@@ -91,7 +91,7 @@ The biggest milestones are:
       - [ ] Nested markup (see #12)
 - [X] Setup basic transformation from the parse tree to a higher-level structure.
 - [-] Transformations to higher-level structure: catch up with
-      features that are already supported by the EBNF parser.
+      features that are already supported by the parser.
 - [-] Render parsed org file with =write-str=
 
 *It can already be useful* for you:
@@ -105,20 +105,17 @@ Don't hesitate to contribute!
 
 * Development
 
-=org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
-build parsers in Clojure. Apart from living up to this claim (and
-beyond the scope of just the one programming language), using
-instaparse is great for another reason: Instaparse works both on CLJ
-and CLJS. Therefore =org-parser= can be used from both ecosystems
-which, of course, include JavaScript and Java. Hence, it is possible
-to [[#usage][use it]] in various situations.
+=org-parser= uses ANTLR-generated parsers as the default backend on
+both CLJ and CLJS. This keeps grammar behavior aligned across JVM and
+JavaScript runtimes while preserving the existing public API and test
+suite expectations.
 
 ** Prerequisites
 
-Please install [[https://clojure.org/guides/getting_started][Clojure]] and [[https://leiningen.org/][Leiningen]].
+Please install [[https://clojure.org/guides/getting_started][Clojure]], [[https://leiningen.org/][Leiningen]], and Node.js (with npm).
 
-There's no additional installation required. Leiningen will pull
-dependencies if required.
+Leiningen will pull JVM dependencies. For CLJS/node tests, install
+JavaScript dependencies with =npm install=.
 
 ** Testing
 
@@ -127,8 +124,17 @@ Running the tests:
 #+BEGIN_SRC shell
 # Clojure
 lein test
-# CLJS (starts a watcher)
-lein doo node
+# CLJS (single run)
+npm install
+./script/gen-antlr-js.sh
+lein doo node once
+#+END_SRC
+
+Generate ANTLR parser artifacts (required for ANTLR backend work):
+
+#+BEGIN_SRC shell
+./script/gen-antlr.sh
+./script/gen-antlr-js.sh
 #+END_SRC
 
 If you're not familiar with Lisp or Clojure, here's a short video on

@@ -10,7 +10,7 @@
   "Reads one ORG value from input String. Takes optional Options."
   [string & options]
   (-> string
-      parser/parse
+      (as-> input (apply parser/parse input options))
       transform/transform))
 
 #_(read-str "** headline _underlined_ / +strikethrough+  :tag:baz:  \n foo/bar")
