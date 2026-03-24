@@ -37,10 +37,12 @@ importantly each of them creates another island. Since they are just
 as programming language dependent as org-element.el, it is impossible
 to share logic between them.
 
-=org-parser= aims at alleviating both these issues. It documents the
-syntax in a standard and machine readable notation (EBNF). And the
-reference implementation is done in a way that it runs on the
-established virtual machines of Java and JavaScript. Hence,
+=org-parser= aims at alleviating both these issues. It specifies the
+syntax in ANTLR grammars, which remain close to EBNF-style notation
+while giving us a mature parser toolchain, robust error handling, and
+multi-runtime generation for JVM and JavaScript. The reference
+implementation is done in a way that it runs on the established
+virtual machines of Java and JavaScript. Hence,
 =org-parser= can be used from all programming languages running on
 those virtual machines. =org-parser= provides a higher-level data
 structure that is easy to consume for an application working with Org
@@ -95,8 +97,10 @@ The biggest milestones are:
 - [-] Render parsed org file with =write-str=
 
 *It can already be useful* for you:
-E.g. if your script needs to parse parts of Org mode features, our EBNF
-parser probably already supports that. Do not underestimate
+E.g. if your script needs to parse parts of Org mode features, our
+ANTLR grammar/parser probably already supports that. The grammar stays
+EBNF-like and readable, while ANTLR gives us strong tooling across CLJ
+and CLJS runtimes. Do not underestimate
 e.g. timestamps. Use our well-tested parser to disassemble it in its
 parts, instead of trying to write a poor and ugly regex that is only
 capable of a subset of Org mode's timestamps ;)
