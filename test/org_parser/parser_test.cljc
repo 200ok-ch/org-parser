@@ -1193,15 +1193,37 @@ is another section"))))))
   (testing "headlines and tables"
     (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")]
       (let [parsed (parser/parse content)]
-        (is (= :antlr (-> parsed meta :backend-used)))
-        (is (= :S (first parsed)))
-        (is (= 4 (count (filter #(and (vector? %) (= :table (first %))) (rest parsed)))))
-        (is (some #(= [:content-line
-                       [:text
-                        [:text-normal "  the spec: "]
-                        [:text-link
-                         [:text-link-plain
-                          [:link-url-scheme "https"]
-                          [:text-link-plain-path "//orgmode.org/worg/dev/org-syntax.html#Tables"]]]]]
-                      %)
-                  (rest parsed)))))))
+        (let [nodes (rest parsed)
+              tables (filter #(and (vector? %) (= :table (first %))) nodes)
+              has-node? (fn has-node? [ast pred]
+                          (cond
+                            (vector? ast) (or (pred ast)
+                                              (some #(has-node? % pred) (rest ast)))
+                            (sequential? ast) (some #(has-node? % pred) ast)
+                            :else false))]
+          (is (= :antlr (-> parsed meta :backend-used)))
+          (is (= :S (first parsed)))
+          (is (= 4 (count tables)))
+          (is (some #(= [:content-line
+                         [:text
+                          [:text-normal "  the spec: "]
+                          [:text-link
+                           [:text-link-plain
+                            [:link-url-scheme "https"]
+                            [:text-link-plain-path "//orgmode.org/worg/dev/org-syntax.html#Tables"]]]]]
+                        %)
+                    nodes))
+          (is (some #(and (has-node? % (fn [n] (= n [:table-cell " first column 1 "])))
+                          (has-node? % (fn [n] (= n [:table-cell " first value 2  "]))))
+                    tables))
+          (is (some #(and (has-node? % (fn [n] (= n [:table-cell " second column 1 "])))
+                          (has-node? % (fn [n] (= n [:table-cell " second value 2  "]))))
+                    tables))
+          (is (some #(and (has-node? % (fn [n] (= n [:table-cell " people     "])))
+                          (has-node? % (fn [n] (= n [:table-cell " median age "])))
+                          (has-node? % (fn [n] (= n [:table-formula "@4$2=vmean(@2..@-1)"]))))
+                    tables))
+          (is (some #(and (has-node? % (fn [n] (= n [:table-tableel-sep "+-----+-----+"])))
+                          (has-node? % (fn [n] (= n [:table-tableel-line "| people | age |"])))
+                          (has-node? % (fn [n] (= n [:table-tableel-line "| max | 42 |"]))))
+                    tables)))))))
