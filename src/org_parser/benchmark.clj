@@ -32,11 +32,41 @@
 (defn- line-count [s]
   (count (str/split-lines s)))
 
+(defn- unique-suffix [copy-idx line-idx]
+  (str " [copy-" copy-idx " line-" line-idx "]"))
+
+(defn- uniquify-readme-line [line copy-idx line-idx]
+  (let [suffix (unique-suffix copy-idx line-idx)]
+    (cond
+      (= "" line) line
+      (re-matches #"\s*:END:\s*" line) line
+      (re-matches #"\s*:[^:\s][^:]*:\s*" line) line
+      (re-matches #"\s*#\+END[_:].*" line) line
+      (re-matches #"\s*-{5,}\s*" line) line
+      (re-matches #"\s*#\+BEGIN[_:].*" line) (str line suffix)
+      (re-matches #"\s*[|+].*" line) line
+      :else
+      (if-let [[_ prefix rest] (re-matches #"(\s*#\+[A-Za-z_]+:)(.*)" line)]
+        (str prefix rest suffix)
+        (if-let [[_ prefix rest] (re-matches #"(\s*:[^:\s][^:]*:)(\s+.+)" line)]
+          (str prefix rest suffix)
+          (str line suffix))))))
+
 (defn- large-readme-content []
   (let [readme (str (slurp "README.org") "\n")
         readme-lines (line-count readme)
         repeats (long (Math/ceil (/ min-large-lines (double readme-lines))))]
     (apply str (repeat repeats readme))))
+
+(defn- large-unique-readme-content []
+  (let [readme (str (slurp "README.org") "\n")
+        lines (str/split-lines readme)
+        readme-lines (count lines)
+        repeats (long (Math/ceil (/ min-large-lines (double readme-lines))))]
+    (->> (for [copy-idx (range repeats)
+               [line-idx line] (map-indexed vector lines)]
+           (str (uniquify-readme-line line copy-idx line-idx) "\n"))
+         (apply str))))
 
 (defn- fixtures []
   [{:name :fixture-minimal
@@ -49,6 +79,8 @@
     :content (slurp "test/org_parser/fixtures/schedule_with_repeater.org")}
    {:name :edge-headline-umlaut
     :content "***** hello wörld⛄ :"}
+   {:name :large-readme-unique-derived
+    :content (large-unique-readme-content)}
    {:name :large-readme-derived
     :content (large-readme-content)}])
 
