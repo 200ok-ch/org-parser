@@ -27,6 +27,7 @@ PERCENT: '%';
 AT: '@';
 QUESTION: '?';
 EXCL: '!';
+CARET: '^';
 SPACE: [ \t];
 COMMENT: 'COMMENT';
 UPPER: [A-Z];

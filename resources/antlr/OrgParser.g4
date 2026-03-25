@@ -103,6 +103,10 @@ eolEof: eol EOF;
 
 wordEof: word EOF;
 
+textSupEof: textSup EOF;
+
+textRadioTargetEof: textRadioTarget EOF;
+
 emptyLine: SPACE+;
 
 eol: NEWLINE?;
@@ -183,7 +187,7 @@ fnLabelChar: UPPER | LOWER | DIGIT | DASH | UNDERSCORE | DOT;
 
 fnTextInline: inlineChar*;
 
-inlineChar: SPACE | UPPER | LOWER | DIGIT | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | LT | GT | LPAREN | RPAREN | LBRACE | RBRACE | BACKSLASH | SLASH | EQUALS | TILDE | DOT | COMMA | PERCENT | AT | QUESTION | EXCL | TEXT_CHAR;
+inlineChar: SPACE | UPPER | LOWER | DIGIT | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | LT | GT | LPAREN | RPAREN | LBRACE | RBRACE | BACKSLASH | SLASH | EQUALS | TILDE | DOT | COMMA | PERCENT | AT | QUESTION | EXCL | CARET | TEXT_CHAR;
 
 commentLine: SPACE* HASH commentLineRest;
 
@@ -235,6 +239,7 @@ sameLineChar
   | AT
   | QUESTION
   | EXCL
+  | CARET
   ;
 
 sameLineCharNoBar
@@ -268,6 +273,7 @@ sameLineCharNoBar
   | AT
   | QUESTION
   | EXCL
+  | CARET
   ;
 
 sameLineCharNoRbrack
@@ -301,6 +307,7 @@ sameLineCharNoRbrack
   | AT
   | QUESTION
   | EXCL
+  | CARET
   ;
 
 tags: COLON tagName (COLON tagName)* COLON;
@@ -554,3 +561,15 @@ linkEscapedBracketOrSlash: BACKSLASH (BACKSLASH | LBRACK | RBRACK);
 linkTargetChar: ~(NEWLINE | LBRACK | RBRACK);
 
 linkDescriptionRaw: sameLineChar*;
+
+textSup: CARET LBRACE textSubCurlyBody RBRACE | CARET textSupWord;
+
+textSupWord: textSupWordChar+;
+
+textSupWordChar: ~(NEWLINE | SPACE | UNDERSCORE);
+
+textRadioTarget: LT LT LT textRadioTargetBody GT GT GT;
+
+textRadioTargetBody: textRadioTargetBodyChar+;
+
+textRadioTargetBodyChar: ~(NEWLINE | GT);

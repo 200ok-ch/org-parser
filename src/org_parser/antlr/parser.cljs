@@ -433,6 +433,16 @@
                  ctx)
       (failure :invalid-link-format :link-format (ctx-text ctx)))))
 
+(defn- text-sup->ast [ctx]
+  (with-span
+    (if-let [curly (.textSubCurlyBody ctx)]
+      [:text-sup [:text-subsup-curly (ctx-text curly)]]
+      [:text-sup [:text-subsup-word (ctx-text (.textSupWord ctx))]])
+    ctx))
+
+(defn- text-radio-target->ast [ctx]
+  (with-span [:text-radio-target [:text-target-name (ctx-text (.textRadioTargetBody ctx))]] ctx))
+
 (defn- parse-node-property-line-direct [s]
   (if-let [[_ name plus value] (re-matches #":(?!END:)([^\s:+]+)(\+)?:(?: (.*))?" s)]
     (with-raw-span
@@ -668,12 +678,8 @@
      (ok (parse-direct raw :text-target))
      (ok (parse-direct raw :text-entity))
      (ok (parse-direct raw :text-sub))
-     (when (str/starts-with? raw "^")
-       (or
-        (when-let [[_ v] (re-matches #"\^\{([^{}]+)\}" raw)]
-          [:text-sup [:text-subsup-curly v]])
-        (when-let [[_ v] (re-matches #"\^([^\s]+)" raw)]
-          [:text-sup [:text-subsup-word v]])))
+     (ok (parse-direct raw :text-sup))
+     (ok (parse-direct raw :text-radio-target))
      nil)))
 
 (defn- parse-text-direct [raw]
@@ -742,7 +748,7 @@
                              (when (<= 0 e) (subs rest 0 (inc e))))))
                 linebreak-match (re-find #"^\\\\([ \t]*)$" rest)
                 chunk (or (when macro-cand [macro-cand (parse-inline-chunk macro-cand)])
-                          (when radio-cand [radio-cand [:text-radio-target [:text-target-name (subs radio-cand 3 (- (count radio-cand) 3))]]])
+                          (when radio-cand [radio-cand (parse-inline-chunk radio-cand)])
                            (when target-cand [target-cand (parse-inline-chunk target-cand)])
                            (when link-cand [link-cand (parse-inline-chunk link-cand)])
                            (when plain-url-cand [plain-url-cand (parse-inline-chunk plain-url-cand)])
@@ -818,6 +824,10 @@
     :text-link
     (parse-antlr-only raw start)
     :link-format
+    (parse-antlr-only raw start)
+    :text-sup
+    (parse-antlr-only raw start)
+    :text-radio-target
     (parse-antlr-only raw start)
     :footnote-link
     (parse-antlr-only raw start)
@@ -1134,6 +1144,8 @@
                        :table (table->ast (.table (.tableEof parser)))
                        :text-styled (text-styled->ast (.textStyled (.textStyledEof parser)))
                        :link-format (link-format->ast (.linkFormat (.linkFormatEof parser)))
+                       :text-sup (text-sup->ast (.textSup (.textSupEof parser)))
+                       :text-radio-target (text-radio-target->ast (.textRadioTarget (.textRadioTargetEof parser)))
                        :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
                        :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
                        :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
