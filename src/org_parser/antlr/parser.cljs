@@ -12,7 +12,7 @@
 (def ^:private OrgLexer (js/require lexer-module-path))
 (def ^:private OrgParser (js/require parser-module-path))
 
-(declare parse-direct parse-antlr-only parse-link-target-node)
+(declare parse-direct parse-antlr-only)
 
 (defn- text-node [s]
   [:text [:text-normal s]])
@@ -69,6 +69,9 @@
 
 (def ^:private code-like-style-tags
   #{:text-sty-verbatim :text-sty-code})
+
+(def ^:private noparse-block-names
+  #{"src" "example" "export" "comment"})
 
 (def ^:private ts-mod-units
   #{"h" "d" "w" "m" "y"})
@@ -424,10 +427,32 @@
       (with-span [[tag inner]] ctx)
       (failure :invalid-text-styled :text-styled raw))))
 
+(defn- link-target->ast [ctx]
+  (cond
+    (.linkTargetId ctx)
+    [:link [:link-ext [:link-ext-id (ctx-text (.linkIdValue (.linkTargetId ctx)))]]]
+
+    (.linkTargetExtOther ctx)
+    (let [other (.linkTargetExtOther ctx)]
+      [:link [:link-ext [:link-ext-other
+                         [:link-url-scheme (ctx-text (.linkUrlScheme other))]
+                         [:link-url-rest (or (some-> other .linkTargetRest ctx-text) "")]]]])
+
+    (.linkTargetIntCustomId ctx)
+    [:link [:link-int [:link-file-loc-customid (subs (ctx-text (.linkTargetIntCustomId ctx)) 1)]]]
+
+    (.linkTargetIntHeadline ctx)
+    [:link [:link-int [:link-file-loc-headline (subs (ctx-text (.linkTargetIntHeadline ctx)) 1)]]]
+
+    (.linkTargetIntString ctx)
+    [:link [:link-int [:link-file-loc-string (ctx-text (.linkTargetIntString ctx))]]]
+
+    :else nil))
+
 (defn- link-format->ast [ctx]
-  (let [target (ctx-text (.linkTargetRaw ctx))
+  (let [link-node (link-target->ast (.linkTarget ctx))
         desc (some-> ctx .linkDescriptionRaw ctx-text)]
-    (if-let [link-node (parse-link-target-node target)]
+    (if link-node
       (with-span (cond-> [:link-format link-node]
                    (some? desc) (conj [:link-description desc]))
                  ctx)
@@ -443,235 +468,33 @@
 (defn- text-radio-target->ast [ctx]
   (with-span [:text-radio-target [:text-target-name (ctx-text (.textRadioTargetBody ctx))]] ctx))
 
-(defn- parse-node-property-line-direct [s]
-  (if-let [[_ name plus value] (re-matches #":(?!END:)([^\s:+]+)(\+)?:(?: (.*))?" s)]
-    (with-raw-span
-      (cond-> [:node-property-line [:node-property-name name]]
-        plus (conj [:node-property-plus])
-        (and (some? value) (not= value "")) (conj [:node-property-value (text-node value)]))
-      s)
-    (failure :invalid-node-property-line :node-property-line s)))
-
-(defn- parse-noparse-block-direct [s]
-  (let [[_ begin-line remainder] (re-matches #"(?s)^([^\n]*)\n(.*)$" s)
-        [_ _ name params] (when begin-line
-                             (re-matches #"[\t ]*#\+(BEGIN|begin)_([^\s]+)(?:[\t ]+(.*))?" begin-line))
-        noparse-name? (contains? #{"src" "example" "export" "comment"}
-                                 (some-> name str/lower-case))
-        end-only (when remainder
-                   (re-matches #"[\t ]*#\+(END|end)_([^\s]+)[\t ]*" remainder))
-        with-content (when (and remainder (not end-only))
-                       (re-matches #"(?s)^(.*\n)([\t ]*#\+(END|end)_([^\s]+)[\t ]*)$" remainder))
-        content (cond
-                  end-only ""
-                  with-content (nth with-content 1)
-                  :else nil)
-        end-name (cond
-                   end-only (nth end-only 2)
-                   with-content (nth with-content 4)
-                   :else nil)]
-    (when (and noparse-name? (some? content) end-name)
-      (let [noparse-name (str/lower-case name)
-            begin-node (cond-> [:noparse-block-begin-line [:block-name-noparse noparse-name]]
-                         (and (some? params) (not= params "")) (conj [:block-parameters params]))
-            content-node [:noparse-block-content content]
-            end-node [:block-end-line [:block-name end-name]]]
-        (with-raw-span [:noparse-block begin-node content-node end-node] s)))))
-
-(defn- ts-inner-w-time-node [date day time]
-  [:ts-inner-w-time [:ts-date date] [:ts-day day] [:ts-time time]])
-
-(defn- parse-list-item-line-direct [raw]
-  (when-let [[_ indent rest] (re-matches #"([\t ]*)(.*)" raw)]
-    (letfn [(tail->nodes [base tail]
-              (let [[_ cb tail2] (or (re-matches #"\[([ \-X])\] (.+)" tail)
-                                     [nil nil tail])
-                    [_ tag contents] (or (re-matches #"(.*?) :: (.*)" tail2)
-                                         [nil nil tail2])]
-                (cond-> base
-                  cb (conj [:list-item-checkbox [:list-item-checkbox-state cb]])
-                  tag (conj [:list-item-tag tag])
-                  true (conj (text-node contents)))))]
-      (or
-       (when-let [[_ bullet tail] (re-matches #"([*+\-]) (.+)" rest)]
-         (tail->nodes [:list-item-line [:indent indent] [:list-item-bullet bullet]] tail))
-       (when-let [[_ counter suffix tail] (re-matches #"([0-9A-Za-z])([\.)]) (.+)" rest)]
-         (tail->nodes [:list-item-line [:indent indent] [:list-item-counter counter] [:list-item-counter-suffix suffix]] tail))
-       nil))))
-
-(defn- parse-table-direct [raw]
-  (let [lines (->> (str/split raw #"\r?\n")
-                   (remove #(= % ""))
-                   vec)
-        trimmed (mapv str/trim lines)]
-    (cond
-      (and (seq trimmed)
-           (every? #(or (re-matches #"\+[-+]+\+" %)
-                        (re-matches #"\|.*\|" %))
-                   trimmed)
-           (some #(re-matches #"\+[-+]+\+" %) trimmed))
-      [:table
-       (into [:table-tableel]
-             (mapv (fn [line]
-                     (if (re-matches #"\+[-+]+\+" line)
-                       [:table-tableel-sep line]
-                       [:table-tableel-line line]))
-                   trimmed))]
-
-      (and (seq trimmed)
-           (every? #(or (re-matches #"\|.*\|" %)
-                        (re-matches #"#\+TBLFM: .*" %))
-                   trimmed))
-      (let [rows (mapv (fn [line]
-                         (cond
-                           (re-matches #"#\+TBLFM: .*" line)
-                           [:table-formula (subs line 9)]
-
-                           (re-matches #"\|[-+]+\|" line)
-                           [:table-row [:table-row-sep line]]
-
-                           :else
-                           (let [inside (subs line 1 (dec (count line)))
-                                 cells (str/split inside #"\|" -1)]
-                             [:table-row (into [:table-row-cells] (map (fn [c] [:table-cell c]) cells))])))
-                       trimmed)]
-        [:table (into [:table-org] rows)])
-
-      :else nil)))
-
-(defn- regex-escape [s]
-  (.replace s (js/RegExp. "[-/\\^$*+?.()|[\\]{}]" "g") "\\$&"))
-
-(defn- parse-text-styled-direct [raw]
-  (let [styles {"*" :text-sty-bold
-                "/" :text-sty-italic
-                "_" :text-sty-underlined
-                "=" :text-sty-verbatim
-                "~" :text-sty-code
-                "+" :text-sty-strikethrough}
-        delim (subs raw 0 1)
-        tag (get styles delim)]
-    (when tag
-      (when-let [[_ inner] (re-matches (re-pattern (str "^" (regex-escape delim) "(.+)" (regex-escape delim) "$")) raw)]
-        (when (and (not= inner "")
-                   (or (not (contains? #{:text-sty-verbatim :text-sty-code} tag))
-                       (and (not (str/starts-with? inner " "))
-                            (not (str/ends-with? inner " "))
-                            (not (re-find #"\S[=~]\s" inner)))))
-          [(vector tag inner)])))))
-
-(defn- parse-text-link-direct [raw]
-  (or
-   (when-let [[_ scheme path] (re-matches #"<([a-zA-Z][a-zA-Z0-9+.-]*):(.*)>" raw)]
-     [:text-link [:text-link-angle [:link-url-scheme scheme] [:text-link-angle-path path]]])
-   (when-let [[_ scheme path] (re-matches #"([a-zA-Z][a-zA-Z0-9+.-]*):(.*)" raw)]
-     [:text-link [:text-link-plain [:link-url-scheme scheme] [:text-link-plain-path path]]])
-   nil))
-
-(defn- parse-link-target-node [target]
-  (cond
-    (or (re-find #"(?<!\\)\[" target)
-        (= target "\\"))
-    nil
-
-    (re-matches #"id:[a-zA-Z0-9][a-zA-Z0-9-]+" target)
-    [:link [:link-ext [:link-ext-id (subs target 3)]]]
-
-    (re-matches #"[a-zA-Z][a-zA-Z0-9+.-]*:.*" target)
-    (when-let [[_ scheme rest] (re-matches #"([a-zA-Z][a-zA-Z0-9+.-]*):(.*)" target)]
-      [:link [:link-ext [:link-ext-other [:link-url-scheme scheme] [:link-url-rest rest]]]])
-
-    (str/starts-with? target "#")
-    [:link [:link-int [:link-file-loc-customid (subs target 1)]]]
-
-    (str/starts-with? target "*")
-    [:link [:link-int [:link-file-loc-headline (subs target 1)]]]
-
-    :else
-    [:link [:link-int [:link-file-loc-string target]]]))
-
-(defn- parse-link-format-direct [raw]
-  (when (and (str/starts-with? raw "[[")
-             (str/ends-with? raw "]]"))
-    (let [inside (subs raw 2 (- (count raw) 2))
-          split-at (.indexOf inside "][")
-          [target desc] (if (neg? split-at)
-                          [inside nil]
-                          [(subs inside 0 split-at)
-                           (subs inside (+ split-at 2))])]
-      (when-let [link-node (parse-link-target-node target)]
-        (cond-> [:link-format link-node]
-          (some? desc) (conj [:link-description desc]))))))
-
-
-
-(defn- parse-ts-modifier-token [token]
-  (when-let [[_ typ val unit at-least-val at-least-unit]
-             (re-matches #"(\+\+|\+|\.\+|--|-)(\d+)([hdwmy])(?:/(\d+)([hdwmy]))?" token)]
-    (let [base [(if (contains? #{"+" "++" ".+"} typ) :ts-repeater :ts-warning)
-                [(if (contains? #{"+" "++" ".+"} typ) :ts-repeater-type :ts-warning-type) typ]
-                [:ts-mod-value val]
-                [:ts-mod-unit unit]]]
-      (if at-least-val
-        (conj base [:ts-mod-at-least [:ts-mod-value at-least-val] [:ts-mod-unit at-least-unit]])
-        base))))
-
-(defn- parse-ts-modifiers [mods-raw]
-  (if (or (nil? mods-raw) (= "" (str/trim mods-raw)))
-    []
-    (let [tokens (str/split (str/trim mods-raw) #"[ \t]+")
-          nodes (mapv parse-ts-modifier-token tokens)]
-      (when (every? some? nodes)
-        nodes))))
-
-(defn- ts-inner-simple
-  ([date day time]
-   (ts-inner-simple date day time []))
-  ([date day time modifiers]
-   (if time
-     [:ts-inner
-      (cond-> [:ts-inner-w-time [:ts-date date]]
-        day (conj [:ts-day day])
-        true (conj [:ts-time time]))
-      (into [:ts-modifiers] modifiers)]
-     [:ts-inner
-      (cond-> [:ts-inner-wo-time [:ts-date date]]
-        day (conj [:ts-day day]))
-      (into [:ts-modifiers] modifiers)])))
-
-(defn- parse-planning-ts [ts]
-  (or
-   (when-let [[_ d day time mods] (re-matches #"\[(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?(?:[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?))?(?:[ \t]+(.+))?\]" ts)]
-     (when-let [mod-nodes (parse-ts-modifiers mods)]
-       [:timestamp [:timestamp-inactive (ts-inner-simple d day time mod-nodes)]]))
-   (when-let [[_ d day time mods] (re-matches #"<(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?(?:[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?))?(?:[ \t]+(.+))?>" ts)]
-     (when-let [mod-nodes (parse-ts-modifiers mods)]
-       [:timestamp [:timestamp-active (ts-inner-simple d day time mod-nodes)]]))
-   nil))
-
-(defn- parse-simple-timestamp-point [raw]
-  (or
-   (when-let [[_ d day time mods] (re-matches #"<(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?(?:[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?))?(?:[ \t]+(.+))?>" raw)]
-     (when-let [mod-nodes (parse-ts-modifiers mods)]
-       [:timestamp [:timestamp-active (ts-inner-simple d day time mod-nodes)]]))
-    (when-let [[_ d day time mods] (re-matches #"\[(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?(?:[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?))?(?:[ \t]+(.+))?\]" raw)]
-      (when-let [mod-nodes (parse-ts-modifiers mods)]
-        [:timestamp [:timestamp-inactive (ts-inner-simple d day time mod-nodes)]]))
-    nil))
-
-(defn- parse-ts-inner-node [raw]
-  (or
-   (when-let [[_ d day time mods] (re-matches #"(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?(?:[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?))?(?:[ \t]+(.+))?" raw)]
-     (when-let [mod-nodes (parse-ts-modifiers mods)]
-       (ts-inner-simple d day time mod-nodes)))
-   nil))
+(defn- noparse-block->ast [ctx]
+  (let [begin-ctx (.noparseBlockBeginLine ctx)
+        end-ctx (.noparseBlockEndLine ctx)
+        begin-marker (some-> begin-ctx .noparseBeginMarker ctx-text str/lower-case)
+        end-marker (some-> end-ctx .noparseEndMarker ctx-text str/lower-case)
+        begin-name (some-> begin-ctx .noparseBlockName ctx-text str/lower-case)
+        end-name (some-> end-ctx .noparseEndName ctx-text str/lower-case)
+        params (some-> begin-ctx .noparseBlockParameters ctx-text)
+        content (or (some-> ctx .noparseBlockContent ctx-text) "")]
+    (if (and (= "begin" begin-marker)
+             (= "end" end-marker)
+             (contains? noparse-block-names begin-name)
+             (seq end-name))
+      (with-span (cond-> [:noparse-block
+                          (cond-> [:noparse-block-begin-line [:block-name-noparse begin-name]]
+                            (and params (not= params "")) (conj [:block-parameters params]))
+                          [:noparse-block-content content]
+                          [:block-end-line [:block-name end-name]]]
+                   true identity)
+                 ctx)
+      (failure :invalid-noparse-block :noparse-block (ctx-text ctx)))))
 
 (defn- parse-inline-chunk [raw]
   (letfn [(ok [v]
             (when (and v (not (:failure? v))) v))]
     (or
-     (when-let [[_ v] (re-matches #"\{\{\{([A-Za-z0-9_]+\(.*\))\}\}\}" raw)]
-       (ok (parse-direct (str "{{{" v "}}}") :text-macro)))
+     (ok (parse-direct raw :text-macro))
      (ok (parse-direct raw :link-format))
      (ok (parse-direct raw :footnote-link))
      (ok (parse-direct raw :text-link))
@@ -807,8 +630,7 @@
     :property-drawer
     (parse-antlr-only raw start)
     :noparse-block
-    (or (parse-noparse-block-direct raw)
-        (failure :invalid-noparse-block start raw))
+    (parse-antlr-only raw start)
     :fixed-width-line
     (parse-antlr-only raw start)
     :fixed-width-area
@@ -1120,8 +942,6 @@
                                  line-ast
                                  (with-meta [line-ast]
                                    (or (meta line-ast) {}))))
-                       :noparse-block (or (parse-direct raw :noparse-block)
-                                          (failure :invalid-noparse-block start raw))
                        :drawer-begin-line (drawer-begin-line->ast (.drawerBeginLine (.drawerBeginLineEof parser)))
                        :drawer-end-line (drawer-end-line->ast (.drawerEndLine (.drawerEndLineEof parser)))
                        :tags (tags->ast (.tags (.tagsEof parser)))
@@ -1146,6 +966,7 @@
                        :link-format (link-format->ast (.linkFormat (.linkFormatEof parser)))
                        :text-sup (text-sup->ast (.textSup (.textSupEof parser)))
                        :text-radio-target (text-radio-target->ast (.textRadioTarget (.textRadioTargetEof parser)))
+                       :noparse-block (noparse-block->ast (.noparseBlock (.noparseBlockEof parser)))
                        :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
                        :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
                        :text-sub (text-sub->ast (.textSub (.textSubEof parser)))

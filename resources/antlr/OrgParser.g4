@@ -107,6 +107,8 @@ textSupEof: textSup EOF;
 
 textRadioTargetEof: textRadioTarget EOF;
 
+noparseBlockEof: noparseBlock EOF;
+
 emptyLine: SPACE+;
 
 eol: NEWLINE?;
@@ -152,6 +154,24 @@ blockName: blockNameChar+;
 blockNameChar: ~(NEWLINE | SPACE);
 
 blockParameters: text;
+
+noparseBlock: noparseBlockBeginLine NEWLINE noparseBlockContent noparseBlockEndLine;
+
+noparseBlockBeginLine: SPACE* HASH PLUS noparseBeginMarker UNDERSCORE noparseBlockName (SPACE noparseBlockParameters)? SPACE*;
+
+noparseBlockEndLine: SPACE* HASH PLUS noparseEndMarker UNDERSCORE noparseEndName SPACE*;
+
+noparseBeginMarker: markerChar+;
+
+noparseEndMarker: markerChar+;
+
+noparseBlockName: blockName;
+
+noparseEndName: blockName;
+
+noparseBlockParameters: text;
+
+noparseBlockContent: (.)*?;
 
 dynamicBlockBeginLine: HASH PLUS dynamicBeginMarker COLON SPACE+ dynamicBlockName (SPACE dynamicBlockParameters)? SPACE*;
 
@@ -550,15 +570,29 @@ textStyledStrike: PLUS textStyledBody PLUS;
 
 textStyledBody: sameLineChar+;
 
-linkFormat: LBRACK LBRACK linkTargetRaw RBRACK (RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK);
+linkFormat: LBRACK LBRACK linkTarget RBRACK (RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK);
 
-linkTargetRaw: linkTargetChunk+;
+linkTarget: linkTargetId | linkTargetExtOther | linkTargetIntCustomId | linkTargetIntHeadline | linkTargetIntString;
 
-linkTargetChunk: linkEscapedBracketOrSlash | linkTargetChar;
+linkTargetId: LOWER LOWER COLON linkIdValue;
 
-linkEscapedBracketOrSlash: BACKSLASH (BACKSLASH | LBRACK | RBRACK);
+linkTargetExtOther: linkUrlScheme COLON linkTargetRest?;
 
-linkTargetChar: ~(NEWLINE | LBRACK | RBRACK);
+linkTargetIntCustomId: HASH linkTargetIntText+;
+
+linkTargetIntHeadline: STAR linkTargetIntText+;
+
+linkTargetIntString: linkTargetIntText+;
+
+linkTargetRest: linkTargetChunk+;
+
+linkTargetIntText: linkTargetChunk;
+
+linkTargetChunk: BACKSLASH linkTargetEscapedChar | linkTargetPlainChar;
+
+linkTargetEscapedChar: ~(NEWLINE);
+
+linkTargetPlainChar: ~(NEWLINE | LBRACK | RBRACK | BACKSLASH);
 
 linkDescriptionRaw: sameLineChar*;
 
