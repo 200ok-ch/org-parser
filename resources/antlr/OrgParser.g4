@@ -85,6 +85,18 @@ textSubEof: textSub EOF;
 
 textMacroEof: textMacro EOF;
 
+tagsEof: tags EOF;
+
+diarySexpEof: diarySexp EOF;
+
+affiliatedKeywordLineEof: affiliatedKeywordLine EOF;
+
+listItemLineEof: listItemLine EOF;
+
+tableEof: table EOF;
+
+textStyledEof: textStyled EOF;
+
 emptyLine: SPACE+;
 
 headline
@@ -212,6 +224,94 @@ sameLineChar
   | QUESTION
   | EXCL
   ;
+
+sameLineCharNoBar
+  : TEXT_CHAR
+  | SPACE
+  | COMMENT
+  | UPPER
+  | LOWER
+  | DIGIT
+  | STAR
+  | LBRACK
+  | RBRACK
+  | HASH
+  | COLON
+  | DASH
+  | PLUS
+  | UNDERSCORE
+  | LT
+  | GT
+  | LPAREN
+  | RPAREN
+  | LBRACE
+  | RBRACE
+  | BACKSLASH
+  | SLASH
+  | EQUALS
+  | TILDE
+  | DOT
+  | COMMA
+  | PERCENT
+  | AT
+  | QUESTION
+  | EXCL
+  ;
+
+sameLineCharNoRbrack
+  : TEXT_CHAR
+  | SPACE
+  | COMMENT
+  | UPPER
+  | LOWER
+  | DIGIT
+  | STAR
+  | LBRACK
+  | HASH
+  | COLON
+  | DASH
+  | PLUS
+  | BAR
+  | UNDERSCORE
+  | LT
+  | GT
+  | LPAREN
+  | RPAREN
+  | LBRACE
+  | RBRACE
+  | BACKSLASH
+  | SLASH
+  | EQUALS
+  | TILDE
+  | DOT
+  | COMMA
+  | PERCENT
+  | AT
+  | QUESTION
+  | EXCL
+  ;
+
+tags: COLON tagName (COLON tagName)* COLON;
+
+tagName: tagNameChar+;
+
+tagNameChar: UPPER | LOWER | DIGIT | UNDERSCORE | AT | HASH | PERCENT;
+
+diarySexp: PERCENT PERCENT diarySexpDirectBody;
+
+diarySexpDirectBody: sameLineChar+;
+
+affiliatedKeywordLine: SPACE* HASH PLUS affiliatedKeywordName affiliatedKeywordOption? COLON SPACE+ affiliatedKeywordValue;
+
+affiliatedKeywordName: affiliatedKeywordNameChar+;
+
+affiliatedKeywordNameChar: UPPER | LOWER | DIGIT | DASH | UNDERSCORE;
+
+affiliatedKeywordOption: LBRACK affiliatedKeywordOptionText RBRACK;
+
+affiliatedKeywordOptionText: sameLineCharNoRbrack+;
+
+affiliatedKeywordValue: sameLineCharNoRbrack+;
 
 nodePropertyLine: COLON nodePropertyName PLUS? COLON (SPACE nodePropertyValue)?;
 
@@ -353,3 +453,80 @@ macroArg: macroArgPart+;
 macroArgPart: BACKSLASH COMMA | LPAREN macroArgPart* RPAREN | macroArgChar;
 
 macroArgChar: ~(NEWLINE | COMMA | RPAREN);
+
+listItemLine: listItemIndent listItemMarker listItemCheckbox? listItemTagSpec? listItemContents;
+
+listItemIndent: SPACE*;
+
+listItemMarker: listItemBullet SPACE | listItemCounter listItemCounterSuffix SPACE;
+
+listItemBullet: STAR | PLUS | DASH;
+
+listItemCounter: UPPER | LOWER | DIGIT;
+
+listItemCounterSuffix: DOT | RPAREN;
+
+listItemCheckbox: LBRACK listItemCheckboxState RBRACK SPACE;
+
+listItemCheckboxState: SPACE | DASH | UPPER;
+
+listItemTagSpec: listItemTagText SPACE COLON COLON SPACE;
+
+listItemTagText: sameLineChar+;
+
+listItemContents: text;
+
+table: tableOrg | tableTableel;
+
+tableTableel: tableTableelLine (NEWLINE tableTableelLine)* NEWLINE?;
+
+tableTableelLine: SPACE* (tableTableelSepLine | tableTableelTextLine);
+
+tableTableelSepLine: PLUS tableTableelSepChar+ PLUS;
+
+tableTableelSepChar: PLUS | DASH;
+
+tableTableelTextLine: BAR tableTableelTextChar* BAR;
+
+tableTableelTextChar: sameLineChar;
+
+tableOrg: tableOrgLine (NEWLINE tableOrgLine)* NEWLINE?;
+
+tableOrgLine: SPACE* (tableFormulaLine | tableOrgSepLine | tableOrgDataRow);
+
+tableFormulaLine: HASH PLUS tableFormulaKeyword COLON SPACE tableFormulaTextOpt;
+
+tableFormulaKeyword: UPPER+;
+
+tableFormulaTextOpt: sameLineChar*;
+
+tableOrgSepLine: BAR tableOrgSepChar+ BAR;
+
+tableOrgSepChar: PLUS | DASH;
+
+tableOrgDataRow: BAR tableOrgCell (BAR tableOrgCell)* BAR;
+
+tableOrgCell: sameLineCharNoBar*;
+
+textStyled
+  : textStyledBold
+  | textStyledItalic
+  | textStyledUnderlined
+  | textStyledVerbatim
+  | textStyledCode
+  | textStyledStrike
+  ;
+
+textStyledBold: STAR textStyledBody STAR;
+
+textStyledItalic: SLASH textStyledBody SLASH;
+
+textStyledUnderlined: UNDERSCORE textStyledBody UNDERSCORE;
+
+textStyledVerbatim: EQUALS textStyledBody EQUALS;
+
+textStyledCode: TILDE textStyledBody TILDE;
+
+textStyledStrike: PLUS textStyledBody PLUS;
+
+textStyledBody: sameLineChar+;

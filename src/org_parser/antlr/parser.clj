@@ -45,6 +45,20 @@
    "DEADLINE" :planning-kw-deadline
    "CLOSED" :planning-kw-closed})
 
+(def ^:private affiliated-keywords
+  #{"HEADER" "NAME" "PLOT" "RESULTS" "CAPTION" "AUTHOR" "DATE" "TITLE"})
+
+(def ^:private text-style-tags
+  {"*" :text-sty-bold
+   "/" :text-sty-italic
+   "_" :text-sty-underlined
+   "=" :text-sty-verbatim
+   "~" :text-sty-code
+   "+" :text-sty-strikethrough})
+
+(def ^:private code-like-style-tags
+  #{:text-sty-verbatim :text-sty-code})
+
 (def ^:private ts-mod-units
   #{"h" "d" "w" "m" "y"})
 
@@ -291,6 +305,107 @@
                (mapv ctx-text (.macroArg args-ctx))
                [""])]
     (with-span [:text-macro [:macro-name (ctx-text (.macroName ctx))] (into [:macro-args] args)] ctx)))
+
+(defn- tags->ast [ctx]
+  (let [tags (mapv ctx-text (.tagName ctx))]
+    (if (seq tags)
+      (with-span (into [:tags] tags) ctx)
+      (failure :invalid-tags :tags (ctx-text ctx)))))
+
+(defn- diary-sexp->ast [ctx]
+  (let [raw (ctx-text (.diarySexpDirectBody ctx))
+        normalized (if (str/starts-with? raw "(")
+                     (subs raw 1)
+                     raw)]
+    (with-span [:diary-sexp normalized] ctx)))
+
+(defn- affiliated-keyword-line->ast [ctx]
+  (let [name (ctx-text (.affiliatedKeywordName ctx))
+        opt (some-> ctx .affiliatedKeywordOption .affiliatedKeywordOptionText ctx-text)
+        value (ctx-text (.affiliatedKeywordValue ctx))]
+    (cond
+      (contains? affiliated-keywords name)
+      (with-span [:affiliated-keyword-line
+                  (if opt
+                    [:affil-kw-key name [:affil-kw-optional opt]]
+                    [:affil-kw-key name])
+                  [:kw-value value]]
+                 ctx)
+
+      (and (str/starts-with? name "ATTR_")
+           (nil? opt)
+           (re-matches #"[A-Za-z0-9-_]+" (subs name 5)))
+      (with-span [:affiliated-keyword-line [:affil-kw-attr (subs name 5)] [:kw-value value]] ctx)
+
+      :else
+      (failure :invalid-affiliated-keyword-line :affiliated-keyword-line (ctx-text ctx)))))
+
+(defn- list-item-line->ast [ctx]
+  (let [marker-ctx (.listItemMarker ctx)]
+    (with-span
+      (cond-> (if-let [bullet-ctx (.listItemBullet marker-ctx)]
+                [:list-item-line [:indent (ctx-text (.listItemIndent ctx))] [:list-item-bullet (ctx-text bullet-ctx)]]
+                [:list-item-line
+                 [:indent (ctx-text (.listItemIndent ctx))]
+                 [:list-item-counter (ctx-text (.listItemCounter marker-ctx))]
+                 [:list-item-counter-suffix (ctx-text (.listItemCounterSuffix marker-ctx))]])
+        (.listItemCheckbox ctx) (conj [:list-item-checkbox [:list-item-checkbox-state (ctx-text (.listItemCheckboxState (.listItemCheckbox ctx)))]] )
+        (.listItemTagSpec ctx) (conj [:list-item-tag (ctx-text (.listItemTagText (.listItemTagSpec ctx)))])
+        true (conj (text-node (ctx-text (.listItemContents ctx)))))
+      ctx)))
+
+(defn- table-tableel-line->ast [ctx]
+  (if-let [sep (.tableTableelSepLine ctx)]
+    [:table-tableel-sep (ctx-text sep)]
+    [:table-tableel-line (ctx-text (.tableTableelTextLine ctx))]))
+
+(defn- table-org-line->ast [ctx]
+  (cond
+    (.tableFormulaLine ctx)
+    (let [formula-ctx (.tableFormulaLine ctx)]
+      (if (= "TBLFM" (ctx-text (.tableFormulaKeyword formula-ctx)))
+        [:table-formula (or (some-> formula-ctx .tableFormulaTextOpt ctx-text) "")]
+        (failure :invalid-table :table (ctx-text formula-ctx))))
+
+    (.tableOrgSepLine ctx)
+    [:table-row [:table-row-sep (ctx-text (.tableOrgSepLine ctx))]]
+
+    :else
+    [:table-row
+     (into [:table-row-cells]
+           (map (fn [cell] [:table-cell (ctx-text cell)])
+                (.tableOrgCell (.tableOrgDataRow ctx))))]))
+
+(defn- table->ast [ctx]
+  (cond
+    (.tableTableel ctx)
+    (with-span [:table
+                (into [:table-tableel]
+                      (map table-tableel-line->ast (.tableTableelLine (.tableTableel ctx))))]
+               ctx)
+
+    (.tableOrg ctx)
+    (let [rows (mapv table-org-line->ast (.tableOrgLine (.tableOrg ctx)))]
+      (if (some :failure? rows)
+        (failure :invalid-table :table (ctx-text ctx))
+        (with-span [:table (into [:table-org] rows)] ctx)))
+
+    :else
+    (failure :invalid-table :table (ctx-text ctx))))
+
+(defn- text-styled->ast [ctx]
+  (let [raw (ctx-text ctx)
+        delim (subs raw 0 1)
+        inner (subs raw 1 (dec (count raw)))
+        tag (get text-style-tags delim)]
+    (if (and tag
+             (not= inner "")
+             (or (not (contains? code-like-style-tags tag))
+                 (and (not (str/starts-with? inner " "))
+                      (not (str/ends-with? inner " "))
+                      (not (re-find #"\S[=~]\s" inner)))))
+      (with-span [[tag inner]] ctx)
+      (failure :invalid-text-styled :text-styled raw))))
 
 (defn- parse-node-property-line-direct [s]
   (if-let [[_ name plus value] (re-matches #":(?!END:)([^\s:+]+)(\+)?:(?: (.*))?" s)]
@@ -549,10 +664,11 @@
                 styled-cand (some (fn [d]
                                     (let [j (.indexOf rest d 1)]
                                       (when (pos? j)
-                                        (let [cand (subs rest 0 (inc j))]
-                                          (when-let [s (parse-text-styled-direct cand)]
-                                            [cand s])))))
-                                  ["*" "/" "_" "=" "~" "+"])
+                                        (let [cand (subs rest 0 (inc j))
+                                              styled (parse-direct cand :text-styled)]
+                                          (when-not (:failure? styled)
+                                            [cand styled])))))
+                                   ["*" "/" "_" "=" "~" "+"])
                 macro-end (.indexOf rest "}}}")
                 macro-cand (when (and (str/starts-with? rest "{{{") (<= 0 macro-end))
                              (subs rest 0 (+ macro-end 3)))
@@ -607,7 +723,7 @@
                                (when-not (:failure? ts-node)
                                 [ts-cand ts-node])))
                           (when angled-cand [angled-cand (parse-inline-chunk angled-cand)])
-                          (when styled-cand [(first styled-cand) (first (second styled-cand))])
+                           (when styled-cand [(first styled-cand) (first (second styled-cand))])
                           (when entity-cand [entity-cand (parse-inline-chunk entity-cand)])
                           (when sub-cand [sub-cand (parse-inline-chunk sub-cand)])
                           (when sup-cand [sup-cand (parse-inline-chunk sup-cand)]))]
@@ -647,28 +763,12 @@
     :word (if (re-matches #"[^\r\n\s]+" raw)
             (with-raw-span [raw] raw)
             (failure :invalid-word start raw))
-    :tags (if-let [[_ body] (re-matches #":([a-zA-Z0-9_@#%:]+):" raw)]
-            (let [tags (remove empty? (str/split body #":"))]
-              (if (seq tags)
-                (with-raw-span (into [:tags] tags) raw)
-                (failure :invalid-tags start raw)))
-            (failure :invalid-tags start raw))
-    :diary-sexp (if-let [[_ v] (re-matches #"%%(.+)" raw)]
-                  (let [normalized (if (str/starts-with? v "(")
-                                     (subs v 1)
-                                     v)]
-                    (with-raw-span [:diary-sexp normalized] raw))
-                  (failure :invalid-diary-sexp start raw))
+    :tags
+    (parse-antlr-only raw start)
+    :diary-sexp
+    (parse-antlr-only raw start)
     :affiliated-keyword-line
-    (or
-     (when-let [[_ k opt v] (re-matches #"\s*#\+(HEADER|NAME|PLOT|RESULTS|CAPTION|AUTHOR|DATE|TITLE)(?:\[([^\]\r\n]+)\])?:\s+([^\]\r\n]+)" raw)]
-       (let [key-node (if opt
-                        [:affil-kw-key k [:affil-kw-optional opt]]
-                        [:affil-kw-key k])]
-         (with-raw-span [:affiliated-keyword-line key-node [:kw-value v]] raw)))
-      (when-let [[_ backend v] (re-matches #"\s*#\+ATTR_([a-zA-Z0-9-_]+):\s+([^\]\r\n]+)" raw)]
-        (with-raw-span [:affiliated-keyword-line [:affil-kw-attr backend] [:kw-value v]] raw))
-      (failure :invalid-affiliated-keyword-line start raw))
+    (parse-antlr-only raw start)
     :node-property-line
     (parse-antlr-only raw start)
     :property-drawer
@@ -687,9 +787,7 @@
     :link-ext-file
     (parse-antlr-only raw start)
     :text-styled
-    (if-let [s (parse-text-styled-direct raw)]
-      (with-raw-span s raw)
-      (failure :invalid-text-styled start raw))
+    (parse-antlr-only raw start)
     :text-link
     (parse-antlr-only raw start)
     :link-format
@@ -707,13 +805,9 @@
     :clock
     (parse-antlr-only raw start)
     :list-item-line
-    (if-let [li (parse-list-item-line-direct raw)]
-      (with-raw-span li raw)
-      (failure :invalid-list-item-line start raw))
+    (parse-antlr-only raw start)
     :table
-    (if-let [t (parse-table-direct raw)]
-      (with-raw-span t raw)
-      (failure :invalid-table start raw))
+    (parse-antlr-only raw start)
     :timestamp
     (parse-antlr-only raw start)
     :text-entity
@@ -1000,6 +1094,9 @@
                                           (failure :invalid-noparse-block start raw))
                        :drawer-begin-line (drawer-begin-line->ast (.drawerBeginLine (.drawerBeginLineEof parser)))
                        :drawer-end-line (drawer-end-line->ast (.drawerEndLine (.drawerEndLineEof parser)))
+                       :tags (tags->ast (.tags (.tagsEof parser)))
+                       :diary-sexp (diary-sexp->ast (.diarySexp (.diarySexpEof parser)))
+                       :affiliated-keyword-line (affiliated-keyword-line->ast (.affiliatedKeywordLine (.affiliatedKeywordLineEof parser)))
                        :node-property-line (node-property-line->ast (.nodePropertyLine (.nodePropertyLineEof parser)))
                        :property-drawer (property-drawer->ast (.propertyDrawer (.propertyDrawerEof parser)))
                        :fixed-width-line (fixed-width-line->ast (.fixedWidthLine (.fixedWidthLineEof parser)))
@@ -1013,6 +1110,9 @@
                        :timestamp (timestamp->ast (.timestamp (.timestampEof parser)))
                        :clock (clock->ast (.clock (.clockEof parser)))
                        :planning (planning->ast (.planning (.planningEof parser)))
+                       :list-item-line (list-item-line->ast (.listItemLine (.listItemLineEof parser)))
+                       :table (table->ast (.table (.tableEof parser)))
+                       :text-styled (text-styled->ast (.textStyled (.textStyledEof parser)))
                        :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
                        :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
                        :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
