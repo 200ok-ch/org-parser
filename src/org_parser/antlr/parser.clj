@@ -204,11 +204,21 @@
     (.linkFileLocationString ctx) [:link-file-loc-string (ctx-text (.linkFileLocationString ctx))]))
 
 (defn- link-ext-file->ast [ctx]
-  (let [path (ctx-text (.linkFilePath ctx))
-        loc-ctx (.linkFileLocation ctx)]
-    (with-span (cond-> [:link-ext-file path]
-                 loc-ctx (conj (link-file-location-node loc-ctx)))
-               ctx)))
+  (let [raw (ctx-text ctx)
+        scheme (some-> ctx .linkFileScheme ctx-text)
+        path (ctx-text (.linkFilePath ctx))
+        loc-ctx (.linkFileLocation ctx)
+        looks-like-other-scheme? (and (nil? scheme)
+                                      (not (re-matches #"(?i)[a-z]:.*" path))
+                                      (or (re-matches #"(?i)(?:https?|ftp|mailto):.*" path)
+                                          (re-matches #"(?i)[a-z][a-z0-9+.-]*://.*" path)))]
+    (if (and (seq path)
+             (or (nil? scheme) (= "file:" (str/lower-case scheme)))
+             (not looks-like-other-scheme?))
+      (with-span (cond-> [:link-ext-file path]
+                   loc-ctx (conj (link-file-location-node loc-ctx)))
+                 ctx)
+      (failure :invalid-link-ext-file :link-ext-file raw))))
 
 (defn- text-link->ast [ctx]
   (let [link-ctx (or (some-> ctx .textLinkAngle .linkExtOther)
@@ -509,7 +519,7 @@
     [:text-normal (ctx-text (.textPlain ctx))]
 
     (.textFallbackChar ctx)
-    (with-meta [:text-normal (ctx-text (.textFallbackChar ctx))] {:barrier-before true})
+    [:text-normal (ctx-text (.textFallbackChar ctx))]
 
     :else nil))
 
@@ -519,8 +529,7 @@
 (defn- merge-text-normal-nodes [nodes]
   (reduce (fn [acc node]
             (if (and (= :text-normal (first node))
-                     (= :text-normal (first (peek acc)))
-                     (not (:barrier-before (meta node))))
+                     (= :text-normal (first (peek acc))))
               (conj (pop acc) [:text-normal (str (second (peek acc)) (second node))])
               (conj acc node)))
           []

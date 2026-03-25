@@ -798,6 +798,12 @@ is another section"))))))
     (testing "parse absolute file link"
       (is (= [:link-ext-file "/folder/file.txt"]
              (parse "/folder/file.txt"))))
+    (testing "parse drive-relative file link"
+      (is (= [:link-ext-file "C:folder/file.txt"]
+             (parse "C:folder/file.txt"))))
+    (testing "parse bare file link with colon in leading segment"
+      (is (= [:link-ext-file "dir:name/file.txt"]
+             (parse "dir:name/file.txt"))))
     (testing "parse file link with line number"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-lnum "15"]]
              (parse "./file.org::15"))))
@@ -813,7 +819,13 @@ is another section"))))))
              (parse "./file.org::*header1: test"))))
     (testing "parse file link with custom id"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-customid "custom-id"]]
-             (parse "./file.org::#custom-id"))))))
+             (parse "./file.org::#custom-id"))))
+    (testing "reject non-file scheme"
+      (is (parser/failure? (parse "http:folder/file.txt"))))
+    (testing "reject bare non-file scheme"
+      (is (parser/failure? (parse "abcd:foo"))))
+    (testing "reject url-like non-file scheme"
+      (is (parser/failure? (parse "ssh://host/path"))))))
 
 (deftest links-external-other-url
   (let [parse #(parser/parse % :start :link-ext-other)]
@@ -924,11 +936,17 @@ is another section"))))))
     (testing "does not parse a string starting with newline"
       (is (parser/failure? (parse "\nfoo"))))
     (testing "parse text that contains style delimiter"
-      (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
+      (is (= [:text [:text-normal "a/b"]]
              (parse "a/b"))))
     (testing "parse text that contains style delimiter"
-      (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
+      (is (= [:text [:text-normal "a /b"]]
              (parse "a /b"))))
+    (testing "parse text with unmatched angle bracket as plain text"
+      (is (= [:text [:text-normal "a<b"]]
+             (parse "a<b"))))
+    (testing "parse text with unmatched bracket as plain text"
+      (is (= [:text [:text-normal "foo[bar"]]
+             (parse "foo[bar"))))
     (testing "parse styled text alone"
       (is (= [:text [:text-sty-bold "bold text"]]
              (parse "*bold text*"))))
@@ -948,8 +966,7 @@ is another section"))))))
              (parse "normal text *bold text* more text"))))
     (testing "parse styled text reluctant"
       (is (= [:text [:text-sty-bold "bold text"]
-              [:text-normal " text"]
-              [:text-normal "*"]]
+              [:text-normal " text*"]]
              (parse "*bold text* text*"))))
     ;; TODO parse only when "surrounded" by delimiter
     ;; (testing "parse italic text"
@@ -1006,7 +1023,7 @@ is another section"))))))
       (is (= [:text [:text-normal "abc "] [:text-linebreak [:text-linebreak-after "  "]]]
              (parse "abc \\\\  "))))
     (testing "parse text followed by line break"
-      (is (= [:text [:text-normal "abc "] [:text-normal "\\"] [:text-normal "\\ xyz"]]
+      (is (= [:text [:text-normal "abc \\\\ xyz"]]
              (parse "abc \\\\ xyz"))))
 
     ;; macros
