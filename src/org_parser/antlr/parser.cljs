@@ -12,7 +12,7 @@
 (def ^:private OrgLexer (js/require lexer-module-path))
 (def ^:private OrgParser (js/require parser-module-path))
 
-(declare parse-direct)
+(declare parse-direct parse-antlr-only)
 
 (defn- text-node [s]
   [:text [:text-normal s]])
@@ -50,6 +50,258 @@
    :reason reason
    :start start
    :raw raw})
+
+(def ^:private planning-keywords
+  {"SCHEDULED" :planning-kw-scheduled
+   "DEADLINE" :planning-kw-deadline
+   "CLOSED" :planning-kw-closed})
+
+(def ^:private ts-mod-units
+  #{"h" "d" "w" "m" "y"})
+
+(defn- ctx-text [ctx]
+  (some-> ctx .getText))
+
+(defn- valid-ts-time? [raw]
+  (boolean (re-matches #"\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?" raw)))
+
+(defn- valid-ts-unit? [unit]
+  (contains? ts-mod-units (some-> unit str/lower-case)))
+
+(defn- ts-mod-at-least->ast [ctx]
+  (when ctx
+    (let [value (ctx-text (.tsModValue ctx))
+          unit (ctx-text (.tsModUnit ctx))]
+      (when (and value (valid-ts-unit? unit))
+        [:ts-mod-at-least [:ts-mod-value value] [:ts-mod-unit unit]]))))
+
+(defn- ts-repeater->ast [ctx]
+  (let [typ (ctx-text (.tsRepeaterType ctx))
+        value (ctx-text (.tsModValue ctx))
+        unit (ctx-text (.tsModUnit ctx))
+        at-least (ts-mod-at-least->ast (.tsModAtLeast ctx))]
+    (when (and typ value (valid-ts-unit? unit))
+      (cond-> [:ts-repeater
+               [:ts-repeater-type typ]
+               [:ts-mod-value value]
+               [:ts-mod-unit unit]]
+        at-least (conj at-least)))))
+
+(defn- ts-warning->ast [ctx]
+  (let [typ (ctx-text (.tsWarningType ctx))
+        value (ctx-text (.tsModValue ctx))
+        unit (ctx-text (.tsModUnit ctx))
+        at-least (ts-mod-at-least->ast (.tsModAtLeast ctx))]
+    (when (and typ value (valid-ts-unit? unit))
+      (cond-> [:ts-warning
+               [:ts-warning-type typ]
+               [:ts-mod-value value]
+               [:ts-mod-unit unit]]
+        at-least (conj at-least)))))
+
+(defn- ts-modifier->ast [ctx]
+  (or (some-> ctx .tsRepeater ts-repeater->ast)
+      (some-> ctx .tsWarning ts-warning->ast)))
+
+(defn- ts-modifiers->ast [ctx]
+  (let [mods (if ctx
+               (mapv ts-modifier->ast (.tsModifier ctx))
+               [])]
+    (when (every? some? mods)
+      (into [:ts-modifiers] mods))))
+
+(defn- ts-time-node [ctx]
+  (let [raw (ctx-text ctx)]
+    (when (valid-ts-time? raw)
+      [:ts-time raw])))
+
+(defn- ts-inner-w-time->ast [ctx]
+  (let [date (ctx-text (.tsDate ctx))
+        day (some-> ctx .tsDay ctx-text)
+        time-node (ts-time-node (.tsTime ctx))]
+    (when (and date time-node)
+      (cond-> [:ts-inner-w-time [:ts-date date]]
+        day (conj [:ts-day day])
+        true (conj time-node)))))
+
+(defn- ts-inner->ast [ctx]
+  (let [date (ctx-text (.tsDate ctx))
+        day (some-> ctx .tsDay ctx-text)
+        time-node (some-> ctx .tsTime ts-time-node)
+        modifiers (ts-modifiers->ast (.tsModifiers ctx))]
+    (when modifiers
+      [:ts-inner
+       (if time-node
+         (cond-> [:ts-inner-w-time [:ts-date date]]
+           day (conj [:ts-day day])
+           true (conj time-node))
+         (cond-> [:ts-inner-wo-time [:ts-date date]]
+           day (conj [:ts-day day])))
+       modifiers])))
+
+(defn- ts-inner-span->ast [ctx]
+  (let [date (ctx-text (.tsDate ctx))
+        day (some-> ctx .tsDay ctx-text)
+        start-time (ts-time-node (.tsTime ctx 0))
+        end-time (ts-time-node (.tsTime ctx 1))
+        modifiers (ts-modifiers->ast (.tsModifiers ctx))]
+    (when (and date start-time end-time modifiers)
+      [:ts-inner-span
+       (cond-> [:ts-inner-w-time [:ts-date date]]
+         day (conj [:ts-day day])
+         true (conj start-time))
+       end-time
+       modifiers])))
+
+(defn- node-property-line->ast [ctx]
+  (with-span
+    (cond-> [:node-property-line [:node-property-name (ctx-text (.nodePropertyName ctx))]]
+      (.PLUS ctx) (conj [:node-property-plus])
+      (.nodePropertyValue ctx) (conj [:node-property-value (text-node (ctx-text (.nodePropertyValue ctx)))]))
+    ctx))
+
+(defn- property-drawer->ast [ctx]
+  (let [props (mapv node-property-line->ast (.nodePropertyLine ctx))]
+    (if (or (not= "PROPERTIES" (ctx-text (.drawerName (.drawerBeginLine ctx))))
+            (some :failure? props))
+      (failure :invalid-property-drawer :property-drawer (ctx-text ctx))
+      (with-span (into [:property-drawer] props) ctx))))
+
+(defn- fixed-width-line->ast [ctx]
+  (with-span [:fixed-width-line (or (some-> ctx .fixedWidthValue ctx-text) "")] ctx))
+
+(defn- fixed-width-area->ast [ctx]
+  (with-span (into [:fixed-width-area] (map fixed-width-line->ast (.fixedWidthLine ctx))) ctx))
+
+(defn- link-ext-other->ast [ctx]
+  (with-span (cond-> [:link-ext-other [:link-url-scheme (ctx-text (.linkUrlScheme ctx))]]
+               (.linkUrlRest ctx) (conj [:link-url-rest (ctx-text (.linkUrlRest ctx))]))
+             ctx))
+
+(defn- link-ext-id->ast [ctx]
+  (if (= "id" (ctx-text (.linkIdPrefix ctx)))
+    (with-span [:link-ext-id (ctx-text (.linkIdValue ctx))] ctx)
+    (failure :invalid-link-ext-id :link-ext-id (ctx-text ctx))))
+
+(defn- link-file-location-node [loc]
+  (cond
+    (re-matches #"[0-9]+" loc) [:link-file-loc-lnum loc]
+    (str/starts-with? loc "*") [:link-file-loc-headline (subs loc 1)]
+    (str/starts-with? loc "#") [:link-file-loc-customid (subs loc 1)]
+    :else [:link-file-loc-string loc]))
+
+(defn- link-ext-file->ast [ctx]
+  (let [scheme (some-> ctx .linkFileScheme ctx-text)
+        path (ctx-text (.linkFilePath ctx))
+        loc (some-> ctx .linkFileLocation ctx-text)]
+    (if (and (seq path)
+             (or (nil? scheme) (= "file:" (str/lower-case scheme))))
+      (with-span (cond-> [:link-ext-file path]
+                   loc (conj (link-file-location-node loc)))
+                 ctx)
+      (failure :invalid-link-ext-file :link-ext-file (ctx-text ctx)))))
+
+(defn- text-link->ast [ctx]
+  (let [link (link-ext-other->ast (.linkExtOther ctx))
+        raw (ctx-text ctx)]
+    (if (:failure? link)
+      link
+      (with-span
+        [:text-link
+         (if (str/starts-with? raw "<")
+           [:text-link-angle
+            [:link-url-scheme (ctx-text (.linkUrlScheme (.linkExtOther ctx)))]
+            [:text-link-angle-path (or (some-> (.linkExtOther ctx) .linkUrlRest ctx-text) "")]]
+           [:text-link-plain
+            [:link-url-scheme (ctx-text (.linkUrlScheme (.linkExtOther ctx)))]
+            [:text-link-plain-path (or (some-> (.linkExtOther ctx) .linkUrlRest ctx-text) "")]])]
+        ctx))))
+
+(defn- ts-time->ast [ctx]
+  (if-let [node (ts-time-node ctx)]
+    (with-span node ctx)
+    (failure :invalid-ts-time :ts-time (ctx-text ctx))))
+
+(defn- timestamp-inactive-range->ast [ctx]
+  (let [span-ctx (.tsInnerSpan ctx)]
+    (if span-ctx
+      (if-let [span (ts-inner-span->ast span-ctx)]
+        (with-span [:timestamp-inactive-range span] ctx)
+        (failure :invalid-timestamp-inactive-range :timestamp-inactive-range (ctx-text ctx)))
+      (let [inners (mapv ts-inner-w-time->ast (.tsInnerWTime ctx))]
+        (if (every? some? inners)
+          (with-span (into [:timestamp-inactive-range] inners) ctx)
+          (failure :invalid-timestamp-inactive-range :timestamp-inactive-range (ctx-text ctx)))))))
+
+(defn- timestamp->ast [ctx]
+  (let [raw (ctx-text ctx)
+        active-tag (if (str/starts-with? raw "<") :timestamp-active :timestamp-inactive)]
+    (cond
+      (.diarySexpBody ctx)
+      (with-span [:timestamp [:timestamp-diary (ctx-text (.diarySexpBody ctx))]] ctx)
+
+      (.tsInnerSpan ctx)
+      (if-let [span (ts-inner-span->ast (.tsInnerSpan ctx))]
+        (with-span [:timestamp [active-tag span]] ctx)
+        (failure :invalid-timestamp :timestamp raw))
+
+      :else
+      (let [inners (mapv ts-inner->ast (.tsInner ctx))]
+        (if (and (seq inners) (every? some? inners))
+          (with-span [:timestamp (into [active-tag] inners)] ctx)
+          (failure :invalid-timestamp :timestamp raw))))))
+
+(defn- planning-timestamp->ast [ctx]
+  (let [tag (if (= "[" (subs (ctx-text ctx) 0 1)) :timestamp-inactive :timestamp-active)]
+    (when-let [inner (ts-inner->ast (.tsInner ctx))]
+      [:timestamp [tag inner]])))
+
+(defn- planning-info->ast [ctx]
+  (let [kw (ctx-text (.planningKeyword ctx))
+        tag (planning-keywords kw)
+        timestamp (planning-timestamp->ast (.planningTimestamp ctx))]
+    (when (and tag timestamp)
+      [:planning-info [:planning-keyword [tag]] timestamp])))
+
+(defn- planning->ast [ctx]
+  (let [infos (mapv planning-info->ast (.planningInfo ctx))]
+    (if (and (seq infos) (every? some? infos))
+      (with-span (into [:planning] infos) ctx)
+      (failure :invalid-planning :planning (ctx-text ctx)))))
+
+(defn- clock->ast [ctx]
+  (let [kw (ctx-text (.clockKeyword ctx))
+        range (timestamp-inactive-range->ast (.timestampInactiveRange ctx))]
+    (if (or (not= "CLOCK" kw) (:failure? range))
+      (failure :invalid-clock :clock (ctx-text ctx))
+      (with-span [:clock
+                  range
+                  [:clock-duration
+                   [:clock-dur-hh (ctx-text (.clockHours ctx))]
+                   [:clock-dur-mm (ctx-text (.clockMinutes ctx))]]]
+                 ctx))))
+
+(defn- text-entity->ast [ctx]
+  (with-span (cond-> [:text-entity [:entity-name (ctx-text (.entityName ctx))]]
+               (.LBRACE ctx) (conj [:entity-braces]))
+             ctx))
+
+(defn- text-target->ast [ctx]
+  (with-span [:text-target [:text-target-name (ctx-text (.textTargetName ctx))]] ctx))
+
+(defn- text-sub->ast [ctx]
+  (with-span
+    (if-let [curly (.textSubCurlyBody ctx)]
+      [:text-sub [:text-subsup-curly (ctx-text curly)]]
+      [:text-sub [:text-subsup-word (ctx-text (.textSubWord ctx))]])
+    ctx))
+
+(defn- text-macro->ast [ctx]
+  (let [args-ctx (.macroArgs ctx)
+        args (if args-ctx
+               (mapv ctx-text (.macroArg args-ctx))
+               [""])]
+    (with-span [:text-macro [:macro-name (ctx-text (.macroName ctx))] (into [:macro-args] args)] ctx)))
 
 (defn- parse-node-property-line-direct [s]
   (if-let [[_ name plus value] (re-matches #":(?!END:)([^\s:+]+)(\+)?:(?: (.*))?" s)]
@@ -428,114 +680,46 @@
                         [:affil-kw-key k [:affil-kw-optional opt]]
                         [:affil-kw-key k])]
          (with-raw-span [:affiliated-keyword-line key-node [:kw-value v]] raw)))
-     (when-let [[_ backend v] (re-matches #"\s*#\+ATTR_([a-zA-Z0-9-_]+):\s+([^\]\r\n]+)" raw)]
-       (with-raw-span [:affiliated-keyword-line [:affil-kw-attr backend] [:kw-value v]] raw))
-     (failure :invalid-affiliated-keyword-line start raw))
+      (when-let [[_ backend v] (re-matches #"\s*#\+ATTR_([a-zA-Z0-9-_]+):\s+([^\]\r\n]+)" raw)]
+        (with-raw-span [:affiliated-keyword-line [:affil-kw-attr backend] [:kw-value v]] raw))
+      (failure :invalid-affiliated-keyword-line start raw))
     :node-property-line
-    (parse-node-property-line-direct raw)
+    (parse-antlr-only raw start)
     :property-drawer
-    (let [lines (str/split raw #"\r?\n")
-          begin (first lines)
-          ending (last lines)
-          middle (vec (butlast (rest lines)))]
-      (if (and (<= 2 (count lines))
-               (re-matches #":PROPERTIES:[\t ]*" begin)
-               (re-matches #":END:[\t ]*" ending))
-        (let [props (mapv parse-node-property-line-direct middle)]
-          (if (some :failure? props)
-            (failure :invalid-property-drawer-content start raw)
-            (with-raw-span (into [:property-drawer] props) raw)))
-        (failure :invalid-property-drawer start raw)))
+    (parse-antlr-only raw start)
     :noparse-block
     (or (parse-noparse-block-direct raw)
         (failure :invalid-noparse-block start raw))
     :fixed-width-line
-    (if-let [[_ v] (re-matches #"[\t ]*:(?: |$)(.*)" raw)]
-      (with-raw-span [:fixed-width-line v] raw)
-      (failure :invalid-fixed-width-line start raw))
+    (parse-antlr-only raw start)
     :fixed-width-area
-    (let [lines (str/split raw #"\r?\n")
-          parsed (mapv #(parse-direct % :fixed-width-line) lines)]
-      (if (and (seq lines)
-               (not-any? :failure? parsed))
-        (with-raw-span (into [:fixed-width-area] parsed) raw)
-        (failure :invalid-fixed-width-area start raw)))
+    (parse-antlr-only raw start)
     :link-ext-other
-    (if-let [[_ scheme rest] (re-matches #"([a-zA-Z][a-zA-Z0-9+.-]*):(.*)" raw)]
-      (with-raw-span [:link-ext-other [:link-url-scheme scheme] [:link-url-rest rest]] raw)
-      (failure :invalid-link-ext-other start raw))
+    (parse-antlr-only raw start)
     :link-ext-id
-    (if-let [[_ id] (re-matches #"\[\[id:([a-zA-Z0-9][a-zA-Z0-9-]+)\]\]" raw)]
-      (with-raw-span [:link-ext-id id] raw)
-      (failure :invalid-link-ext-id start raw))
+    (parse-antlr-only raw start)
     :link-ext-file
-    (let [path+loc (if (str/starts-with? raw "file:")
-                     (subs raw 5)
-                     raw)
-          [path loc] (str/split path+loc #"::" 2)
-          loc-node (when loc
-                     (cond
-                       (re-matches #"[0-9]+" loc) [:link-file-loc-lnum loc]
-                       (str/starts-with? loc "*") [:link-file-loc-headline (subs loc 1)]
-                       (str/starts-with? loc "#") [:link-file-loc-customid (subs loc 1)]
-                       :else [:link-file-loc-string loc]))]
-      (if (seq path)
-        (with-raw-span (cond-> [:link-ext-file path]
-                         loc-node (conj loc-node))
-                       raw)
-        (failure :invalid-link-ext-file start raw)))
+    (parse-antlr-only raw start)
     :text-styled
     (if-let [s (parse-text-styled-direct raw)]
       (with-raw-span s raw)
       (failure :invalid-text-styled start raw))
     :text-link
-    (if-let [l (parse-text-link-direct raw)]
-      (with-raw-span l raw)
-      (failure :invalid-text-link start raw))
+    (parse-antlr-only raw start)
     :link-format
     (if-let [l (parse-link-format-direct raw)]
       (with-raw-span l raw)
       (failure :invalid-link-format start raw))
     :footnote-link
-    (or
-     (when-let [[_ label] (re-matches #"\[fn:([a-zA-Z0-9-_]+)\]" raw)]
-       (with-raw-span [:footnote-link [:fn-label label]] raw))
-     (when-let [[_ text] (re-matches #"\[fn::([^\[\]]*)\]" raw)]
-       (with-raw-span [:footnote-link text] raw))
-     (when-let [[_ label text] (re-matches #"\[fn:([a-zA-Z0-9-_]+):([^\[\]]*)\]" raw)]
-       (with-raw-span [:footnote-link [:fn-label label] text] raw))
-     (failure :invalid-footnote-link start raw))
+    (parse-antlr-only raw start)
     :footnote-line
-    (if-let [[_ label text] (re-matches #"\[fn:([a-zA-Z0-9-_]+)\] (.+)" raw)]
-      (with-raw-span [:footnote-line [:fn-label label] (text-node text)] raw)
-      (failure :invalid-footnote-line start raw))
+    (parse-antlr-only raw start)
     :ts-time
-    (if (re-matches #"\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?" raw)
-      (with-raw-span [:ts-time raw] raw)
-      (failure :invalid-ts-time start raw))
+    (parse-antlr-only raw start)
     :timestamp-inactive-range
-    (or
-     (when-let [[_ d day t1 t2] (re-matches #"\[(\d{4}-\d{2}-\d{2})\s+([^\d\s>\]]+)\s+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)-(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)\]" raw)]
-       (with-raw-span [:timestamp-inactive-range
-                       [:ts-inner-span
-                        (ts-inner-w-time-node d day t1)
-                        [:ts-time t2]
-                        [:ts-modifiers]]]
-                      raw))
-     (when-let [[_ d1 day1 t1 d2 day2 t2] (re-matches #"\[(\d{4}-\d{2}-\d{2})\s+([^\d\s>\]]+)\s+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)\]--\[(\d{4}-\d{2}-\d{2})\s+([^\d\s>\]]+)\s+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)\]" raw)]
-       (with-raw-span [:timestamp-inactive-range
-                       (ts-inner-w-time-node d1 day1 t1)
-                       (ts-inner-w-time-node d2 day2 t2)]
-                      raw))
-     (failure :invalid-timestamp-inactive-range start raw))
+    (parse-antlr-only raw start)
     :clock
-    (or
-     (when-let [[_ ts hh mm] (re-matches #"[\t ]*CLOCK:[\t ]*(\[[^\]]+\](?:--\[[^\]]+\])?)[\t ]*=>[\t ]*([0-9]+):([0-9]{2})[\t ]*" raw)]
-       (let [range (parse-direct ts :timestamp-inactive-range)]
-         (if (:failure? range)
-           (failure :invalid-clock-range start raw)
-           (with-raw-span [:clock range [:clock-duration [:clock-dur-hh hh] [:clock-dur-mm mm]]] raw))))
-     (failure :invalid-clock start raw))
+    (parse-antlr-only raw start)
     :list-item-line
     (if-let [li (parse-list-item-line-direct raw)]
       (with-raw-span li raw)
@@ -545,82 +729,17 @@
       (with-raw-span t raw)
       (failure :invalid-table start raw))
     :timestamp
-    (or
-     (when-let [[_ v] (re-matches #"<%%(.+)>" raw)]
-       (with-raw-span [:timestamp [:timestamp-diary v]] raw))
-     (when-let [[_ d day t1 t2 mods]
-                (re-matches #"<(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)-(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)(?:[ \t]+(.+))?>" raw)]
-       (when-let [mod-nodes (parse-ts-modifiers mods)]
-         (with-raw-span [:timestamp
-                         [:timestamp-active
-                          [:ts-inner-span
-                           (cond-> [:ts-inner-w-time [:ts-date d]]
-                             day (conj [:ts-day day])
-                             true (conj [:ts-time t1]))
-                           [:ts-time t2]
-                           (into [:ts-modifiers] mod-nodes)]]]
-                        raw)))
-     (when-let [[_ d day t1 t2 mods]
-                (re-matches #"\[(\d{4}-\d{2}-\d{2})(?:[ \t]+([^\d\s>\]]+))?[ \t]+(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)-(\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?)(?:[ \t]+(.+))?\]" raw)]
-       (when-let [mod-nodes (parse-ts-modifiers mods)]
-         (with-raw-span [:timestamp
-                         [:timestamp-inactive
-                          [:ts-inner-span
-                           (cond-> [:ts-inner-w-time [:ts-date d]]
-                             day (conj [:ts-day day])
-                             true (conj [:ts-time t1]))
-                           [:ts-time t2]
-                           (into [:ts-modifiers] mod-nodes)]]]
-                        raw)))
-     (when-let [[_ a b] (re-matches #"(<[^>]+>)--(<[^>]+>)" raw)]
-       (let [ia (parse-ts-inner-node (subs a 1 (dec (count a))))
-             ib (parse-ts-inner-node (subs b 1 (dec (count b))))]
-         (when (and ia ib)
-           (with-raw-span [:timestamp [:timestamp-active ia ib]] raw))))
-     (when-let [[_ a b] (re-matches #"(\[[^\]]+\])--(\[[^\]]+\])" raw)]
-       (let [ia (parse-ts-inner-node (subs a 1 (dec (count a))))
-             ib (parse-ts-inner-node (subs b 1 (dec (count b))))]
-         (when (and ia ib)
-           (with-raw-span [:timestamp [:timestamp-inactive ia ib]] raw))))
-     (when-let [t (parse-simple-timestamp-point raw)]
-       (with-raw-span t raw))
-     (failure :invalid-timestamp start raw))
+    (parse-antlr-only raw start)
     :text-entity
-    (if-let [[_ name braces] (re-matches #"\\([A-Za-z]+)(\{\})?" raw)]
-      (with-raw-span (cond-> [:text-entity [:entity-name name]]
-                       braces (conj [:entity-braces]))
-                     raw)
-      (failure :invalid-text-entity start raw))
+    (parse-antlr-only raw start)
     :text-target
-    (if-let [[_ name] (re-matches #"<<([^\s<>](?:[^<>]*[^\s<>])?)>>" raw)]
-      (with-raw-span [:text-target [:text-target-name name]] raw)
-      (failure :invalid-text-target start raw))
+    (parse-antlr-only raw start)
     :text-sub
-    (or
-     (when-let [[_ v] (re-matches #"_\{([^{}]+)\}" raw)]
-       (with-raw-span [:text-sub [:text-subsup-curly v]] raw))
-     (when-let [[_ v] (re-matches #"_([^\s]+)" raw)]
-       (with-raw-span [:text-sub [:text-subsup-word v]] raw))
-     (failure :invalid-text-sub start raw))
+    (parse-antlr-only raw start)
     :text-macro
-    (if-let [[_ name args] (re-matches #"\{\{\{([A-Za-z0-9_]+)\((.*)\)\}\}\}" raw)]
-      (let [parts (if (= args "")
-                    [""]
-                    (vec (str/split args #"(?<!\\),")))]
-        (with-raw-span [:text-macro [:macro-name name] (into [:macro-args] parts)] raw))
-      (failure :invalid-text-macro start raw))
+    (parse-antlr-only raw start)
     :planning
-    (let [infos (re-seq #"(SCHEDULED|DEADLINE|CLOSED):\s*([<\[].*?[>\]])" raw)
-          parsed (mapv (fn [[_ kw ts]]
-                         (when-let [ts-node (parse-planning-ts ts)]
-                           [:planning-info
-                            [:planning-keyword [(keyword (str "planning-kw-" (str/lower-case kw)))]]
-                            ts-node]))
-                       infos)]
-      (if (and (seq infos)
-               (every? some? parsed))
-        (with-raw-span (into [:planning] parsed) raw)
-        (failure :invalid-planning start raw)))
+    (parse-antlr-only raw start)
     :text
     (parse-text-direct raw)
     nil))
@@ -822,87 +941,110 @@
                     from-lines)]
     (with-span (into [:S] (remove nil? all-lines)) ctx)))
 
+(defn- throwing-error-listener []
+  (doto (new (.-ErrorListener antlr4))
+    (aset "syntaxError"
+          (fn [_ _ line col msg _]
+            (throw (js/Error. (str "line " line ":" col " " msg)))))))
+
 (defn- parser-for [raw]
+  (let [input (new (.-InputStream antlr4) raw)
+        lexer (new OrgLexer input)
+        tokens (new (.-CommonTokenStream antlr4) lexer)
+        parser (new OrgParser tokens)
+        listener (throwing-error-listener)]
+    (.removeErrorListeners lexer)
+    (.removeErrorListeners parser)
+    (.addErrorListener lexer listener)
+    (.addErrorListener parser listener)
+    parser))
+
+(defn- parse-antlr-only
+  [raw start]
   (try
-    (let [input (new (.-InputStream antlr4) raw)
-          lexer (new OrgLexer input)
-          tokens (new (.-CommonTokenStream antlr4) lexer)
-          parser (new OrgParser tokens)]
-      parser)
-    (catch js/Error _
+    (let [parser (parser-for raw)]
+      (if (:failure? parser)
+        parser
+        (let [result (case start
+                       :S (-> (s->ast (.s parser))
+                              (postprocess/attach-headline-planning parse-direct raw)
+                              (postprocess/collapse-table-lines parse-direct raw)
+                              (postprocess/strip-nested-s-lines))
+                       :s (s->ast (.s parser))
+                       :drawer (-> parser .s s->ast postprocess/drawer-from-s)
+                       :dynamic-block (-> parser .s s->ast postprocess/dynamic-block-from-s)
+                       :block (let [np (parse-direct raw :noparse-block)]
+                                (if (and np (not (:failure? np)))
+                                  (with-meta [:block np]
+                                    (or (meta np) {}))
+                                  (-> parser .s s->ast postprocess/block-from-s)))
+                       :headline (let [s-ast (-> (s->ast (.s parser))
+                                                 (postprocess/attach-headline-planning parse-direct raw))
+                                       lines (rest s-ast)]
+                                   (if (and (= 1 (count lines))
+                                            (= :headline (first (first lines))))
+                                     (with-meta (first lines)
+                                       (merge (meta (first lines))
+                                              {:span [0 (count raw)]}))
+                                     (failure :invalid-headline start raw)))
+                       :todo-line (todo-line->ast (.todoLine (.todoLineEof parser)))
+                       :block-begin-line (block-begin-line->ast (.blockBeginLine (.blockBeginLineEof parser)))
+                       :block-end-line (block-end-line->ast (.blockEndLine (.blockEndLineEof parser)))
+                       :dynamic-block-begin-line (dynamic-block-begin-line->ast (.dynamicBlockBeginLine (.dynamicBlockBeginLineEof parser)))
+                       :dynamic-block-end-line (dynamic-block-end-line->ast (.dynamicBlockEndLine (.dynamicBlockEndLineEof parser)))
+                       :other-keyword-line (other-keyword-line->ast (.otherKeywordLine (.otherKeywordLineEof parser)))
+                       :footnote-line (footnote-line->ast (.footnoteLine (.footnoteLineEof parser)))
+                       :footnote-link (footnote-link->ast (.footnoteLink (.footnoteLinkEof parser)))
+                       :comment-line (comment-line->ast (.commentLine (.commentLineEof parser)))
+                       :horizontal-rule (horizontal-rule->ast (.horizontalRule (.horizontalRuleEof parser)))
+                       :content-line (content-line->ast (.contentLine parser))
+                       :line (let [line-ast (line->ast (.line (.lineEof parser)))]
+                               (if (:failure? line-ast)
+                                 line-ast
+                                 (with-meta [line-ast]
+                                   (or (meta line-ast) {}))))
+                       :noparse-block (or (parse-direct raw :noparse-block)
+                                          (failure :invalid-noparse-block start raw))
+                       :drawer-begin-line (drawer-begin-line->ast (.drawerBeginLine (.drawerBeginLineEof parser)))
+                       :drawer-end-line (drawer-end-line->ast (.drawerEndLine (.drawerEndLineEof parser)))
+                       :node-property-line (node-property-line->ast (.nodePropertyLine (.nodePropertyLineEof parser)))
+                       :property-drawer (property-drawer->ast (.propertyDrawer (.propertyDrawerEof parser)))
+                       :fixed-width-line (fixed-width-line->ast (.fixedWidthLine (.fixedWidthLineEof parser)))
+                       :fixed-width-area (fixed-width-area->ast (.fixedWidthArea (.fixedWidthAreaEof parser)))
+                       :link-ext-other (link-ext-other->ast (.linkExtOther (.linkExtOtherEof parser)))
+                       :link-ext-id (link-ext-id->ast (.linkExtId (.linkExtIdEof parser)))
+                       :link-ext-file (link-ext-file->ast (.linkExtFile (.linkExtFileEof parser)))
+                       :text-link (text-link->ast (.textLink (.textLinkEof parser)))
+                       :ts-time (ts-time->ast (.tsTime (.tsTimeEof parser)))
+                       :timestamp-inactive-range (timestamp-inactive-range->ast (.timestampInactiveRange (.timestampInactiveRangeEof parser)))
+                       :timestamp (timestamp->ast (.timestamp (.timestampEof parser)))
+                       :clock (clock->ast (.clock (.clockEof parser)))
+                       :planning (planning->ast (.planning (.planningEof parser)))
+                       :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
+                       :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
+                       :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
+                       :text-macro (text-macro->ast (.textMacro (.textMacroEof parser)))
+                       (failure :unsupported-start start raw))
+              current-token (.getCurrentToken parser)
+              token-type (or (some-> current-token .-type)
+                             (when (and current-token
+                                        (fn? (.-getType current-token)))
+                               (.getType current-token)))
+              eof? (= (.-EOF (.-Token antlr4)) token-type)]
+          (if (or (:failure? result)
+                  eof?
+                  (contains? #{:block :headline} start))
+            result
+            (failure :unconsumed-input start raw)))))
+    (catch js/Error e
       {:failure? true
-        :backend :antlr
-        :reason :missing-generated-classes
-        :message "Generate ANTLR JS classes with ./script/gen-antlr-js.sh and install npm deps"})))
+       :backend :antlr
+       :reason :parse-error
+       :message (.-message e)
+       :start start})))
 
 (defn parse
   [raw {:keys [start] :or {start :s}}]
   (if-let [direct (parse-direct raw start)]
     direct
-    (try
-      (let [parser (parser-for raw)]
-        (if (:failure? parser)
-          parser
-          (let [result (case start
-                          :S (-> (s->ast (.s parser))
-                                 (postprocess/attach-headline-planning parse-direct raw)
-                                 (postprocess/collapse-table-lines parse-direct raw)
-                                 (postprocess/strip-nested-s-lines))
-                          :s (s->ast (.s parser))
-                          :drawer (-> parser .s s->ast postprocess/drawer-from-s)
-                          :dynamic-block (-> parser .s s->ast postprocess/dynamic-block-from-s)
-                           :block (let [np (parse-direct raw :noparse-block)]
-                                    (if (and np (not (:failure? np)))
-                                      (with-meta [:block np]
-                                        (or (meta np) {}))
-                                      (let [b (-> parser .s s->ast postprocess/block-from-s)]
-                                        (if (:failure? b)
-                                          b
-                                          b))))
-                           :headline (let [s-ast (-> (s->ast (.s parser))
-                                                    (postprocess/attach-headline-planning parse-direct raw))
-                                           lines (rest s-ast)]
-                                       (if (and (= 1 (count lines))
-                                                (= :headline (first (first lines))))
-                                        (with-meta (first lines)
-                                          (merge (meta (first lines))
-                                                 {:span [0 (count raw)]}))
-                                        (failure :invalid-headline start raw)))
-                         :todo-line (todo-line->ast (.todoLine (.todoLineEof parser)))
-                         :block-begin-line (block-begin-line->ast (.blockBeginLine (.blockBeginLineEof parser)))
-                         :block-end-line (block-end-line->ast (.blockEndLine (.blockEndLineEof parser)))
-                         :dynamic-block-begin-line (dynamic-block-begin-line->ast (.dynamicBlockBeginLine (.dynamicBlockBeginLineEof parser)))
-                         :dynamic-block-end-line (dynamic-block-end-line->ast (.dynamicBlockEndLine (.dynamicBlockEndLineEof parser)))
-                         :other-keyword-line (other-keyword-line->ast (.otherKeywordLine (.otherKeywordLineEof parser)))
-                         :footnote-line (footnote-line->ast (.footnoteLine (.footnoteLineEof parser)))
-                         :footnote-link (footnote-link->ast (.footnoteLink (.footnoteLinkEof parser)))
-                         :comment-line (comment-line->ast (.commentLine (.commentLineEof parser)))
-                         :horizontal-rule (horizontal-rule->ast (.horizontalRule (.horizontalRuleEof parser)))
-                         :content-line (content-line->ast (.contentLine parser))
-                         :line (let [line-ast (line->ast (.line (.lineEof parser)))]
-                                 (if (:failure? line-ast)
-                                   line-ast
-                                   (with-meta [line-ast]
-                                     (or (meta line-ast) {}))))
-                         :noparse-block (or (parse-direct raw :noparse-block)
-                                            (failure :invalid-noparse-block start raw))
-                         :drawer-begin-line (drawer-begin-line->ast (.drawerBeginLine (.drawerBeginLineEof parser)))
-                         :drawer-end-line (drawer-end-line->ast (.drawerEndLine (.drawerEndLineEof parser)))
-                         (failure :unsupported-start start raw))
-                current-token (.getCurrentToken parser)
-                token-type (or (some-> current-token .-type)
-                               (when (and current-token
-                                          (fn? (.-getType current-token)))
-                                 (.getType current-token)))
-                eof? (= (.-EOF (.-Token antlr4)) token-type)]
-            (if (or (:failure? result)
-                    eof?
-                    (contains? #{:block :headline} start))
-              result
-              (failure :unconsumed-input start raw)))))
-      (catch js/Error e
-        {:failure? true
-         :backend :antlr
-         :reason :parse-error
-         :message (.-message e)
-         :start start}))))
+    (parse-antlr-only raw start)))

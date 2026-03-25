@@ -51,6 +51,40 @@ footnoteLinkEof: footnoteLink EOF;
 
 otherKeywordLineEof: otherKeywordLine EOF;
 
+nodePropertyLineEof: nodePropertyLine EOF;
+
+propertyDrawerEof: propertyDrawer EOF;
+
+fixedWidthLineEof: fixedWidthLine EOF;
+
+fixedWidthAreaEof: fixedWidthArea EOF;
+
+linkExtOtherEof: linkExtOther EOF;
+
+linkExtIdEof: linkExtId EOF;
+
+linkExtFileEof: linkExtFile EOF;
+
+textLinkEof: textLink EOF;
+
+tsTimeEof: tsTime EOF;
+
+timestampInactiveRangeEof: timestampInactiveRange EOF;
+
+timestampEof: timestamp EOF;
+
+clockEof: clock EOF;
+
+planningEof: planning EOF;
+
+textEntityEof: textEntity EOF;
+
+textTargetEof: textTarget EOF;
+
+textSubEof: textSub EOF;
+
+textMacroEof: textMacro EOF;
+
 emptyLine: SPACE+;
 
 headline
@@ -87,7 +121,7 @@ blockEndMarker: markerChar+;
 
 blockName: blockNameChar+;
 
-blockNameChar: UPPER | LOWER | TEXT_CHAR;
+blockNameChar: ~(NEWLINE | SPACE);
 
 blockParameters: text;
 
@@ -103,7 +137,7 @@ markerChar: UPPER | LOWER;
 
 dynamicBlockName: dynamicNameChar+;
 
-dynamicNameChar: UPPER | LOWER | TEXT_CHAR;
+dynamicNameChar: ~(NEWLINE | SPACE);
 
 dynamicBlockParameters: text;
 
@@ -121,11 +155,11 @@ fnPrefix: LOWER LOWER COLON;
 
 fnLabel: fnLabelChar+;
 
-fnLabelChar: UPPER | LOWER | DASH | UNDERSCORE | TEXT_CHAR;
+fnLabelChar: UPPER | LOWER | DIGIT | DASH | UNDERSCORE | DOT;
 
 fnTextInline: inlineChar*;
 
-inlineChar: SPACE | UPPER | LOWER | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | TEXT_CHAR;
+inlineChar: SPACE | UPPER | LOWER | DIGIT | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | LT | GT | LPAREN | RPAREN | LBRACE | RBRACE | BACKSLASH | SLASH | EQUALS | TILDE | DOT | COMMA | PERCENT | AT | QUESTION | EXCL | TEXT_CHAR;
 
 commentLine: SPACE* HASH commentLineRest;
 
@@ -137,10 +171,185 @@ drawerBeginLine: COLON drawerName COLON SPACE*;
 
 drawerName: drawerNameChar+;
 
-drawerNameChar: UPPER | LOWER | TEXT_CHAR;
+drawerNameChar: ~(NEWLINE | COLON);
 
 drawerEndLine: END_DRAWER SPACE*;
 
 text: textNormal+;
 
-textNormal: (TEXT_CHAR | SPACE | UPPER | LOWER | DASH | PLUS | BAR | UNDERSCORE | HASH | LBRACK | RBRACK | COLON | STAR)+;
+textNormal: sameLineChar+;
+
+sameLineChar
+  : TEXT_CHAR
+  | SPACE
+  | COMMENT
+  | UPPER
+  | LOWER
+  | DIGIT
+  | STAR
+  | LBRACK
+  | RBRACK
+  | HASH
+  | COLON
+  | DASH
+  | PLUS
+  | BAR
+  | UNDERSCORE
+  | LT
+  | GT
+  | LPAREN
+  | RPAREN
+  | LBRACE
+  | RBRACE
+  | BACKSLASH
+  | SLASH
+  | EQUALS
+  | TILDE
+  | DOT
+  | COMMA
+  | PERCENT
+  | AT
+  | QUESTION
+  | EXCL
+  ;
+
+nodePropertyLine: COLON nodePropertyName PLUS? COLON (SPACE nodePropertyValue)?;
+
+nodePropertyName: nodePropertyNameChar+;
+
+nodePropertyNameChar: ~(NEWLINE | SPACE | COLON | PLUS);
+
+nodePropertyValue: sameLineChar+;
+
+propertyDrawer: drawerBeginLine NEWLINE (nodePropertyLine NEWLINE)* drawerEndLine;
+
+fixedWidthLine: SPACE* COLON (SPACE fixedWidthValue?)?;
+
+fixedWidthValue: sameLineChar+;
+
+fixedWidthArea: fixedWidthLine (NEWLINE fixedWidthLine)* NEWLINE?;
+
+linkUrlScheme: (UPPER | LOWER) (UPPER | LOWER | DIGIT | PLUS | DASH | DOT)*;
+
+linkUrlRest: sameLineChar+;
+
+linkExtOther: linkUrlScheme COLON linkUrlRest?;
+
+linkExtId: LBRACK LBRACK linkIdPrefix COLON linkIdValue RBRACK RBRACK;
+
+linkIdPrefix: LOWER LOWER;
+
+linkIdValue: (UPPER | LOWER | DIGIT) (UPPER | LOWER | DIGIT | DASH)+;
+
+linkExtFile: linkFileScheme? linkFilePath (COLON COLON linkFileLocation)?;
+
+linkFileScheme: (UPPER | LOWER) (UPPER | LOWER) (UPPER | LOWER) (UPPER | LOWER) COLON;
+
+linkFilePath: linkFilePathChar+?;
+
+linkFilePathChar: sameLineChar;
+
+linkFileLocation: sameLineChar+;
+
+textLink: LT linkExtOther GT | linkExtOther;
+
+tsDate: DIGIT DIGIT DIGIT DIGIT DASH DIGIT DIGIT DASH DIGIT DIGIT;
+
+tsDay: tsDayChar+;
+
+tsDayChar: ~(NEWLINE | SPACE | LT | GT | LBRACK | RBRACK | DIGIT);
+
+tsTime: DIGIT DIGIT? COLON DIGIT DIGIT (COLON DIGIT DIGIT)? ((UPPER | LOWER) (UPPER | LOWER))?;
+
+tsModValue: DIGIT+;
+
+tsModUnit: UPPER | LOWER;
+
+tsModAtLeast: SLASH tsModValue tsModUnit;
+
+tsRepeaterType: PLUS PLUS | PLUS | DOT PLUS;
+
+tsWarningType: DASH DASH | DASH;
+
+tsRepeater: tsRepeaterType tsModValue tsModUnit tsModAtLeast?;
+
+tsWarning: tsWarningType tsModValue tsModUnit tsModAtLeast?;
+
+tsModifier: tsRepeater | tsWarning;
+
+tsModifiers: tsModifier (SPACE+ tsModifier)*;
+
+tsInner: tsDate (SPACE+ tsDay)? (SPACE+ tsTime)? (SPACE+ tsModifiers)?;
+
+tsInnerWTime: tsDate (SPACE+ tsDay)? SPACE+ tsTime;
+
+tsInnerSpan: tsDate (SPACE+ tsDay)? SPACE+ tsTime DASH tsTime (SPACE+ tsModifiers)?;
+
+diarySexpBody: diarySexpChar+;
+
+diarySexpChar: ~(NEWLINE | GT);
+
+timestampInactiveRange
+  : LBRACK tsInnerSpan RBRACK
+  | LBRACK tsInnerWTime RBRACK DASH DASH LBRACK tsInnerWTime RBRACK
+  ;
+
+timestamp
+  : LT PERCENT PERCENT diarySexpBody GT
+  | LT tsInnerSpan GT
+  | LBRACK tsInnerSpan RBRACK
+  | LT tsInner GT DASH DASH LT tsInner GT
+  | LBRACK tsInner RBRACK DASH DASH LBRACK tsInner RBRACK
+  | LT tsInner GT
+  | LBRACK tsInner RBRACK
+  ;
+
+clock: SPACE* clockKeyword COLON SPACE* timestampInactiveRange SPACE* EQUALS GT SPACE* clockHours COLON clockMinutes SPACE*;
+
+clockKeyword: UPPER+;
+
+clockHours: DIGIT+;
+
+clockMinutes: DIGIT DIGIT;
+
+planning: SPACE* planningInfo (SPACE+ planningInfo)* SPACE*;
+
+planningInfo: planningKeyword COLON SPACE* planningTimestamp;
+
+planningKeyword: UPPER+;
+
+planningTimestamp: LBRACK tsInner RBRACK | LT tsInner GT;
+
+textEntity: BACKSLASH entityName (LBRACE RBRACE)?;
+
+entityName: (UPPER | LOWER)+;
+
+textTarget: LT LT textTargetName GT GT;
+
+textTargetName: textTargetNameEdge | textTargetNameEdge (textTargetNameMiddle | SPACE)* textTargetNameEdge;
+
+textTargetNameEdge: ~(NEWLINE | SPACE | LT | GT);
+
+textTargetNameMiddle: ~(NEWLINE | LT | GT);
+
+textSub: UNDERSCORE LBRACE textSubCurlyBody RBRACE | UNDERSCORE textSubWord;
+
+textSubWord: textSubWordChar+;
+
+textSubWordChar: ~(NEWLINE | SPACE);
+
+textSubCurlyBody: textSubCurlyChar+;
+
+textSubCurlyChar: ~(NEWLINE | LBRACE | RBRACE);
+
+textMacro: LBRACE LBRACE LBRACE macroName LPAREN macroArgs? RPAREN RBRACE RBRACE RBRACE;
+
+macroName: (UPPER | LOWER | DIGIT | UNDERSCORE)+;
+
+macroArgs: macroArg (COMMA macroArg)*;
+
+macroArg: macroArgPart+;
+
+macroArgPart: BACKSLASH COMMA | LPAREN macroArgPart* RPAREN | macroArgChar;
+
+macroArgChar: ~(NEWLINE | COMMA | RPAREN);
