@@ -1,6 +1,7 @@
 (ns org-parser.antlr.parser
   (:require [org-parser.antlr.parser-shared :as shared])
   (:import [org.antlr.v4.runtime BaseErrorListener BailErrorStrategy CharStreams CommonTokenStream]
+           [org.antlr.v4.runtime.atn PredictionMode]
            [org.antlr.v4.runtime.misc ParseCancellationException]
            [org.antlr.v4.runtime Token]
            [clojure.lang Reflector]))
@@ -25,7 +26,7 @@
       (throw (ParseCancellationException.
               (str "line " line ":" col " " msg))))))
 
-(defn- parser-for [raw]
+(defn- parser-for [raw prediction-mode]
   (try
     (let [input (CharStreams/fromString raw)
           lexer (instantiate lexer-class-name input)
@@ -36,8 +37,10 @@
       (.removeErrorListeners parser)
       (.addErrorListener lexer listener)
       (.addErrorListener parser listener)
+      (.. parser getInterpreter (setPredictionMode prediction-mode))
       (.setErrorHandler parser (BailErrorStrategy.))
-      parser)
+      {:parser parser
+       :tokens tokens})
     (catch ClassNotFoundException _
       {:failure? true
        :backend :antlr
@@ -49,10 +52,16 @@
 
 (defn- parse-antlr-only [raw start]
   (try
-    (let [parser (parser-for raw)]
-      (if (:failure? parser)
-        parser
-        (shared/parse-result parser raw start parse-direct eof?)))
+    (let [{:keys [parser] :as parser-state} (parser-for raw PredictionMode/SLL)]
+      (if (:failure? parser-state)
+        parser-state
+        (try
+          (shared/parse-result parser raw start parse-direct eof?)
+          (catch ParseCancellationException _
+            (let [{:keys [parser] :as retry-state} (parser-for raw PredictionMode/LL)]
+              (if (:failure? retry-state)
+                retry-state
+                (shared/parse-result parser raw start parse-direct eof?)))))))
     (catch ParseCancellationException e
       {:failure? true
        :backend :antlr

@@ -4,38 +4,83 @@
 
 (declare footnote-link->ast text->ast)
 
+(def ^:dynamic *raw* nil)
+
 (defn text-node [s]
   [:text [:text-normal s]])
 
-#?(:cljs
-   (defn- token-start-index [token]
+(defn- token-start-index [token]
+  #?(:clj
+     (if token
+       (.getStartIndex token)
+       0)
+     :cljs
      (or (some-> token .-start)
          (when (and token (fn? (.-getStartIndex token)))
            (.getStartIndex token))
          0)))
 
-#?(:cljs
-   (defn- token-stop-index [token default-start]
+(defn- token-stop-index [token default-start]
+  #?(:clj
+     (if token
+       (.getStopIndex token)
+       default-start)
+     :cljs
      (or (some-> token .-stop)
          (when (and token (fn? (.-getStopIndex token)))
            (.getStopIndex token))
          default-start)))
 
-(defn ctx-span [ctx]
+(defn- node-span [node]
   #?(:clj
-     (let [start-token (.getStart ctx)
-           stop-token (.getStop ctx)
-           start-idx (.getStartIndex start-token)
-           stop-idx (if stop-token (.getStopIndex stop-token) start-idx)]
-       [start-idx (inc stop-idx)])
+     (cond
+       (instance? org.antlr.v4.runtime.ParserRuleContext node)
+       (let [start-token (.getStart ^org.antlr.v4.runtime.ParserRuleContext node)
+             stop-token (.getStop ^org.antlr.v4.runtime.ParserRuleContext node)
+             start-idx (token-start-index start-token)
+             stop-idx (token-stop-index stop-token start-idx)]
+         [start-idx (inc stop-idx)])
+
+       (instance? org.antlr.v4.runtime.tree.TerminalNode node)
+       (let [token (.getSymbol ^org.antlr.v4.runtime.tree.TerminalNode node)
+             start-idx (token-start-index token)
+             stop-idx (token-stop-index token start-idx)]
+         [start-idx (inc stop-idx)])
+
+       (instance? org.antlr.v4.runtime.Token node)
+       (let [start-idx (token-start-index node)
+             stop-idx (token-stop-index node start-idx)]
+         [start-idx (inc stop-idx)]))
      :cljs
-     (let [start-token (or (.-start ctx)
-                           (.getStart ctx))
-           stop-token (or (.-stop ctx)
-                          (.getStop ctx))
-           start-idx (token-start-index start-token)
-           stop-idx (token-stop-index stop-token start-idx)]
-       [start-idx (inc stop-idx)])))
+     (cond
+       (fn? (.-getSymbol node))
+       (let [token (.getSymbol node)
+             start-idx (token-start-index token)
+             stop-idx (token-stop-index token start-idx)]
+         [start-idx (inc stop-idx)])
+
+       (or (some? (.-start node))
+           (some? (.-stop node))
+           (fn? (.-getStart node))
+           (fn? (.-getStop node)))
+       (let [start-token (or (some-> node .-start)
+                             (when (fn? (.-getStart node))
+                               (.getStart node)))
+             stop-token (or (some-> node .-stop)
+                            (when (fn? (.-getStop node))
+                              (.getStop node)))
+             start-idx (token-start-index start-token)
+             stop-idx (token-stop-index stop-token start-idx)]
+         [start-idx (inc stop-idx)])
+
+       (or (some? (.-start node))
+           (fn? (.-getStartIndex node)))
+       (let [start-idx (token-start-index node)
+             stop-idx (token-stop-index node start-idx)]
+         [start-idx (inc stop-idx)]))))
+
+(defn ctx-span [ctx]
+  (node-span ctx))
 
 (defn with-span [node ctx]
   (with-meta node {:span (ctx-span ctx)}))
@@ -72,8 +117,17 @@
 (def ts-mod-units
   #{"h" "d" "w" "m" "y"})
 
+(defn- span-text [node]
+  (when-let [[start end] (node-span node)]
+    (when (and *raw*
+               (<= 0 start end (count *raw*)))
+      (subs *raw* start end))))
+
 (defn ctx-text [ctx]
-  (some-> ctx .getText))
+  (let [text (some-> ctx .getText)]
+    (if (= "" text)
+      text
+      (or (span-text ctx) text))))
 
 (defn valid-ts-time? [raw]
   (boolean (re-matches #"\d{1,2}:\d{2}(?::\d{2})?(?:[AaPp][Mm])?" raw)))
@@ -473,7 +527,7 @@
 
 (defn- link-format->ast [ctx]
   (let [link-node (link-target->ast (.linkTarget ctx))
-        desc (some-> ctx .linkDescriptionRaw ctx-text)]
+        desc (some-> ctx .linkFormatTail .linkDescriptionRaw ctx-text)]
     (if link-node
       (with-span (cond-> [:link-format link-node]
                    (some? desc) (conj [:link-description desc]))
@@ -739,6 +793,7 @@
     (.blockBeginLine ctx) (block-begin-line->ast (.blockBeginLine ctx))
     (.otherKeywordLine ctx) (other-keyword-line->ast (.otherKeywordLine ctx))
     (.dynamicBlockEndLine ctx) (dynamic-block-end-line->ast (.dynamicBlockEndLine ctx))
+    (.planningLine ctx) (planning->ast (.planning (.planningLine ctx)))
     (.dynamicBlockBeginLine ctx) (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx))
     (.footnoteLine ctx) (footnote-line->ast (.footnoteLine ctx))
     (.commentLine ctx) (comment-line->ast (.commentLine ctx))
@@ -762,11 +817,12 @@
     (with-span (into [:S] (remove nil? all-lines)) ctx)))
 
 (defn parse-result [parser raw start parse-direct eof?]
-  (let [result (case start
+  (binding [*raw* raw]
+    (let [result (case start
                  :S (-> (s->ast (.s parser) parse-direct raw)
-                        (postprocess/attach-headline-planning parse-direct raw)
-                        (postprocess/collapse-table-lines parse-direct raw)
-                        (postprocess/strip-nested-s-lines))
+                         (postprocess/attach-headline-planning raw)
+                         (postprocess/collapse-table-lines raw)
+                         (postprocess/strip-nested-s-lines))
                  :s (horizontal-space->ast (.horizontalSpace (.horizontalSpaceEof parser)))
                  :drawer (-> parser .s (#(s->ast % parse-direct raw)) postprocess/drawer-from-s)
                  :dynamic-block (-> parser .s (#(s->ast % parse-direct raw)) postprocess/dynamic-block-from-s)
@@ -776,8 +832,8 @@
                               (or (meta np) {}))
                             (-> parser .s (#(s->ast % parse-direct raw)) postprocess/block-from-s)))
                  :headline (let [s-ast (-> (s->ast (.s parser) parse-direct raw)
-                                           (postprocess/attach-headline-planning parse-direct raw))
-                                 lines (rest s-ast)]
+                                            (postprocess/attach-headline-planning raw))
+                                  lines (rest s-ast)]
                              (if (and (= 1 (count lines))
                                       (= :headline (first (first lines))))
                                (with-meta (first lines)
@@ -831,10 +887,10 @@
                  :text (text->ast (.text (.textEof parser)))
                  :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
                  :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
-                 :text-macro (text-macro->ast (.textMacro (.textMacroEof parser)))
-                 (failure :unsupported-start start raw))]
-    (if (or (:failure? result)
-            (eof? parser)
-            (contains? #{:block :headline} start))
-      result
-      (failure :unconsumed-input start raw))))
+                  :text-macro (text-macro->ast (.textMacro (.textMacroEof parser)))
+                  (failure :unsupported-start start raw))]
+      (if (or (:failure? result)
+              (eof? parser)
+              (contains? #{:block :headline} start))
+        result
+        (failure :unconsumed-input start raw)))))

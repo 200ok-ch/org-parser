@@ -11,6 +11,7 @@ lineAtEof: line;
 line
   : emptyLine
   | headline
+  | planningLine
   | todoLine
   | blockBeginLine
   | blockEndLine
@@ -139,6 +140,8 @@ title: text;
 
 contentLine: text;
 
+planningLine: planning;
+
 todoLine: HASH PLUS todoKeyword COLON SPACE+ todoState (SPACE+ todoState)* SPACE+ BAR SPACE+ doneState (SPACE+ doneState)*;
 
 todoKeyword: UPPER+;
@@ -203,7 +206,9 @@ kwValue: text;
 
 footnoteLine: LBRACK fnPrefix fnLabel RBRACK SPACE text;
 
-footnoteLink: LBRACK fnPrefix fnLabel RBRACK | LBRACK fnPrefix COLON fnTextInline RBRACK | LBRACK fnPrefix fnLabel COLON fnTextInline RBRACK;
+footnoteLink
+  : LBRACK fnPrefix (fnLabel (RBRACK | COLON fnTextInline RBRACK) | COLON fnTextInline RBRACK)
+  ;
 
 fnPrefix: LOWER LOWER COLON;
 
@@ -654,7 +659,9 @@ textStyledStrike: PLUS textStyledBody PLUS;
 
 textStyledBody: sameLineChar+?;
 
-linkFormat: LBRACK LBRACK linkTarget RBRACK (RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK);
+linkFormat: LBRACK LBRACK linkTarget RBRACK linkFormatTail;
+
+linkFormatTail: RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK;
 
 linkTarget: linkTargetId | linkTargetExtOther | linkTargetIntCustomId | linkTargetIntHeadline | linkTargetIntString;
 
