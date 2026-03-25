@@ -104,7 +104,9 @@
 
 (defn parse
   [raw {:keys [start] :or {start :s}}]
-  (binding [*direct-cache* (or *direct-cache* (atom {}))]
+  (binding [*direct-cache* (or *direct-cache* (atom {}))
+            shared/*text-node-cache* (or shared/*text-node-cache* (atom {}))
+            shared/*line-template-cache* (or shared/*line-template-cache* (atom {}))]
     (if-let [direct (parse-direct raw start)]
       direct
       (parse-antlr-only raw start))))

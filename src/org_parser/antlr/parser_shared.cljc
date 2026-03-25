@@ -5,12 +5,24 @@
 (declare footnote-link->ast text->ast)
 
 (def ^:dynamic *raw* nil)
+(def ^:dynamic *text-node-cache* nil)
+(def ^:dynamic *attach-spans?* true)
+(def ^:dynamic *line-template-cache* nil)
 
 (def ^:private inline-special-pattern
   #"[#%\[\]{}<>\\_*+/=~^:@]")
 
 (defn text-node [s]
   [:text [:text-normal s]])
+
+(defn cached-text-node [s]
+  (if *text-node-cache*
+    (if (contains? @*text-node-cache* s)
+      (get @*text-node-cache* s)
+      (let [node (text-node s)]
+        (swap! *text-node-cache* assoc s node)
+        node))
+    (text-node s)))
 
 (defn- needs-inline-parse? [s]
   (boolean (and (some? s)
@@ -90,7 +102,19 @@
   (node-span ctx))
 
 (defn with-span [node ctx]
-  (with-meta node {:span (ctx-span ctx)}))
+  (if *attach-spans?*
+    (with-meta node {:span (ctx-span ctx)})
+    node))
+
+(defn cached-line-template [cache-key build]
+  (if *line-template-cache*
+    (if (contains? @*line-template-cache* cache-key)
+      (get @*line-template-cache* cache-key)
+      (let [node (binding [*attach-spans?* false]
+                   (build))]
+        (swap! *line-template-cache* assoc cache-key node)
+        node))
+    (build)))
 
 (defn failure [reason start raw]
   {:failure? true
@@ -231,7 +255,7 @@
   (with-span
     (cond-> [:node-property-line [:node-property-name (ctx-text (.nodePropertyName ctx))]]
       (.PLUS ctx) (conj [:node-property-plus])
-      (.nodePropertyValue ctx) (conj [:node-property-value (text-node (ctx-text (.nodePropertyValue ctx)))]))
+      (.nodePropertyValue ctx) (conj [:node-property-value (cached-text-node (ctx-text (.nodePropertyValue ctx)))]))
     ctx))
 
 (defn- property-drawer->ast [ctx]
@@ -449,7 +473,7 @@
                  [:list-item-counter-suffix (ctx-text (.listItemCounterSuffix marker-ctx))]])
         (.listItemCheckbox ctx) (conj [:list-item-checkbox [:list-item-checkbox-state (ctx-text (.listItemCheckboxState (.listItemCheckbox ctx)))]] )
         (.listItemTagSpec ctx) (conj [:list-item-tag (ctx-text (.listItemTagText (.listItemTagSpec ctx)))])
-        true (conj (text-node (ctx-text (.listItemContents ctx)))))
+        true (conj (cached-text-node (ctx-text (.listItemContents ctx)))))
       ctx)))
 
 (defn- table-tableel-line->ast [ctx]
@@ -650,39 +674,50 @@
     (parse-antlr-only raw start)))
 
 (defn- headline->ast [ctx parse-direct raw]
-  (let [stars (.getText (.stars ctx))
-        keyword-ctx (.keyword ctx)
-        priority-ctx (.priority ctx)
-        comment-token-ctx (.commentToken ctx)
-        title-txt (some-> ctx .title ctx-text)
-        base [:headline [:stars stars]]
-        with-keyword (if keyword-ctx
-                       (conj base [:keyword (.getText keyword-ctx)])
-                       base)
-        with-priority (if priority-ctx
-                        (conj with-keyword [:priority (.getText (.UPPER priority-ctx))])
-                        with-keyword)
-        with-comment-token (if comment-token-ctx
-                             (conj with-priority [:comment-token])
-                             with-priority)]
-    (with-span (conj with-comment-token
-                     (if (needs-inline-parse? title-txt)
-                       (let [parsed-title (parse-direct title-txt :text)]
-                         (if (:failure? parsed-title)
-                           (text-node title-txt)
-                           parsed-title))
-                       (text-node title-txt)))
-                 ctx)))
+  (let [headline-raw (ctx-text ctx)]
+    (with-span
+      (cached-line-template
+        [:headline headline-raw]
+        (fn []
+          (let [stars (.getText (.stars ctx))
+                keyword-ctx (.keyword ctx)
+                priority-ctx (.priority ctx)
+                comment-token-ctx (.commentToken ctx)
+                title-txt (some-> ctx .title ctx-text)
+                base [:headline [:stars stars]]
+                with-keyword (if keyword-ctx
+                               (conj base [:keyword (.getText keyword-ctx)])
+                               base)
+                with-priority (if priority-ctx
+                                (conj with-keyword [:priority (.getText (.UPPER priority-ctx))])
+                                with-keyword)
+                with-comment-token (if comment-token-ctx
+                                     (conj with-priority [:comment-token])
+                                     with-priority)]
+            (conj with-comment-token
+                  (if (needs-inline-parse? title-txt)
+                    (let [parsed-title (binding [*attach-spans?* false]
+                                         (parse-direct title-txt :text))]
+                      (if (:failure? parsed-title)
+                        (cached-text-node title-txt)
+                        parsed-title))
+                    (cached-text-node title-txt))))))
+      ctx)))
 
 (defn- content-line->ast [ctx parse-direct]
   (let [raw (ctx-text ctx)
-        parsed-text (when (needs-inline-parse? raw)
-                      (parse-direct raw :text))
-        text-ast (if (or (nil? parsed-text)
-                         (:failure? parsed-text))
-                   (text-node raw)
-                   parsed-text)]
-    (with-span [:content-line text-ast] ctx)))
+        node (cached-line-template
+               [:content-line raw]
+               (fn []
+                 (let [parsed-text (when (needs-inline-parse? raw)
+                                     (binding [*attach-spans?* false]
+                                       (parse-direct raw :text)))
+                       text-ast (if (or (nil? parsed-text)
+                                        (:failure? parsed-text))
+                                  (cached-text-node raw)
+                                  parsed-text)]
+                   [:content-line text-ast])))]
+    (with-span node ctx)))
 
 (defn- drawer-begin-line->ast [ctx]
   (with-span [:drawer-begin-line [:drawer-name (.getText (.drawerName ctx))]] ctx))
@@ -765,7 +800,7 @@
   (if (fn-prefix-valid? (.fnPrefix ctx))
     (with-span [:footnote-line
                 [:fn-label (.getText (.fnLabel ctx))]
-                (text-node (.getText (.text ctx)))]
+                (cached-text-node (.getText (.text ctx)))]
                ctx)
     {:failure? true
      :backend :antlr
@@ -797,23 +832,29 @@
                ctx)))
 
 (defn- line->ast [ctx parse-direct raw]
-  (cond
-    (.headline ctx) (headline->ast (.headline ctx) parse-direct raw)
-    (.todoLine ctx) (todo-line->ast (.todoLine ctx))
-    (.blockEndLine ctx) (block-end-line->ast (.blockEndLine ctx))
-    (.blockBeginLine ctx) (block-begin-line->ast (.blockBeginLine ctx))
-    (.otherKeywordLine ctx) (other-keyword-line->ast (.otherKeywordLine ctx))
-    (.dynamicBlockEndLine ctx) (dynamic-block-end-line->ast (.dynamicBlockEndLine ctx))
-    (.planningLine ctx) (planning->ast (.planning (.planningLine ctx)))
-    (.dynamicBlockBeginLine ctx) (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx))
-    (.footnoteLine ctx) (footnote-line->ast (.footnoteLine ctx))
-    (.commentLine ctx) (comment-line->ast (.commentLine ctx))
-    (.horizontalRule ctx) (horizontal-rule->ast (.horizontalRule ctx))
-    (.drawerBeginLine ctx) (drawer-begin-line->ast (.drawerBeginLine ctx))
-    (.drawerEndLine ctx) (drawer-end-line->ast (.drawerEndLine ctx))
-    (.contentLine ctx) (content-line->ast (.contentLine ctx) parse-direct)
-    (.emptyLine ctx) (with-span [:empty-line] (.emptyLine ctx))
-    :else nil))
+  (let [line-raw (ctx-text ctx)]
+    (with-span
+      (cached-line-template
+        [:line line-raw]
+        (fn []
+          (cond
+            (.headline ctx) (headline->ast (.headline ctx) parse-direct raw)
+            (.todoLine ctx) (todo-line->ast (.todoLine ctx))
+            (.blockEndLine ctx) (block-end-line->ast (.blockEndLine ctx))
+            (.blockBeginLine ctx) (block-begin-line->ast (.blockBeginLine ctx))
+            (.otherKeywordLine ctx) (other-keyword-line->ast (.otherKeywordLine ctx))
+            (.dynamicBlockEndLine ctx) (dynamic-block-end-line->ast (.dynamicBlockEndLine ctx))
+            (.planningLine ctx) (planning->ast (.planning (.planningLine ctx)))
+            (.dynamicBlockBeginLine ctx) (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx))
+            (.footnoteLine ctx) (footnote-line->ast (.footnoteLine ctx))
+            (.commentLine ctx) (comment-line->ast (.commentLine ctx))
+            (.horizontalRule ctx) (horizontal-rule->ast (.horizontalRule ctx))
+            (.drawerBeginLine ctx) (drawer-begin-line->ast (.drawerBeginLine ctx))
+            (.drawerEndLine ctx) (drawer-end-line->ast (.drawerEndLine ctx))
+            (.contentLine ctx) (content-line->ast (.contentLine ctx) parse-direct)
+            (.emptyLine ctx) [:empty-line]
+            :else nil)))
+      ctx)))
 
 (defn- s->ast [ctx parse-direct raw]
   (let [from-lines (map (fn [line-ctx]
