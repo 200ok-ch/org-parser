@@ -123,6 +123,14 @@
       (is (= [[:other-keyword-line [:kw-name "KEY"] [:kw-value "VALUE"]]]
              (parse "#+KEY: VALUE"))))
 
+    (testing "dynamic block begin line"
+      (is (= [[:dynamic-block-begin-line [:dynamic-block-name "name"] [:dynamic-block-parameters "params"]]]
+             (parse "#+BEGIN: name params"))))
+
+    (testing "dynamic block end line"
+      (is (= [[:dynamic-block-end-line]]
+             (parse "#+END:"))))
+
     (testing "comment line"
       (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest ""]]]
              (parse "#"))))

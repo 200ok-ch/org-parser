@@ -12,7 +12,7 @@
 (def ^:private OrgLexer (js/require lexer-module-path))
 (def ^:private OrgParser (js/require parser-module-path))
 
-(declare parse-direct parse-antlr-only)
+(declare parse-direct parse-antlr-only footnote-link->ast text->ast)
 
 (defn- text-node [s]
   [:text [:text-normal s]])
@@ -40,9 +40,6 @@
 
 (defn- with-span [node ctx]
   (with-meta node {:span (ctx-span ctx)}))
-
-(defn- with-raw-span [node raw]
-  (with-meta node {:span [0 (count raw)]}))
 
 (defn- failure [reason start raw]
   {:failure? true
@@ -191,47 +188,55 @@
   (with-span (into [:fixed-width-area] (map fixed-width-line->ast (.fixedWidthLine ctx))) ctx))
 
 (defn- link-ext-other->ast [ctx]
-  (with-span (cond-> [:link-ext-other [:link-url-scheme (ctx-text (.linkUrlScheme ctx))]]
-               (.linkUrlRest ctx) (conj [:link-url-rest (ctx-text (.linkUrlRest ctx))]))
-             ctx))
+  (let [raw (ctx-text ctx)
+        scheme (or (some-> ctx .linkUrlScheme ctx-text)
+                   (some->> (re-matches #"^([^:]+):(.*)$" raw) second))
+        rest (or (some-> ctx .linkUrlRest ctx-text)
+                 (some->> (re-matches #"^[^:]+:(.*)$" raw) second))]
+    (with-span (cond-> [:link-ext-other [:link-url-scheme scheme]]
+                 (some? rest) (conj [:link-url-rest rest]))
+               ctx)))
+
+(defn- link-ext-other-fields [node]
+  [(second (second node))
+   (when-let [rest-node (nth node 2 nil)]
+     (second rest-node))])
 
 (defn- link-ext-id->ast [ctx]
   (if (= "id" (ctx-text (.linkIdPrefix ctx)))
     (with-span [:link-ext-id (ctx-text (.linkIdValue ctx))] ctx)
     (failure :invalid-link-ext-id :link-ext-id (ctx-text ctx))))
 
-(defn- link-file-location-node [loc]
+(defn- link-file-location-node [ctx]
   (cond
-    (re-matches #"[0-9]+" loc) [:link-file-loc-lnum loc]
-    (str/starts-with? loc "*") [:link-file-loc-headline (subs loc 1)]
-    (str/starts-with? loc "#") [:link-file-loc-customid (subs loc 1)]
-    :else [:link-file-loc-string loc]))
+    (.linkFileLocationLine ctx) [:link-file-loc-lnum (ctx-text (.linkFileLocationLine ctx))]
+    (.linkFileLocationHeadline ctx) [:link-file-loc-headline (subs (ctx-text (.linkFileLocationHeadline ctx)) 1)]
+    (.linkFileLocationCustomId ctx) [:link-file-loc-customid (subs (ctx-text (.linkFileLocationCustomId ctx)) 1)]
+    (.linkFileLocationString ctx) [:link-file-loc-string (ctx-text (.linkFileLocationString ctx))]))
 
 (defn- link-ext-file->ast [ctx]
-  (let [scheme (some-> ctx .linkFileScheme ctx-text)
-        path (ctx-text (.linkFilePath ctx))
-        loc (some-> ctx .linkFileLocation ctx-text)]
-    (if (and (seq path)
-             (or (nil? scheme) (= "file:" (str/lower-case scheme))))
-      (with-span (cond-> [:link-ext-file path]
-                   loc (conj (link-file-location-node loc)))
-                 ctx)
-      (failure :invalid-link-ext-file :link-ext-file (ctx-text ctx)))))
+  (let [path (ctx-text (.linkFilePath ctx))
+        loc-ctx (.linkFileLocation ctx)]
+    (with-span (cond-> [:link-ext-file path]
+                 loc-ctx (conj (link-file-location-node loc-ctx)))
+               ctx)))
 
 (defn- text-link->ast [ctx]
-  (let [link (link-ext-other->ast (.linkExtOther ctx))
-        raw (ctx-text ctx)]
+  (let [link-ctx (or (some-> ctx .textLinkAngle .linkExtOther)
+                     (some-> ctx .textLinkPlain .linkExtOther))
+        link (link-ext-other->ast link-ctx)
+        [scheme path] (link-ext-other-fields link)]
     (if (:failure? link)
       link
       (with-span
         [:text-link
-         (if (str/starts-with? raw "<")
-           [:text-link-angle
-            [:link-url-scheme (ctx-text (.linkUrlScheme (.linkExtOther ctx)))]
-            [:text-link-angle-path (or (some-> (.linkExtOther ctx) .linkUrlRest ctx-text) "")]]
-           [:text-link-plain
-            [:link-url-scheme (ctx-text (.linkUrlScheme (.linkExtOther ctx)))]
-            [:text-link-plain-path (or (some-> (.linkExtOther ctx) .linkUrlRest ctx-text) "")]])]
+         (if (.textLinkAngle ctx)
+             [:text-link-angle
+              [:link-url-scheme scheme]
+              [:text-link-angle-path (or path "")]]
+            [:text-link-plain
+             [:link-url-scheme scheme]
+             [:text-link-plain-path (or path "")]])]
         ctx))))
 
 (defn- ts-time->ast [ctx]
@@ -321,6 +326,9 @@
     (with-span [:text-macro [:macro-name (ctx-text (.macroName ctx))] (into [:macro-args] args)] ctx)))
 
 (defn- eol->ast [ctx]
+  (with-span '() ctx))
+
+(defn- horizontal-space->ast [ctx]
   (with-span '() ctx))
 
 (defn- word->ast [ctx]
@@ -434,18 +442,23 @@
 
     (.linkTargetExtOther ctx)
     (let [other (.linkTargetExtOther ctx)]
-      [:link [:link-ext [:link-ext-other
-                         [:link-url-scheme (ctx-text (.linkUrlScheme other))]
-                         [:link-url-rest (or (some-> other .linkTargetRest ctx-text) "")]]]])
+      (let [raw (ctx-text other)
+            scheme (or (some-> other .linkUrlScheme ctx-text)
+                       (some->> (re-matches #"^([^:]+):(.*)$" raw) second))
+            rest (or (some-> other .linkTargetRest ctx-text)
+                     (some->> (re-matches #"^[^:]+:(.*)$" raw) second))]
+        [:link [:link-ext [:link-ext-other
+                           [:link-url-scheme scheme]
+                           [:link-url-rest (or rest "")]]]]))
 
     (.linkTargetIntCustomId ctx)
-    [:link [:link-int [:link-file-loc-customid (subs (ctx-text (.linkTargetIntCustomId ctx)) 1)]]]
+    [:link [:link-int [:link-file-loc-customid (ctx-text (.linkTargetIntBody (.linkTargetIntCustomId ctx)))]]]
 
     (.linkTargetIntHeadline ctx)
-    [:link [:link-int [:link-file-loc-headline (subs (ctx-text (.linkTargetIntHeadline ctx)) 1)]]]
+    [:link [:link-int [:link-file-loc-headline (ctx-text (.linkTargetIntBody (.linkTargetIntHeadline ctx)))]]]
 
     (.linkTargetIntString ctx)
-    [:link [:link-int [:link-file-loc-string (ctx-text (.linkTargetIntString ctx))]]]
+    [:link [:link-int [:link-file-loc-string (ctx-text (.linkTargetIntBody (.linkTargetIntString ctx)))]]]
 
     :else nil))
 
@@ -467,6 +480,71 @@
 
 (defn- text-radio-target->ast [ctx]
   (with-span [:text-radio-target [:text-target-name (ctx-text (.textRadioTargetBody ctx))]] ctx))
+
+(defn- text-part->ast [ctx]
+  (cond
+    (.timestamp ctx)
+    (timestamp->ast (.timestamp ctx))
+
+    (.linkFormat ctx)
+    (link-format->ast (.linkFormat ctx))
+
+    (.footnoteLink ctx)
+    (footnote-link->ast (.footnoteLink ctx))
+
+    (.textRadioTarget ctx)
+    (text-radio-target->ast (.textRadioTarget ctx))
+
+    (.textTarget ctx)
+    (text-target->ast (.textTarget ctx))
+
+    (.textLink ctx)
+    (text-link->ast (.textLink ctx))
+
+    (.textStyled ctx)
+    (first (text-styled->ast (.textStyled ctx)))
+
+    (.textEntity ctx)
+    (text-entity->ast (.textEntity ctx))
+
+    (.textSub ctx)
+    (text-sub->ast (.textSub ctx))
+
+    (.textSup ctx)
+    (text-sup->ast (.textSup ctx))
+
+    (.textMacro ctx)
+    (text-macro->ast (.textMacro ctx))
+
+    (.textPlain ctx)
+    [:text-normal (ctx-text (.textPlain ctx))]
+
+    (.textFallbackChar ctx)
+    (with-meta [:text-normal (ctx-text (.textFallbackChar ctx))] {:barrier-before true})
+
+    :else nil))
+
+(defn- text-linebreak->ast [ctx]
+  [:text-linebreak [:text-linebreak-after (or (some-> ctx .textLinebreakAfter ctx-text) "")]])
+
+(defn- merge-text-normal-nodes [nodes]
+  (reduce (fn [acc node]
+            (if (and (= :text-normal (first node))
+                     (= :text-normal (first (peek acc)))
+                     (not (:barrier-before (meta node))))
+              (conj (pop acc) [:text-normal (str (second (peek acc)) (second node))])
+              (conj acc node)))
+          []
+          nodes))
+
+(defn- text->ast [ctx]
+  (let [segments (mapv text-part->ast (.textSegment ctx))
+        linebreak (some-> ctx .textLinebreak text-linebreak->ast)]
+    (if (or (some nil? segments)
+            (and linebreak (empty? segments) (not (.textLinebreak ctx))))
+      (failure :invalid-text :text (ctx-text ctx))
+      (with-span (into [:text] (merge-text-normal-nodes (cond-> segments linebreak (conj linebreak))))
+                 ctx))))
 
 (defn- noparse-block->ast [ctx]
   (let [begin-ctx (.noparseBlockBeginLine ctx)
@@ -490,133 +568,12 @@
                  ctx)
       (failure :invalid-noparse-block :noparse-block (ctx-text ctx)))))
 
-(defn- parse-inline-chunk [raw]
-  (letfn [(ok [v]
-            (when (and v (not (:failure? v))) v))]
-    (or
-     (ok (parse-direct raw :text-macro))
-     (ok (parse-direct raw :link-format))
-     (ok (parse-direct raw :footnote-link))
-     (ok (parse-direct raw :text-link))
-     (ok (parse-direct raw :text-target))
-     (ok (parse-direct raw :text-entity))
-     (ok (parse-direct raw :text-sub))
-     (ok (parse-direct raw :text-sup))
-     (ok (parse-direct raw :text-radio-target))
-     nil)))
-
-(defn- parse-text-direct [raw]
-  (if (or (str/starts-with? raw "\n")
-          (str/starts-with? raw "\r"))
-    (failure :invalid-text :text raw)
-    (let [n (count raw)]
-      (loop [i 0
-             normal ""
-             out []]
-        (if (>= i n)
-          (let [nodes (cond-> out
-                        (not= normal "") (conj [:text-normal normal]))]
-            (with-raw-span (into [:text] nodes)
-                           raw))
-          (let [rest (subs raw i)
-                styled-cand (some (fn [d]
-                                    (let [j (.indexOf rest d 1)]
-                                      (when (pos? j)
-                                        (let [cand (subs rest 0 (inc j))
-                                              styled (parse-direct cand :text-styled)]
-                                          (when-not (:failure? styled)
-                                            [cand styled])))))
-                                   ["*" "/" "_" "=" "~" "+"])
-                macro-end (.indexOf rest "}}}")
-                macro-cand (when (and (str/starts-with? rest "{{{") (<= 0 macro-end))
-                             (subs rest 0 (+ macro-end 3)))
-                radio-end (.indexOf rest ">>>")
-                radio-cand (when (and (str/starts-with? rest "<<<") (<= 0 radio-end))
-                             (subs rest 0 (+ radio-end 3)))
-                target-end (.indexOf rest ">>")
-                target-cand (when (and (str/starts-with? rest "<<") (<= 0 target-end))
-                              (subs rest 0 (+ target-end 2)))
-                angled-end (.indexOf rest ">")
-                angled-cand (when (and (str/starts-with? rest "<") (<= 0 angled-end))
-                              (subs rest 0 (inc angled-end)))
-                link-second (.indexOf rest "]]" 2)
-                link-cand (when (and (str/starts-with? rest "[[") (<= 0 link-second))
-                            (let [base (subs rest 0 (+ link-second 2))
-                                  after (subs rest (+ link-second 2))]
-                              (if (and (str/starts-with? after "[")
-                                       (not (str/starts-with? after "[fn:")))
-                                (let [desc-end (.indexOf after "]")]
-                                  (if (<= 0 desc-end)
-                                    (str base (subs after 0 (inc desc-end)))
-                                    base))
-                                base)))
-                plain-url-cand (when-let [[_ u] (re-find #"^((?:https?|ftp|file):[^\s<>\[\]()]+|mailto:[^\s<>\[\]()]+)" rest)]
-                                 u)
-                foot-cand (when (str/starts-with? rest "[fn:")
-                            (let [end (.indexOf rest "]")]
-                              (when (<= 0 end) (subs rest 0 (inc end)))))
-                entity-cand (when (str/starts-with? rest "\\")
-                              (when-let [[_ n braces] (re-find #"^\\([A-Za-z]+)(\{\})?" rest)]
-                                (str "\\" n (or braces ""))))
-                sub-cand (or (when-let [[_ v] (re-find #"^_\{([^{}]+)\}" rest)] (str "_{" v "}"))
-                             (when-let [[_ v] (re-find #"^_([^\s]+)" rest)] (str "_" v)))
-                sup-cand (or (when-let [[_ v] (re-find #"^\^\{([^{}]+)\}" rest)] (str "^{" v "}"))
-                             (when-let [[_ v] (re-find #"^\^([^\s_]+)" rest)] (str "^" v)))
-                ts-cand (or
-                         (when (str/starts-with? rest "<")
-                           (let [e (.indexOf rest ">")]
-                             (when (<= 0 e) (subs rest 0 (inc e)))))
-                         (when (str/starts-with? rest "[")
-                           (let [e (.indexOf rest "]")]
-                             (when (<= 0 e) (subs rest 0 (inc e))))))
-                linebreak-match (re-find #"^\\\\([ \t]*)$" rest)
-                chunk (or (when macro-cand [macro-cand (parse-inline-chunk macro-cand)])
-                          (when radio-cand [radio-cand (parse-inline-chunk radio-cand)])
-                           (when target-cand [target-cand (parse-inline-chunk target-cand)])
-                           (when link-cand [link-cand (parse-inline-chunk link-cand)])
-                           (when plain-url-cand [plain-url-cand (parse-inline-chunk plain-url-cand)])
-                           (when foot-cand [foot-cand (parse-inline-chunk foot-cand)])
-                           (when ts-cand
-                             (let [ts-node (parse-direct ts-cand :timestamp)]
-                               (when-not (:failure? ts-node)
-                                [ts-cand ts-node])))
-                          (when angled-cand [angled-cand (parse-inline-chunk angled-cand)])
-                          (when styled-cand [(first styled-cand) (first (second styled-cand))])
-                          (when entity-cand [entity-cand (parse-inline-chunk entity-cand)])
-                          (when sub-cand [sub-cand (parse-inline-chunk sub-cand)])
-                          (when sup-cand [sup-cand (parse-inline-chunk sup-cand)]))]
-            (cond
-              linebreak-match
-              (let [after (second linebreak-match)
-                    out* (cond-> out
-                           (not= normal "") (conj [:text-normal normal]))]
-                (with-raw-span (into [:text] (conj out* [:text-linebreak [:text-linebreak-after after]])) raw))
-
-              (and chunk (not (:failure? (second chunk))) (vector? (second chunk)))
-              (let [[cand node] chunk
-                    out* (cond-> out
-                           (not= normal "") (conj [:text-normal normal]))]
-                (recur (+ i (count cand)) "" (conj out* node)))
-
-              (str/starts-with? rest "\\\\")
-              (let [out* (cond-> out
-                           (not= normal "") (conj [:text-normal normal]))]
-                (recur (inc i) "" (conj out* [:text-normal "\\"])))
-
-              (and (contains? #{"*" "/" "_" "=" "~" "+"} (subs raw i (inc i)))
-                   (not= normal ""))
-              (recur i "" (conj out [:text-normal normal]))
-
-              :else
-              (recur (inc i) (str normal (subs raw i (inc i))) out))))))))
-
 (defn- parse-direct [raw start]
   (case start
     :eol
     (parse-antlr-only raw start)
-    :s (if (re-matches #"[\t ]+" raw)
-         (with-raw-span '() raw)
-         (failure :invalid-horizontal-space start raw))
+    :s
+    (parse-antlr-only raw start)
     :word
     (parse-antlr-only raw start)
     :tags
@@ -678,7 +635,7 @@
     :planning
     (parse-antlr-only raw start)
     :text
-    (parse-text-direct raw)
+    (parse-antlr-only raw start)
     nil))
 
 (defn- headline->ast [ctx]
@@ -698,15 +655,15 @@
                              (conj with-priority [:comment-token])
                              with-priority)]
     (with-span (conj with-comment-token
-                     (let [parsed-title (parse-text-direct title-txt)]
-                       (if (:failure? parsed-title)
-                         (text-node title-txt)
-                         parsed-title)))
-               ctx)))
+                     (let [parsed-title (text->ast (.text (.title ctx)))]
+                        (if (:failure? parsed-title)
+                          (text-node title-txt)
+                          parsed-title)))
+                ctx)))
 
 (defn- content-line->ast [ctx]
   (let [raw (.getText ctx)
-        parsed-text (parse-text-direct raw)
+        parsed-text (text->ast (.text ctx))
         text-ast (if (:failure? parsed-text)
                    (text-node raw)
                    parsed-text)]
@@ -777,33 +734,14 @@
        :raw (.getText ctx)})))
 
 (defn- dynamic-block-begin-line->ast [ctx]
-  (let [marker (.getText (.dynamicBeginMarker ctx))
-        name (.getText (.dynamicBlockName ctx))
-        marker* (str/upper-case marker)
+  (let [name (.getText (.dynamicBlockName ctx))
         params-ctx (.dynamicBlockParameters ctx)]
-    (cond
-      (= "BEGIN" marker*)
-      (with-span (cond-> [:dynamic-block-begin-line [:dynamic-block-name name]]
-                   params-ctx (conj [:dynamic-block-parameters (.getText params-ctx)]))
-                  ctx)
-
-      (= "END" marker*)
-      (with-span [:dynamic-block-end-line] ctx)
-
-      :else
-      {:failure? true
-       :backend :antlr
-       :reason :invalid-dynamic-block-begin-marker
-       :raw (.getText ctx)})))
+    (with-span (cond-> [:dynamic-block-begin-line [:dynamic-block-name name]]
+                 params-ctx (conj [:dynamic-block-parameters (.getText params-ctx)]))
+                ctx)))
 
 (defn- dynamic-block-end-line->ast [ctx]
-  (let [marker (.getText (.dynamicEndMarker ctx))]
-    (if (= "END" (str/upper-case marker))
-      (with-span [:dynamic-block-end-line] ctx)
-      {:failure? true
-       :backend :antlr
-       :reason :invalid-dynamic-block-end-marker
-       :raw (.getText ctx)})))
+  (with-span [:dynamic-block-end-line] ctx))
 
 (defn- fn-prefix-valid? [ctx]
   (= "fn:" (str/lower-case (.getText ctx))))
@@ -844,27 +782,22 @@
                ctx)))
 
 (defn- line->ast [ctx]
-  (let [raw (.getText ctx)]
-    (cond
-      (.headline ctx) (headline->ast (.headline ctx))
-      (.todoLine ctx) (todo-line->ast (.todoLine ctx))
-      (.blockEndLine ctx) (block-end-line->ast (.blockEndLine ctx))
-      (.blockBeginLine ctx) (block-begin-line->ast (.blockBeginLine ctx))
-      (.otherKeywordLine ctx) (other-keyword-line->ast (.otherKeywordLine ctx))
-      (.dynamicBlockEndLine ctx) (dynamic-block-end-line->ast (.dynamicBlockEndLine ctx))
-      (.dynamicBlockBeginLine ctx) (if-let [[_ k v] (re-matches #"#\+([A-Z][A-Z0-9_-]*):\s*(.*)" raw)]
-                                     (if (contains? #{"BEGIN" "END"} k)
-                                       (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx))
-                                       (with-span [:other-keyword-line [:kw-name k] [:kw-value v]] ctx))
-                                     (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx)))
-      (.footnoteLine ctx) (footnote-line->ast (.footnoteLine ctx))
-      (.commentLine ctx) (comment-line->ast (.commentLine ctx))
-      (.horizontalRule ctx) (horizontal-rule->ast (.horizontalRule ctx))
-      (.drawerBeginLine ctx) (drawer-begin-line->ast (.drawerBeginLine ctx))
-      (.drawerEndLine ctx) (drawer-end-line->ast (.drawerEndLine ctx))
-      (.contentLine ctx) (content-line->ast (.contentLine ctx))
-      (.emptyLine ctx) (with-span [:empty-line] (.emptyLine ctx))
-      :else nil)))
+  (cond
+    (.headline ctx) (headline->ast (.headline ctx))
+    (.todoLine ctx) (todo-line->ast (.todoLine ctx))
+    (.blockEndLine ctx) (block-end-line->ast (.blockEndLine ctx))
+    (.blockBeginLine ctx) (block-begin-line->ast (.blockBeginLine ctx))
+    (.otherKeywordLine ctx) (other-keyword-line->ast (.otherKeywordLine ctx))
+    (.dynamicBlockEndLine ctx) (dynamic-block-end-line->ast (.dynamicBlockEndLine ctx))
+    (.dynamicBlockBeginLine ctx) (dynamic-block-begin-line->ast (.dynamicBlockBeginLine ctx))
+    (.footnoteLine ctx) (footnote-line->ast (.footnoteLine ctx))
+    (.commentLine ctx) (comment-line->ast (.commentLine ctx))
+    (.horizontalRule ctx) (horizontal-rule->ast (.horizontalRule ctx))
+    (.drawerBeginLine ctx) (drawer-begin-line->ast (.drawerBeginLine ctx))
+    (.drawerEndLine ctx) (drawer-end-line->ast (.drawerEndLine ctx))
+    (.contentLine ctx) (content-line->ast (.contentLine ctx))
+    (.emptyLine ctx) (with-span [:empty-line] (.emptyLine ctx))
+    :else nil))
 
 (defn- s->ast [ctx]
   (let [from-lines (map (fn [line-ctx]
@@ -903,11 +836,11 @@
       (if (:failure? parser)
         parser
         (let [result (case start
-                       :S (-> (s->ast (.s parser))
-                              (postprocess/attach-headline-planning parse-direct raw)
-                              (postprocess/collapse-table-lines parse-direct raw)
-                              (postprocess/strip-nested-s-lines))
-                       :s (s->ast (.s parser))
+                        :S (-> (s->ast (.s parser))
+                               (postprocess/attach-headline-planning parse-direct raw)
+                               (postprocess/collapse-table-lines parse-direct raw)
+                               (postprocess/strip-nested-s-lines))
+                        :s (horizontal-space->ast (.horizontalSpace (.horizontalSpaceEof parser)))
                        :drawer (-> parser .s s->ast postprocess/drawer-from-s)
                        :dynamic-block (-> parser .s s->ast postprocess/dynamic-block-from-s)
                        :block (let [np (parse-direct raw :noparse-block)]
@@ -924,9 +857,9 @@
                                        (merge (meta (first lines))
                                               {:span [0 (count raw)]}))
                                      (failure :invalid-headline start raw)))
-                       :todo-line (todo-line->ast (.todoLine (.todoLineEof parser)))
-                       :eol (eol->ast (.eol (.eolEof parser)))
-                       :word (word->ast (.word (.wordEof parser)))
+                        :todo-line (todo-line->ast (.todoLine (.todoLineEof parser)))
+                        :eol (eol->ast (.eol (.eolEof parser)))
+                        :word (word->ast (.word (.wordEof parser)))
                        :block-begin-line (block-begin-line->ast (.blockBeginLine (.blockBeginLineEof parser)))
                        :block-end-line (block-end-line->ast (.blockEndLine (.blockEndLineEof parser)))
                        :dynamic-block-begin-line (dynamic-block-begin-line->ast (.dynamicBlockBeginLine (.dynamicBlockBeginLineEof parser)))
@@ -965,12 +898,13 @@
                        :text-styled (text-styled->ast (.textStyled (.textStyledEof parser)))
                        :link-format (link-format->ast (.linkFormat (.linkFormatEof parser)))
                        :text-sup (text-sup->ast (.textSup (.textSupEof parser)))
-                       :text-radio-target (text-radio-target->ast (.textRadioTarget (.textRadioTargetEof parser)))
-                       :noparse-block (noparse-block->ast (.noparseBlock (.noparseBlockEof parser)))
-                       :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
-                       :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
-                       :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
-                       :text-macro (text-macro->ast (.textMacro (.textMacroEof parser)))
+                        :text-radio-target (text-radio-target->ast (.textRadioTarget (.textRadioTargetEof parser)))
+                        :noparse-block (noparse-block->ast (.noparseBlock (.noparseBlockEof parser)))
+                        :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
+                        :text (text->ast (.text (.textEof parser)))
+                        :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
+                        :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
+                        :text-macro (text-macro->ast (.textMacro (.textMacroEof parser)))
                        (failure :unsupported-start start raw))
               current-token (.getCurrentToken parser)
               token-type (or (some-> current-token .-type)

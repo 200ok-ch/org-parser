@@ -103,15 +103,21 @@ eolEof: eol EOF;
 
 wordEof: word EOF;
 
+horizontalSpaceEof: horizontalSpace EOF;
+
 textSupEof: textSup EOF;
 
 textRadioTargetEof: textRadioTarget EOF;
 
 noparseBlockEof: noparseBlock EOF;
 
+textEof: text EOF;
+
 emptyLine: SPACE+;
 
 eol: NEWLINE?;
+
+horizontalSpace: SPACE+;
 
 word: wordChar+;
 
@@ -173,13 +179,13 @@ noparseBlockParameters: text;
 
 noparseBlockContent: (.)*?;
 
-dynamicBlockBeginLine: HASH PLUS dynamicBeginMarker COLON SPACE+ dynamicBlockName (SPACE dynamicBlockParameters)? SPACE*;
+dynamicBlockBeginLine: DYNBLOCK_BEGIN_PREFIX SPACE+ dynamicBlockName (SPACE dynamicBlockParameters)? SPACE*;
 
-dynamicBlockEndLine: HASH PLUS dynamicEndMarker COLON SPACE*;
+dynamicBlockEndLine: DYNBLOCK_END_PREFIX SPACE*;
 
-dynamicBeginMarker: markerChar+;
+dynamicBeginMarker: DYNBLOCK_BEGIN_PREFIX;
 
-dynamicEndMarker: markerChar+;
+dynamicEndMarker: DYNBLOCK_END_PREFIX;
 
 markerChar: UPPER | LOWER;
 
@@ -207,7 +213,7 @@ fnLabelChar: UPPER | LOWER | DIGIT | DASH | UNDERSCORE | DOT;
 
 fnTextInline: inlineChar*;
 
-inlineChar: SPACE | UPPER | LOWER | DIGIT | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | LT | GT | LPAREN | RPAREN | LBRACE | RBRACE | BACKSLASH | SLASH | EQUALS | TILDE | DOT | COMMA | PERCENT | AT | QUESTION | EXCL | CARET | TEXT_CHAR;
+inlineChar: PLAIN_URL | SPACE | UPPER | LOWER | DIGIT | DASH | UNDERSCORE | PLUS | BAR | HASH | COLON | STAR | LT | GT | LPAREN | RPAREN | LBRACE | RBRACE | BACKSLASH | SLASH | EQUALS | TILDE | DOT | COMMA | PERCENT | AT | QUESTION | EXCL | CARET | TEXT_CHAR;
 
 commentLine: SPACE* HASH commentLineRest;
 
@@ -223,14 +229,79 @@ drawerNameChar: ~(NEWLINE | COLON);
 
 drawerEndLine: END_DRAWER SPACE*;
 
-text: textNormal+;
+text: textSegment* textLinebreak | textSegment+;
+
+textSegment
+  : timestamp
+  | linkFormat
+  | footnoteLink
+  | textRadioTarget
+  | textTarget
+  | textLink
+  | textStyled
+  | textEntity
+  | textSub
+  | textSup
+  | textMacro
+  | textPlain
+  | textFallbackChar
+  ;
+
+textLinebreak: BACKSLASH BACKSLASH textLinebreakAfter;
+
+textLinebreakAfter: SPACE*;
+
+textPlain: textPlainChar+;
+
+textPlainChar
+  : TEXT_CHAR
+  | SPACE
+  | COMMENT
+  | DYNBLOCK_BEGIN_PREFIX
+  | DYNBLOCK_END_PREFIX
+  | UPPER
+  | LOWER
+  | DIGIT
+  | RBRACK
+  | HASH
+  | COLON
+  | DASH
+  | BAR
+  | GT
+  | LPAREN
+  | RPAREN
+  | RBRACE
+  | DOT
+  | COMMA
+  | PERCENT
+  | AT
+  | QUESTION
+  | EXCL
+  ;
+
+textFallbackChar
+  : STAR
+  | LBRACK
+  | PLUS
+  | UNDERSCORE
+  | LT
+  | LBRACE
+  | BACKSLASH
+  | SLASH
+  | EQUALS
+  | TILDE
+  | CARET
+  ;
 
 textNormal: sameLineChar+;
 
 sameLineChar
   : TEXT_CHAR
+  | PLAIN_URL
   | SPACE
   | COMMENT
+  | DYNBLOCK_BEGIN_PREFIX
+  | DYNBLOCK_END_PREFIX
   | UPPER
   | LOWER
   | DIGIT
@@ -264,6 +335,7 @@ sameLineChar
 
 sameLineCharNoBar
   : TEXT_CHAR
+  | PLAIN_URL
   | SPACE
   | COMMENT
   | UPPER
@@ -372,7 +444,7 @@ linkUrlScheme: (UPPER | LOWER) (UPPER | LOWER | DIGIT | PLUS | DASH | DOT)*;
 
 linkUrlRest: sameLineChar+;
 
-linkExtOther: linkUrlScheme COLON linkUrlRest?;
+linkExtOther: PLAIN_URL | linkUrlScheme COLON linkUrlRest?;
 
 linkExtId: LBRACK LBRACK linkIdPrefix COLON linkIdValue RBRACK RBRACK;
 
@@ -388,9 +460,21 @@ linkFilePath: linkFilePathChar+?;
 
 linkFilePathChar: sameLineChar;
 
-linkFileLocation: sameLineChar+;
+linkFileLocation: linkFileLocationLine | linkFileLocationHeadline | linkFileLocationCustomId | linkFileLocationString;
 
-textLink: LT linkExtOther GT | linkExtOther;
+linkFileLocationLine: DIGIT+;
+
+linkFileLocationHeadline: STAR sameLineChar+;
+
+linkFileLocationCustomId: HASH sameLineChar+;
+
+linkFileLocationString: sameLineChar+;
+
+textLink: textLinkAngle | textLinkPlain;
+
+textLinkAngle: LT linkExtOther GT;
+
+textLinkPlain: linkExtOther;
 
 tsDate: DIGIT DIGIT DIGIT DIGIT DASH DIGIT DIGIT DASH DIGIT DIGIT;
 
@@ -568,7 +652,7 @@ textStyledCode: TILDE textStyledBody TILDE;
 
 textStyledStrike: PLUS textStyledBody PLUS;
 
-textStyledBody: sameLineChar+;
+textStyledBody: sameLineChar+?;
 
 linkFormat: LBRACK LBRACK linkTarget RBRACK (RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK);
 
@@ -576,13 +660,15 @@ linkTarget: linkTargetId | linkTargetExtOther | linkTargetIntCustomId | linkTarg
 
 linkTargetId: LOWER LOWER COLON linkIdValue;
 
-linkTargetExtOther: linkUrlScheme COLON linkTargetRest?;
+linkTargetExtOther: PLAIN_URL | linkUrlScheme COLON linkTargetRest?;
 
-linkTargetIntCustomId: HASH linkTargetIntText+;
+linkTargetIntCustomId: HASH linkTargetIntBody;
 
-linkTargetIntHeadline: STAR linkTargetIntText+;
+linkTargetIntHeadline: STAR linkTargetIntBody;
 
-linkTargetIntString: linkTargetIntText+;
+linkTargetIntString: linkTargetIntBody;
+
+linkTargetIntBody: linkTargetIntText+;
 
 linkTargetRest: linkTargetChunk+;
 

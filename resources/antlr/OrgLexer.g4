@@ -1,5 +1,8 @@
 lexer grammar OrgLexer;
 
+DYNBLOCK_BEGIN_PREFIX: '#+' B E G I N ':';
+DYNBLOCK_END_PREFIX: '#+' E N D ':';
+PLAIN_URL: ('http' | 'https' | 'ftp') ':' URL_CHAR+ | 'mailto:' URL_CHAR+;
 NEWLINE: '\r'? '\n' | '\r';
 STAR: '*';
 LBRACK: '[';
@@ -34,3 +37,11 @@ UPPER: [A-Z];
 LOWER: [a-z];
 DIGIT: [0-9];
 TEXT_CHAR: ~[\r\n];
+
+fragment B: [Bb];
+fragment D: [Dd];
+fragment E: [Ee];
+fragment G: [Gg];
+fragment I: [Ii];
+fragment N: [Nn];
+fragment URL_CHAR: [A-Za-z0-9_./?&=:%#@~,+;!-];
