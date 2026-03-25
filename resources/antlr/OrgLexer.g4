@@ -1,6 +1,6 @@
 lexer grammar OrgLexer;
 
-NEWLINE: '\r'? '\n';
+NEWLINE: '\r'? '\n' | '\r';
 STAR: '*';
 LBRACK: '[';
 RBRACK: ']';

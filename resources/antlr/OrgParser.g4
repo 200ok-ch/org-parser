@@ -99,7 +99,17 @@ textStyledEof: textStyled EOF;
 
 linkFormatEof: linkFormat EOF;
 
+eolEof: eol EOF;
+
+wordEof: word EOF;
+
 emptyLine: SPACE+;
+
+eol: NEWLINE?;
+
+word: wordChar+;
+
+wordChar: ~(NEWLINE | SPACE);
 
 headline
   : stars (SPACE+ keyword)? (SPACE+ priority)? (SPACE+ commentToken)? SPACE+ title

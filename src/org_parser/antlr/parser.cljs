@@ -317,6 +317,12 @@
                [""])]
     (with-span [:text-macro [:macro-name (ctx-text (.macroName ctx))] (into [:macro-args] args)] ctx)))
 
+(defn- eol->ast [ctx]
+  (with-span '() ctx))
+
+(defn- word->ast [ctx]
+  (with-span [(ctx-text ctx)] ctx))
+
 (defn- tags->ast [ctx]
   (let [tags (mapv ctx-text (.tagName ctx))]
     (if (seq tags)
@@ -777,15 +783,13 @@
 
 (defn- parse-direct [raw start]
   (case start
-    :eol (if (or (= raw "") (= raw "\n") (= raw "\r"))
-           (with-raw-span '() raw)
-           (failure :invalid-eol start raw))
+    :eol
+    (parse-antlr-only raw start)
     :s (if (re-matches #"[\t ]+" raw)
          (with-raw-span '() raw)
          (failure :invalid-horizontal-space start raw))
-    :word (if (re-matches #"[^\r\n\s]+" raw)
-            (with-raw-span [raw] raw)
-            (failure :invalid-word start raw))
+    :word
+    (parse-antlr-only raw start)
     :tags
     (parse-antlr-only raw start)
     :diary-sexp
@@ -1089,6 +1093,8 @@
                                               {:span [0 (count raw)]}))
                                      (failure :invalid-headline start raw)))
                        :todo-line (todo-line->ast (.todoLine (.todoLineEof parser)))
+                       :eol (eol->ast (.eol (.eolEof parser)))
+                       :word (word->ast (.word (.wordEof parser)))
                        :block-begin-line (block-begin-line->ast (.blockBeginLine (.blockBeginLineEof parser)))
                        :block-end-line (block-end-line->ast (.blockEndLine (.blockEndLineEof parser)))
                        :dynamic-block-begin-line (dynamic-block-begin-line->ast (.dynamicBlockBeginLine (.dynamicBlockBeginLineEof parser)))
