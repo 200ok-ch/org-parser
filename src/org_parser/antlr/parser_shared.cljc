@@ -6,8 +6,15 @@
 
 (def ^:dynamic *raw* nil)
 
+(def ^:private inline-special-pattern
+  #"[#%\[\]{}<>\\_*+/=~^:@]")
+
 (defn text-node [s]
   [:text [:text-normal s]])
+
+(defn- needs-inline-parse? [s]
+  (boolean (and (some? s)
+                (re-find inline-special-pattern s))))
 
 (defn- token-start-index [token]
   #?(:clj
@@ -647,7 +654,7 @@
         keyword-ctx (.keyword ctx)
         priority-ctx (.priority ctx)
         comment-token-ctx (.commentToken ctx)
-        title-txt (some-> ctx .title .getText)
+        title-txt (some-> ctx .title ctx-text)
         base [:headline [:stars stars]]
         with-keyword (if keyword-ctx
                        (conj base [:keyword (.getText keyword-ctx)])
@@ -659,16 +666,20 @@
                              (conj with-priority [:comment-token])
                              with-priority)]
     (with-span (conj with-comment-token
-                     (let [parsed-title (text->ast (.text (.title ctx)))]
-                       (if (:failure? parsed-title)
-                         (text-node title-txt)
-                         parsed-title)))
-                ctx)))
+                     (if (needs-inline-parse? title-txt)
+                       (let [parsed-title (parse-direct title-txt :text)]
+                         (if (:failure? parsed-title)
+                           (text-node title-txt)
+                           parsed-title))
+                       (text-node title-txt)))
+                 ctx)))
 
-(defn- content-line->ast [ctx]
-  (let [raw (.getText ctx)
-        parsed-text (text->ast (.text ctx))
-        text-ast (if (:failure? parsed-text)
+(defn- content-line->ast [ctx parse-direct]
+  (let [raw (ctx-text ctx)
+        parsed-text (when (needs-inline-parse? raw)
+                      (parse-direct raw :text))
+        text-ast (if (or (nil? parsed-text)
+                         (:failure? parsed-text))
                    (text-node raw)
                    parsed-text)]
     (with-span [:content-line text-ast] ctx)))
@@ -800,7 +811,7 @@
     (.horizontalRule ctx) (horizontal-rule->ast (.horizontalRule ctx))
     (.drawerBeginLine ctx) (drawer-begin-line->ast (.drawerBeginLine ctx))
     (.drawerEndLine ctx) (drawer-end-line->ast (.drawerEndLine ctx))
-    (.contentLine ctx) (content-line->ast (.contentLine ctx))
+    (.contentLine ctx) (content-line->ast (.contentLine ctx) parse-direct)
     (.emptyLine ctx) (with-span [:empty-line] (.emptyLine ctx))
     :else nil))
 
@@ -852,7 +863,7 @@
                  :footnote-link (footnote-link->ast (.footnoteLink (.footnoteLinkEof parser)))
                  :comment-line (comment-line->ast (.commentLine (.commentLineEof parser)))
                  :horizontal-rule (horizontal-rule->ast (.horizontalRule (.horizontalRuleEof parser)))
-                 :content-line (content-line->ast (.contentLine parser))
+                 :content-line (content-line->ast (.contentLine parser) parse-direct)
                  :line (let [line-ast (line->ast (.line (.lineEof parser)) parse-direct raw)]
                          (if (:failure? line-ast)
                            line-ast

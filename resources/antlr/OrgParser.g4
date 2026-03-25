@@ -136,9 +136,9 @@ priority: LBRACK HASH UPPER RBRACK;
 
 commentToken: COMMENT;
 
-title: text;
+title: sameLineChar*;
 
-contentLine: text;
+contentLine: sameLineChar+;
 
 planningLine: planning;
 

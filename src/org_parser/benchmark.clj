@@ -1,6 +1,7 @@
 (ns org-parser.benchmark
   (:require [clojure.pprint :as pp]
             [clojure.string :as str]
+            [org-parser.antlr.parser :as antlr-parser]
             [org-parser.core :as core]
             [org-parser.parser :as parser]))
 
@@ -63,6 +64,9 @@
 (defn- parse-only [s]
   (parser/parse s))
 
+(defn- parse-only-telemetry [s]
+  (:telemetry (antlr-parser/with-telemetry #(parse-only s))))
+
 (defn- parse-and-transform [s]
   (core/read-str s))
 
@@ -75,12 +79,13 @@
                 :measure-runs measure-runs}
      :results
      (mapv
-      (fn [{:keys [name content]}]
-        {:case name
-         :input-bytes (count content)
-         :parse-only (->> (benchmark-one #(parse-only content) warmup-runs measure-runs)
-                          (summarize "parse-only"))
-         :parse-and-transform (->> (benchmark-one #(parse-and-transform content) warmup-runs measure-runs)
+       (fn [{:keys [name content]}]
+         {:case name
+          :input-bytes (count content)
+          :parse-only-telemetry (parse-only-telemetry content)
+          :parse-only (->> (benchmark-one #(parse-only content) warmup-runs measure-runs)
+                           (summarize "parse-only"))
+          :parse-and-transform (->> (benchmark-one #(parse-and-transform content) warmup-runs measure-runs)
                                    (summarize "parse-and-transform"))})
       cases)}))
 

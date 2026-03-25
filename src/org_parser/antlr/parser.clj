@@ -8,6 +8,7 @@
 
 (def ^:private lexer-class-name "org_parser.antlr.OrgLexer")
 (def ^:private parser-class-name "org_parser.antlr.OrgParser")
+(def ^:dynamic *telemetry* nil)
 
 (declare parse-antlr-only)
 
@@ -19,6 +20,22 @@
 
 (defn- parse-direct [raw start]
   (shared/parse-direct parse-antlr-only raw start))
+
+(defn- note! [event start]
+  (when *telemetry*
+    (swap! *telemetry*
+           (fn [state]
+             (-> state
+                 (update :events conj {:event event :start start})
+                 (update-in [:counts event] (fnil inc 0))
+                 (update-in [:starts start event] (fnil inc 0)))))))
+
+(defn with-telemetry [f]
+  (let [telemetry (atom {:events [] :counts {} :starts {}})
+        result (binding [*telemetry* telemetry]
+                 (f))]
+    {:result result
+     :telemetry @telemetry}))
 
 (defn- throwing-error-listener []
   (proxy [BaseErrorListener] []
@@ -56,12 +73,18 @@
       (if (:failure? parser-state)
         parser-state
         (try
-          (shared/parse-result parser raw start parse-direct eof?)
+          (let [result (shared/parse-result parser raw start parse-direct eof?)]
+            (note! :sll-success start)
+            result)
           (catch ParseCancellationException _
+            (note! :sll-fallback start)
             (let [{:keys [parser] :as retry-state} (parser-for raw PredictionMode/LL)]
               (if (:failure? retry-state)
                 retry-state
-                (shared/parse-result parser raw start parse-direct eof?)))))))
+                (do
+                  (let [result (shared/parse-result parser raw start parse-direct eof?)]
+                    (note! :ll-success start)
+                    result))))))))
     (catch ParseCancellationException e
       {:failure? true
        :backend :antlr
