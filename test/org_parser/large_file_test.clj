@@ -1,7 +1,8 @@
 (ns org-parser.large-file-test
   (:require [clojure.string :as str]
-            [clojure.test :refer :all]
-            [org-parser.core :as core]))
+             [clojure.test :refer :all]
+            [org-parser.core :as core]
+            [org-parser.parser :as parser]))
 
 (def ^:private min-lines 31000)
 (def ^:private max-elapsed-ms 30000)
@@ -29,3 +30,7 @@
            (count (:headlines parsed))))
     (is (< elapsed-ms max-elapsed-ms)
         (str "parsing took " elapsed-ms "ms, expected < " max-elapsed-ms "ms"))))
+
+(deftest parser-accepts-large-readme-derived-document
+  (let [{:keys [content]} (repeated-readme)]
+    (is (not (parser/failure? (parser/parse content))))))

@@ -9,6 +9,7 @@
 (def ^:private lexer-class-name "org_parser.antlr.OrgLexer")
 (def ^:private parser-class-name "org_parser.antlr.OrgParser")
 (def ^:dynamic *telemetry* nil)
+(def ^:dynamic *direct-cache* nil)
 
 (declare parse-antlr-only)
 
@@ -19,7 +20,16 @@
   (Reflector/invokeConstructor (load-class class-name) (to-array args)))
 
 (defn- parse-direct [raw start]
-  (shared/parse-direct parse-antlr-only raw start))
+  (if-not (contains? shared/direct-starts start)
+    nil
+    (if *direct-cache*
+      (let [cache-key [start raw]]
+        (if (contains? @*direct-cache* cache-key)
+          (get @*direct-cache* cache-key)
+          (let [result (shared/parse-direct parse-antlr-only raw start)]
+            (swap! *direct-cache* assoc cache-key result)
+            result)))
+      (shared/parse-direct parse-antlr-only raw start))))
 
 (defn- note! [event start]
   (when *telemetry*
@@ -94,6 +104,7 @@
 
 (defn parse
   [raw {:keys [start] :or {start :s}}]
-  (if-let [direct (parse-direct raw start)]
-    direct
-    (parse-antlr-only raw start)))
+  (binding [*direct-cache* (or *direct-cache* (atom {}))]
+    (if-let [direct (parse-direct raw start)]
+      direct
+      (parse-antlr-only raw start))))

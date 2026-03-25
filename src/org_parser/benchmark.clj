@@ -62,10 +62,21 @@
     (vec runs)))
 
 (defn- parse-only [s]
-  (parser/parse s))
+  (let [result (parser/parse s)]
+    (when (parser/failure? result)
+      (throw (ex-info "benchmark parse failed"
+                      (select-keys result [:backend :reason :message :start]))))
+    result))
+
+(defn- summarize-telemetry [{:keys [events] :as telemetry}]
+  (-> telemetry
+      (assoc :event-count (count events))
+      (dissoc :events)))
 
 (defn- parse-only-telemetry [s]
-  (:telemetry (antlr-parser/with-telemetry #(parse-only s))))
+  (-> (antlr-parser/with-telemetry #(parse-only s))
+      :telemetry
+      summarize-telemetry))
 
 (defn- parse-and-transform [s]
   (core/read-str s))
