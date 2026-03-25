@@ -97,6 +97,8 @@ tableEof: table EOF;
 
 textStyledEof: textStyled EOF;
 
+linkFormatEof: linkFormat EOF;
+
 emptyLine: SPACE+;
 
 headline
@@ -530,3 +532,15 @@ textStyledCode: TILDE textStyledBody TILDE;
 textStyledStrike: PLUS textStyledBody PLUS;
 
 textStyledBody: sameLineChar+;
+
+linkFormat: LBRACK LBRACK linkTargetRaw RBRACK (RBRACK | LBRACK linkDescriptionRaw RBRACK RBRACK);
+
+linkTargetRaw: linkTargetChunk+;
+
+linkTargetChunk: linkEscapedBracketOrSlash | linkTargetChar;
+
+linkEscapedBracketOrSlash: BACKSLASH (BACKSLASH | LBRACK | RBRACK);
+
+linkTargetChar: ~(NEWLINE | LBRACK | RBRACK);
+
+linkDescriptionRaw: sameLineChar*;

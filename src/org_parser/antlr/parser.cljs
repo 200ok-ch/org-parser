@@ -12,7 +12,7 @@
 (def ^:private OrgLexer (js/require lexer-module-path))
 (def ^:private OrgParser (js/require parser-module-path))
 
-(declare parse-direct parse-antlr-only)
+(declare parse-direct parse-antlr-only parse-link-target-node)
 
 (defn- text-node [s]
   [:text [:text-normal s]])
@@ -418,6 +418,15 @@
       (with-span [[tag inner]] ctx)
       (failure :invalid-text-styled :text-styled raw))))
 
+(defn- link-format->ast [ctx]
+  (let [target (ctx-text (.linkTargetRaw ctx))
+        desc (some-> ctx .linkDescriptionRaw ctx-text)]
+    (if-let [link-node (parse-link-target-node target)]
+      (with-span (cond-> [:link-format link-node]
+                   (some? desc) (conj [:link-description desc]))
+                 ctx)
+      (failure :invalid-link-format :link-format (ctx-text ctx)))))
+
 (defn- parse-node-property-line-direct [s]
   (if-let [[_ name plus value] (re-matches #":(?!END:)([^\s:+]+)(\+)?:(?: (.*))?" s)]
     (with-raw-span
@@ -805,9 +814,7 @@
     :text-link
     (parse-antlr-only raw start)
     :link-format
-    (if-let [l (parse-link-format-direct raw)]
-      (with-raw-span l raw)
-      (failure :invalid-link-format start raw))
+    (parse-antlr-only raw start)
     :footnote-link
     (parse-antlr-only raw start)
     :footnote-line
@@ -1120,6 +1127,7 @@
                        :list-item-line (list-item-line->ast (.listItemLine (.listItemLineEof parser)))
                        :table (table->ast (.table (.tableEof parser)))
                        :text-styled (text-styled->ast (.textStyled (.textStyledEof parser)))
+                       :link-format (link-format->ast (.linkFormat (.linkFormatEof parser)))
                        :text-entity (text-entity->ast (.textEntity (.textEntityEof parser)))
                        :text-target (text-target->ast (.textTarget (.textTargetEof parser)))
                        :text-sub (text-sub->ast (.textSub (.textSubEof parser)))
