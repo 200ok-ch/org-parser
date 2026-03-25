@@ -10,7 +10,7 @@
 (def ^:dynamic *line-template-cache* nil)
 
 (def ^:private inline-special-pattern
-  #"[#%\[\]{}<>\\_*+/=~^:@]")
+  #"(\[\[|\[fn:|<<<|<<|\\\\|\\[A-Za-z]|https?://|file:|mailto:|id:|<[^>]+>|(^|[^[:alnum:]])[*=+~]([^[:space:]]|$)|[_^][[:alnum:]{])")
 
 (defn text-node [s]
   [:text [:text-normal s]])

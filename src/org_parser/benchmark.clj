@@ -33,7 +33,7 @@
   (count (str/split-lines s)))
 
 (defn- unique-suffix [copy-idx line-idx]
-  (str " [copy-" copy-idx " line-" line-idx "]"))
+  (str " copy" copy-idx " line" line-idx))
 
 (defn- uniquify-readme-line [line copy-idx line-idx]
   (let [suffix (unique-suffix copy-idx line-idx)]
