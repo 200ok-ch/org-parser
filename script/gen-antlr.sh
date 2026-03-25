@@ -5,9 +5,11 @@ set -euo pipefail
 OUT_DIR="src/java"
 PKG_DIR="$OUT_DIR/org_parser/antlr"
 GRAMMAR_DIR="resources/antlr"
+CLASS_DIR="target/classes/org_parser/antlr"
 
 mkdir -p "$PKG_DIR"
 rm -f "$PKG_DIR"/*.java "$PKG_DIR"/*.tokens "$PKG_DIR"/*.interp
+rm -rf "$CLASS_DIR"
 
 CP="$(lein classpath)"
 

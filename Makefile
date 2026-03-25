@@ -1,7 +1,11 @@
 
-.PHONY: build test testcode testjs testjar clean
+.PHONY: antlr-clj build test testcode testjs testjar clean
 
-build: buildjar.sh
+antlr-clj:
+	./script/gen-antlr.sh
+	lein javac
+
+build: antlr-clj buildjar.sh
 	bash buildjar.sh
 # Order is important because one command deletes build artifacts of the other.
 # Also, not sure if this would stop correctly on error:
@@ -9,7 +13,7 @@ build: buildjar.sh
 
 test: testcode-clj testcode-cljs testjar
 
-testcode-clj:
+testcode-clj: antlr-clj
 	lein test
 
 testcode-cljs:
@@ -26,4 +30,5 @@ buildjs.sh buildjar.sh testjar.sh: README.org
 clean:
 	$(RM) build*.sh
 	$(RM) test*.sh
+	$(RM) -r src/java/org_parser/antlr/
 	$(RM) target/

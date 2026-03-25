@@ -71,3 +71,14 @@
                                    :priority "B",
                                    :commented? false
                                    :tags []}}]})))
+
+(deftest read-str-accepts-indented-property-drawer
+  (is (= {:preamble {:section {:ast [[:drawer-begin-line [:drawer-name "PROPERTIES"]]
+                                     [:text [:text-normal "  :CUSTOM"]
+                                      [:text-sub [:text-subsup-word "ID:"]]
+                                      [:text-normal " usage"]]
+                                     [:drawer-end-line]]
+                              :raw ["  :PROPERTIES:"
+                                    "  :CUSTOM_ID: usage"
+                                    "  :END:"]}}}
+         (core/read-str "  :PROPERTIES:\n  :CUSTOM_ID: usage\n  :END:\n"))))

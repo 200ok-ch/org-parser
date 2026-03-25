@@ -226,13 +226,13 @@ commentLineRest: SPACE text? | ;
 
 horizontalRule: SPACE* DASH DASH DASH DASH DASH DASH*;
 
-drawerBeginLine: COLON drawerName COLON SPACE*;
+drawerBeginLine: SPACE* COLON drawerName COLON SPACE*;
 
 drawerName: drawerNameChar+;
 
 drawerNameChar: ~(NEWLINE | COLON);
 
-drawerEndLine: END_DRAWER SPACE*;
+drawerEndLine: SPACE* END_DRAWER SPACE*;
 
 text: textSegment* textLinebreak | textSegment+;
 
