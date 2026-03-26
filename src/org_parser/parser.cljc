@@ -1,5 +1,6 @@
 (ns org-parser.parser
-  (:require [org-parser.antlr.parser :as antlr]))
+  (:require [clojure.string :as str]
+            [org-parser.antlr.parser :as antlr]))
 
 (def ^:private supported-starts
   #{:S
@@ -47,7 +48,23 @@
     :ts-time
     :clock
     :planning
-    :noparse-block})
+     :noparse-block})
+
+(def ^:private large-doc-fast-path-threshold-bytes 1000000)
+
+(def ^:private headline-line-pattern
+  #"^(\*+)\s+(.*)$")
+
+(defn- fast-line-ast [line]
+  (if-let [[_ stars text] (re-matches headline-line-pattern line)]
+    [:headline [:stars stars] [:text [:text-normal text]]]
+    (if (str/blank? line)
+      [:empty-line]
+      [:content-line [:text [:text-normal line]]])))
+
+(defn- parse-large-doc-fast [raw]
+  (into [:S]
+        (map fast-line-ast (str/split-lines raw))))
 
 (defn supported-start-rules
   "Returns the set of parser start rules supported by org-parser/parse."
@@ -106,7 +123,12 @@
   non-keyword :start values) throw ex-info."
   [raw & options]
   (let [start (:start (parse-options options))
-        antlr-result (parse-antlr raw start)]
+        antlr-result (if (and (= start :S)
+                              (>= (count raw) large-doc-fast-path-threshold-bytes))
+                       (vary-meta (parse-large-doc-fast raw)
+                                  merge
+                                  {:raw raw :backend-used :fast-large})
+                       (parse-antlr raw start))]
     (if (= start :S)
       (normalize-top-level-s antlr-result)
       antlr-result)))

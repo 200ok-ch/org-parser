@@ -1,5 +1,5 @@
 
-.PHONY: antlr-clj build test testcode testjs testjar clean
+.PHONY: antlr-clj build test testcode testjs testjar benchmark-large-31k profile-large-31k perf-large-31k clean
 
 antlr-clj:
 	./script/gen-antlr.sh
@@ -22,6 +22,15 @@ testcode-cljs:
 # Test by executing parser on test file and expect at least one line of output (grep .)
 testjar: build testjar.sh
 	bash testjar.sh | grep .
+
+benchmark-large-31k:
+	bash script/benchmark-large-unique-31k.sh benchmark 5 20
+
+profile-large-31k:
+	bash script/benchmark-large-unique-31k.sh profile 50
+
+perf-large-31k:
+	bash script/benchmark-large-unique-31k.sh all 5 20 50
 
 # Filenames of :tangle files must be hardcoded :(
 buildjs.sh buildjar.sh testjar.sh: README.org

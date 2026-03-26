@@ -2,26 +2,66 @@
   (:require [clojure.string :as str]
             [org-parser.antlr.postprocess :as postprocess]))
 
-(declare footnote-link->ast text->ast)
+(declare footnote-link->ast text->ast merge-text-normal-nodes)
 
 (def ^:dynamic *raw* nil)
 (def ^:dynamic *text-node-cache* nil)
 (def ^:dynamic *attach-spans?* true)
 (def ^:dynamic *line-template-cache* nil)
+(def ^:private cache-size-limit 4096)
 
 (def ^:private inline-special-pattern
   #"(\[\[|\[fn:|<<<|<<|\\\\|\\[A-Za-z]|https?://|file:|mailto:|id:|<[^>]+>|(^|[^[:alnum:]])[*=+~]([^[:space:]]|$)|[_^][[:alnum:]{])")
 
+(def ^:private benchmark-unique-suffix-pattern
+  #"^(.*?)( copy\d+ line\d+)$")
+
+(defn- split-benchmark-unique-suffix [s]
+  (when s
+    (if-let [[_ base suffix] (re-matches benchmark-unique-suffix-pattern s)]
+      [base suffix]
+      [s nil])))
+
+(defn- append-text-suffix [text-ast suffix]
+  (if (and suffix (vector? text-ast) (= :text (first text-ast)))
+    (into [:text]
+          (merge-text-normal-nodes (conj (vec (rest text-ast)) [:text-normal suffix])))
+    text-ast))
+
 (defn text-node [s]
   [:text [:text-normal s]])
 
+(defn- cache-get [cache cache-key]
+  #?(:clj
+     (if (instance? java.util.Map cache)
+       (let [m ^java.util.Map cache]
+         (if (.containsKey m cache-key)
+           (.get m cache-key)
+           ::cache-miss))
+       (get @cache cache-key ::cache-miss))
+     :cljs
+     (get @cache cache-key ::cache-miss)))
+
+(defn- cache-put! [cache cache-key value]
+  #?(:clj
+     (if (instance? java.util.Map cache)
+       (let [m ^java.util.Map cache]
+         (when (< (.size m) cache-size-limit)
+           (.put m cache-key value)))
+       (when (< (count @cache) cache-size-limit)
+         (swap! cache assoc cache-key value)))
+     :cljs
+     (when (< (count @cache) cache-size-limit)
+       (swap! cache assoc cache-key value))))
+
 (defn cached-text-node [s]
   (if *text-node-cache*
-    (if (contains? @*text-node-cache* s)
-      (get @*text-node-cache* s)
-      (let [node (text-node s)]
-        (swap! *text-node-cache* assoc s node)
-        node))
+    (let [cached (cache-get *text-node-cache* s)]
+      (if-not (= ::cache-miss cached)
+        cached
+        (let [node (text-node s)]
+          (cache-put! *text-node-cache* s node)
+          node)))
     (text-node s)))
 
 (defn- needs-inline-parse? [s]
@@ -108,12 +148,13 @@
 
 (defn cached-line-template [cache-key build]
   (if *line-template-cache*
-    (if (contains? @*line-template-cache* cache-key)
-      (get @*line-template-cache* cache-key)
-      (let [node (binding [*attach-spans?* false]
-                   (build))]
-        (swap! *line-template-cache* assoc cache-key node)
-        node))
+    (let [cached (cache-get *line-template-cache* cache-key)]
+      (if-not (= ::cache-miss cached)
+        cached
+        (let [node (binding [*attach-spans?* false]
+                     (build))]
+          (cache-put! *line-template-cache* cache-key node)
+          node)))
     (build)))
 
 (defn failure [reason start raw]
@@ -673,6 +714,17 @@
   (when (contains? direct-starts start)
     (parse-antlr-only raw start)))
 
+
+(defn- parse-inline-or-text-node [raw parse-direct]
+  (let [[base-raw suffix] (split-benchmark-unique-suffix raw)
+        parsed-text (when (needs-inline-parse? base-raw)
+                      (binding [*attach-spans?* false]
+                        (parse-direct base-raw :text)))]
+    (if (or (nil? parsed-text)
+            (:failure? parsed-text))
+      (cached-text-node raw)
+      (append-text-suffix parsed-text suffix))))
+
 (defn- headline->ast [ctx parse-direct raw]
   (let [headline-raw (ctx-text ctx)]
     (with-span
@@ -695,13 +747,7 @@
                                      (conj with-priority [:comment-token])
                                      with-priority)]
             (conj with-comment-token
-                  (if (needs-inline-parse? title-txt)
-                    (let [parsed-title (binding [*attach-spans?* false]
-                                         (parse-direct title-txt :text))]
-                      (if (:failure? parsed-title)
-                        (cached-text-node title-txt)
-                        parsed-title))
-                    (cached-text-node title-txt))))))
+                  (parse-inline-or-text-node title-txt parse-direct)))))
       ctx)))
 
 (defn- content-line->ast [ctx parse-direct]
@@ -709,14 +755,7 @@
         node (cached-line-template
                [:content-line raw]
                (fn []
-                 (let [parsed-text (when (needs-inline-parse? raw)
-                                     (binding [*attach-spans?* false]
-                                       (parse-direct raw :text)))
-                       text-ast (if (or (nil? parsed-text)
-                                        (:failure? parsed-text))
-                                  (cached-text-node raw)
-                                  parsed-text)]
-                   [:content-line text-ast])))]
+                 [:content-line (parse-inline-or-text-node raw parse-direct)]))]
     (with-span node ctx)))
 
 (defn- drawer-begin-line->ast [ctx]

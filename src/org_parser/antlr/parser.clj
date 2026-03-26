@@ -1,34 +1,52 @@
 (ns org-parser.antlr.parser
   (:require [org-parser.antlr.parser-shared :as shared])
-  (:import [org.antlr.v4.runtime BaseErrorListener BailErrorStrategy CharStreams CommonTokenStream]
+  (:import [org.antlr.v4.runtime BaseErrorListener BailErrorStrategy CharStream CharStreams CommonTokenStream TokenStream]
            [org.antlr.v4.runtime.atn PredictionMode]
            [org.antlr.v4.runtime.misc ParseCancellationException]
-           [org.antlr.v4.runtime Token]
-           [clojure.lang Reflector]))
+           [org.antlr.v4.runtime Token]))
 
 (def ^:private lexer-class-name "org_parser.antlr.OrgLexer")
 (def ^:private parser-class-name "org_parser.antlr.OrgParser")
+(def ^:private cache-size-limit 4096)
 (def ^:dynamic *telemetry* nil)
 (def ^:dynamic *direct-cache* nil)
 
 (declare parse-antlr-only)
 
-(defn- load-class [class-name]
-  (Class/forName class-name))
+(defonce ^:private lexer-class (delay (Class/forName lexer-class-name)))
+(defonce ^:private parser-class (delay (Class/forName parser-class-name)))
+(defonce ^:private lexer-constructor
+  (delay (.getConstructor ^Class @lexer-class (into-array Class [CharStream]))))
+(defonce ^:private parser-constructor
+  (delay (.getConstructor ^Class @parser-class (into-array Class [TokenStream]))))
 
-(defn- instantiate [class-name & args]
-  (Reflector/invokeConstructor (load-class class-name) (to-array args)))
+(defn- instantiate-lexer [input]
+  (.newInstance ^java.lang.reflect.Constructor @lexer-constructor (object-array [input])))
+
+(defn- instantiate-parser [tokens]
+  (.newInstance ^java.lang.reflect.Constructor @parser-constructor (object-array [tokens])))
 
 (defn- parse-direct [raw start]
   (if-not (contains? shared/direct-starts start)
     nil
     (if *direct-cache*
       (let [cache-key [start raw]]
-        (if (contains? @*direct-cache* cache-key)
-          (get @*direct-cache* cache-key)
-          (let [result (shared/parse-direct parse-antlr-only raw start)]
-            (swap! *direct-cache* assoc cache-key result)
-            result)))
+        (if (instance? java.util.HashMap *direct-cache*)
+          (let [cache ^java.util.HashMap *direct-cache*
+                has-key? (.containsKey cache cache-key)]
+            (if has-key?
+              (.get cache cache-key)
+              (let [result (shared/parse-direct parse-antlr-only raw start)]
+                (when (< (.size cache) cache-size-limit)
+                  (.put cache cache-key result))
+                result)))
+          (let [cached (get @*direct-cache* cache-key ::miss)]
+            (if-not (= ::miss cached)
+              cached
+              (let [result (shared/parse-direct parse-antlr-only raw start)]
+                (when (< (count @*direct-cache*) cache-size-limit)
+                  (swap! *direct-cache* assoc cache-key result))
+                result)))))
       (shared/parse-direct parse-antlr-only raw start))))
 
 (defn- note! [event start]
@@ -53,13 +71,16 @@
       (throw (ParseCancellationException.
               (str "line " line ":" col " " msg))))))
 
+(defonce ^:private error-listener
+  (delay (throwing-error-listener)))
+
 (defn- parser-for [raw prediction-mode]
   (try
     (let [input (CharStreams/fromString raw)
-          lexer (instantiate lexer-class-name input)
+          lexer (instantiate-lexer input)
           tokens (CommonTokenStream. lexer)
-          parser (instantiate parser-class-name tokens)
-          listener (throwing-error-listener)]
+          parser (instantiate-parser tokens)
+          listener @error-listener]
       (.removeErrorListeners lexer)
       (.removeErrorListeners parser)
       (.addErrorListener lexer listener)
@@ -79,7 +100,7 @@
 
 (defn- parse-antlr-only [raw start]
   (try
-    (let [{:keys [parser] :as parser-state} (parser-for raw PredictionMode/SLL)]
+    (let [{:keys [parser tokens] :as parser-state} (parser-for raw PredictionMode/SLL)]
       (if (:failure? parser-state)
         parser-state
         (try
@@ -88,13 +109,13 @@
             result)
           (catch ParseCancellationException _
             (note! :sll-fallback start)
-            (let [{:keys [parser] :as retry-state} (parser-for raw PredictionMode/LL)]
-              (if (:failure? retry-state)
-                retry-state
-                (do
-                  (let [result (shared/parse-result parser raw start parse-direct eof?)]
-                    (note! :ll-success start)
-                    result))))))))
+            (.seek ^CommonTokenStream tokens 0)
+            (.reset parser)
+            (.. parser getInterpreter (setPredictionMode PredictionMode/LL))
+            (.setErrorHandler parser (BailErrorStrategy.))
+            (let [result (shared/parse-result parser raw start parse-direct eof?)]
+              (note! :ll-success start)
+              result)))))
     (catch ParseCancellationException e
       {:failure? true
        :backend :antlr
@@ -104,9 +125,9 @@
 
 (defn parse
   [raw {:keys [start] :or {start :s}}]
-  (binding [*direct-cache* (or *direct-cache* (atom {}))
-            shared/*text-node-cache* (or shared/*text-node-cache* (atom {}))
-            shared/*line-template-cache* (or shared/*line-template-cache* (atom {}))]
+  (binding [*direct-cache* (or *direct-cache* (java.util.HashMap.))
+            shared/*text-node-cache* (or shared/*text-node-cache* (java.util.HashMap.))
+            shared/*line-template-cache* (or shared/*line-template-cache* (java.util.HashMap.))]
     (if-let [direct (parse-direct raw start)]
       direct
       (parse-antlr-only raw start))))
