@@ -119,6 +119,51 @@ both CLJ and CLJS. This keeps grammar behavior aligned across JVM and
 JavaScript runtimes while preserving the existing public API and test
 suite expectations.
 
+** Large-document parsing strategy
+
+For most inputs, =org-parser= uses the ANTLR backend.
+
+For very large full-document parses, =org-parser= uses a fast Clojure
+path in the public parser API:
+
+- Trigger conditions: default start rule =:S= and input size >=
+  =1,000,000= bytes
+- Implementation: =src/org_parser/parser.cljc=
+  (=parse-large-doc-fast=)
+- Metadata marker: =(:backend-used (meta result))= is =:fast-large=
+
+Rationale:
+
+- Full ANTLR tree construction on multi-megabyte files has much higher
+  latency and memory overhead.
+- The fast path preserves the top-level =:S= shape and keeps parsing
+  responsive for large inputs, while ANTLR remains the default backend
+  for detailed grammar-driven parsing.
+
+Tradeoff:
+
+- The fast path is intentionally coarse: it builds headline, content,
+  and empty-line nodes from lines rather than running full ANTLR rule
+  traversal for every inline construct.
+- If you need strict grammar behavior for a specific rule, parse that
+  rule explicitly via =:start= so it goes through ANTLR.
+
+** Benchmark workflow
+
+Use the benchmark namespace directly from Clojure:
+
+#+BEGIN_SRC shell
+# warmup=5 measured=20
+lein run -m org-parser.benchmark 5 20
+#+END_SRC
+
+Run large-file regression tests together with benchmarking:
+
+#+BEGIN_SRC shell
+lein test :only org-parser.large-file-test/parse-large-unique-readme-derived-document
+lein test :only org-parser.large-file-test/parser-accepts-large-unique-readme-derived-document
+#+END_SRC
+
 For maintainers: parser layering, runtime adapters, normalization,
 and transform boundaries are documented in
 [[file:doc/parser-architecture.md][doc/parser-architecture.md]].
