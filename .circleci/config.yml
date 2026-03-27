@@ -6,7 +6,7 @@ version: 2
 jobs:
   test-clj:
     docker:
-      - image: circleci/clojure:openjdk-8-lein
+      - image: cimg/clojure:1.10.3
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
@@ -28,6 +28,7 @@ jobs:
             - v1-dependencies-
 
       - run: lein deps
+      - run: ./script/gen-antlr.sh
       - run: lein test
 
       - save_cache:
@@ -37,7 +38,7 @@ jobs:
 
   test-cljs:
     docker:
-      - image: circleci/clojure:openjdk-8-lein-node
+      - image: cimg/clojure:1.10.3-node
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
@@ -59,6 +60,9 @@ jobs:
             - v1-dependencies-
 
       - run: lein deps
+      - run: npm install
+      - run: ./script/gen-antlr.sh
+      - run: ./script/gen-antlr-js.sh
       - run: lein doo node once
 
       - save_cache:

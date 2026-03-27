@@ -1,0 +1,8 @@
+{
+  "name": "org-parser",
+  "private": true,
+  "description": "Runtime deps for cljs/node parser tests",
+  "dependencies": {
+    "antlr4": "4.13.2"
+  }
+}

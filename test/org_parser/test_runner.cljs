@@ -1,6 +1,8 @@
 (ns org-parser.test-runner
   (:require [doo.runner :refer-macros [doo-tests]]
             org-parser.core-test
+            org-parser.parser-contract-test
+            org-parser.parser-start-rules-test
             org-parser.parser-test
             org-parser.parser-mean-test
             org-parser.transform-test))
@@ -13,6 +15,8 @@
 
 (doo-tests
  'org-parser.core-test
+ 'org-parser.parser-contract-test
+ 'org-parser.parser-start-rules-test
  'org-parser.parser-test
  'org-parser.parser-mean-test
  'org-parser.transform-test)

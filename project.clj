@@ -3,12 +3,14 @@
   :url "https://github.com/200ok-ch/org-parser"
   :license {:name "GNU Affero General Public License v3.0"
             :url "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.10.0"]
+  :dependencies [[org.clojure/clojure "1.12.4"]
                  [org.clojure/clojurescript "1.10.866"]
                  [cljs-node-io "1.1.2"]
                  [org.clojure/data.json "1.0.0"]
-                 [instaparse "1.4.12"]]
+                 [org.antlr/antlr4 "4.13.2"]
+                 [org.antlr/antlr4-runtime "4.13.2"]]
   :main ^:skip-aot org-parser.cli
+  :java-source-paths ["src/java"]
   :target-path "target/%s"
   :repl-options {:init-ns org-parser.core}
   :plugins [[lein-cljsbuild "1.1.8"]

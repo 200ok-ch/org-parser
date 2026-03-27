@@ -1,8 +1,7 @@
 (ns org-parser.parser-test
   (:refer-clojure :exclude [keyword])
   (:require [org-parser.parser :as parser]
-            [instaparse.core :as insta]
-            #?(:clj [clojure.test :refer :all])
+                        #?(:clj [clojure.test :refer :all])
             #?(:cljs [cljs.test :refer-macros [deftest is testing]])
             #?(:cljs [cljs-node-io.core :refer [slurp]])))
 
@@ -10,7 +9,7 @@
 ;; if parse is successful it returns a vector otherwise a map
 
 (deftest check-regex-syntax
-  ;; There are so many dialects of regex. AFAIK, instaparse uses Java/Clojure regex syntax.
+  ;; There are many regex dialects. These checks document expected JVM/CLJS behavior.
   ;; To be sure, here are some checks:
   (testing "escaping of '-' within brackets work"
     ;; in other dialects, the regex would be written like: [- X]
@@ -42,9 +41,9 @@
   (testing "carriage return as <eol>"
     (is (= () (#(parser/parse % :start :eol) "\r"))))
   (testing "horizontal space <s> does not match form feed"
-    (is (insta/failure? (#(parser/parse % :start :s) "\f"))))
+    (is (parser/failure? (#(parser/parse % :start :s) "\f"))))
   (testing "horizontal space <s> does not match CR"
-    (is (insta/failure? (#(parser/parse % :start :s) "\r"))))
+    (is (parser/failure? (#(parser/parse % :start :s) "\r"))))
   )
 
 (deftest word
@@ -53,9 +52,9 @@
       (is (= ["a"]
              (parse "a"))))
     (testing "single with trailing space"
-      (is (insta/failure? (parse "ab "))))
+      (is (parser/failure? (parse "ab "))))
     (testing "single with trailing newline"
-      (is (insta/failure? (parse "a\n"))))))
+      (is (parser/failure? (parse "a\n"))))))
 
 
 ;; NOTE: Tags are defined in EBNF but currently not effective. Tags
@@ -91,7 +90,7 @@
       (is (= [:headline [:stars "****"] [:priority "B"] [:text [:text-normal "hello world :the:end:"]]]
              (parse "**** [#B] hello world :the:end:"))))
     (testing "title cannot have multiple lines"
-      (is (insta/failure? (parse "* a\nb"))))
+      (is (parser/failure? (parse "* a\nb"))))
     (testing "with todo keyword"
       (is (= [:headline [:stars "*"] [:keyword "TODO"] [:text [:text-normal "hello world"]]]
              (parse "* TODO hello world"))))
@@ -124,6 +123,14 @@
       (is (= [[:other-keyword-line [:kw-name "KEY"] [:kw-value "VALUE"]]]
              (parse "#+KEY: VALUE"))))
 
+    (testing "dynamic block begin line"
+      (is (= [[:dynamic-block-begin-line [:dynamic-block-name "name"] [:dynamic-block-parameters "params"]]]
+             (parse "#+BEGIN: name params"))))
+
+    (testing "dynamic block end line"
+      (is (= [[:dynamic-block-end-line]]
+             (parse "#+END:"))))
+
     (testing "comment line"
       (is (= [[:comment-line [:comment-line-head "#"] [:comment-line-rest ""]]]
              (parse "#"))))
@@ -141,9 +148,9 @@
 (deftest comment-line
   (let [parse #(parser/parse % :start :comment-line)]
     (testing "no valid comment line"
-      (is (insta/failure? (parse "#comment"))))
+      (is (parser/failure? (parse "#comment"))))
     (testing "no valid comment line"
-      (is (insta/failure? (parse "#\tcomment"))))))
+      (is (parser/failure? (parse "#\tcomment"))))))
 
 ;; (deftest content
 ;;   (let [parse #(parser/parse % :start :content-line)]
@@ -322,7 +329,7 @@ is another section"))))))
              (parse "#+BEGIN: name \ntext\n#+end: "))))
     ;; TODO doesn't work yet :(
     ;; (testing "parse reluctantly"
-    ;;   (is (insta/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
+    ;;   (is (parser/failure? (parse "#+BEGIN: name \n#+end:\n#+end:"))))
     (testing "content"
       (is (= [:dynamic-block [:dynamic-block-begin-line [:dynamic-block-name "abc"]]
 	      [:content-line [:text [:text-normal "multi"]]]
@@ -336,13 +343,19 @@ is another section"))))))
   (let [parse #(parser/parse % :start :drawer-begin-line)]
     (testing "drawer-begin"
       (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
-             (parse ":SOMENAME:"))))))
+             (parse ":SOMENAME:"))))
+    (testing "drawer-begin with indentation"
+      (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
+             (parse "  :SOMENAME:"))))))
 
 (deftest drawer-end
   (let [parse #(parser/parse % :start :drawer-end-line)]
     (testing "drawer-end"
       (is (= [:drawer-end-line]
-             (parse ":END:"))))))
+             (parse ":END:"))))
+    (testing "drawer-end with indentation"
+      (is (= [:drawer-end-line]
+             (parse "  :END:"))))))
 
 (deftest drawer
   (testing "simple drawer"
@@ -354,7 +367,13 @@ is another section"))))))
             [:drawer-begin-line [:drawer-name "PROPERTIES"]]
             [:content-line [:text [:text-normal ":foo: bar"]]]
             [:drawer-end-line]]
-           (parser/parse ":PROPERTIES:\n:foo: bar\n:END:")))))
+           (parser/parse ":PROPERTIES:\n:foo: bar\n:END:"))))
+  (testing "indented property drawer in document"
+    (is (= [:S
+            [:drawer-begin-line [:drawer-name "PROPERTIES"]]
+            [:content-line [:text [:text-normal "  :CUSTOM_ID: usage"]]]
+            [:drawer-end-line]]
+           (parser/parse "  :PROPERTIES:\n  :CUSTOM_ID: usage\n  :END:")))))
 
 (deftest drawer-semantic-block
   (let [parse #(parser/parse % :start :drawer)]
@@ -386,7 +405,7 @@ is another section"))))))
 	       [:node-property-value [:text [:text-normal "abc"]]]]]
              (parse ":PROPERTIES:\n:text+: my value\n:PRO: abc\n:END:"))))
     (testing "can only contain properties"
-      (is (insta/failure? (parse ":PROPERTIES:\ntext\n:END:"))))
+      (is (parser/failure? (parse ":PROPERTIES:\ntext\n:END:"))))
     ))
 
 (deftest dynamic-block-begin
@@ -412,7 +431,7 @@ is another section"))))))
       (is (= [:footnote-line [:fn-label "123"] [:text [:text-normal "some contents"]]]
              (parse "[fn:123] some contents"))))
     (testing "invalid footnote with only a number; sorry, this is not a footnote in orgmode"
-      (is (insta/failure? (parse "[123] some contents"))))
+      (is (parser/failure? (parse "[123] some contents"))))
     ))
 
 (deftest footnote-link
@@ -431,9 +450,9 @@ is another section"))))))
       (is (= [:footnote-link [:fn-label "123"] "some contents"]
              (parse "[fn:123:some contents]"))))
     (testing "footnote link with label and invalid text"
-      (is (insta/failure? (parse "[fn:some-label:some [contents]"))))
+      (is (parser/failure? (parse "[fn:some-label:some [contents]"))))
     (testing "footnote link with label and invalid text"
-      (is (insta/failure? (parse "[fn:some-label:some ]contents]"))))
+      (is (parser/failure? (parse "[fn:some-label:some ]contents]"))))
     ))
 
 
@@ -625,7 +644,7 @@ is another section"))))))
              (parse "[2020-01-18 18:00-20:00 -2d +1w]"))))
 
     (testing "syntactically wrong timestamp"
-      (is (insta/failure? (parse "<2020-04-25 day wrong>"))))
+      (is (parser/failure? (parse "<2020-04-25 day wrong>"))))
 
     (testing "at-least modifier for habits"
       (is (= [:timestamp [:timestamp-active [:ts-inner
@@ -646,11 +665,9 @@ is another section"))))))
              (parse "<2009-10-17 Sat 8:00>"))))
 
     (testing "newlines are not recognized as space \\s"
-      ;; http://xahlee.info/clojure/clojure_instaparse.html
-      (is (insta/failure? (parse "<2020-04-17 F\nri>"))))
+      (is (parser/failure? (parse "<2020-04-17 F\nri>"))))
     (testing "newlines are not recognized as space"
-      ;; http://xahlee.info/clojure/clojure_instaparse.html
-      (is (insta/failure? (parse "<2020-04-17\nFri>"))))))
+      (is (parser/failure? (parse "<2020-04-17\nFri>"))))))
 
 
 (deftest timestamp-ts-time
@@ -685,9 +702,9 @@ is another section"))))))
               [:ts-inner-w-time [:ts-date "2021-05-22"] [:ts-day "Sat"] [:ts-time "23:46"]]]
              (parse "[2021-05-22 Sat 23:26]--[2021-05-22 Sat 23:46]"))))
     (testing "do not parse active range"
-      (is (insta/failure? (parse "<2021-05-22 Sat 23:26-23:46>"))))
+      (is (parser/failure? (parse "<2021-05-22 Sat 23:26-23:46>"))))
     (testing "do not parse inactive timestamp without range"
-      (is (insta/failure? (parse "[2021-05-22 Sat 23:26]"))))
+      (is (parser/failure? (parse "[2021-05-22 Sat 23:26]"))))
     ))
 
 (deftest literal-line
@@ -705,7 +722,7 @@ is another section"))))))
       (is (= [:fixed-width-line "literal text "]
              (parse "  : literal text "))))
     (testing "fail to parse fixed-width line with no space after colon"
-      (is (insta/failure? (parse ":literal text"))))
+      (is (parser/failure? (parse ":literal text"))))
     ))
 
 (deftest fixed-width-area
@@ -750,16 +767,16 @@ is another section"))))))
 (deftest id-links
   (let [parse #(parser/parse % :start :link-ext-id)]
     (testing "invalid id link"
-      (is (insta/failure? (parse "[[id:]]"))))
+      (is (parser/failure? (parse "[[id:]]"))))
     (testing "invalid id link"
-      (is (insta/failure? (parse "[[id:z]]"))))
+      (is (parser/failure? (parse "[[id:z]]"))))
     ))
 
 (deftest links-with-escapse
   (let [parse #(parser/parse % :start :link-format)]
     ;; remember that "\\" is one backslash!
     (testing "parse link with just one literal backslash"
-      (is (insta/failure? (parse "[[\\]]"))))
+      (is (parser/failure? (parse "[[\\]]"))))
     (testing "parse link with escaped backslash"
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\\\"]]]]
              (parse "[[\\\\]]"))))
@@ -767,7 +784,7 @@ is another section"))))))
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\a"]]]]
              (parse "[[\\a]]"))))
     (testing "parse link with unescaped opening bracket"
-      (is (insta/failure? (parse "[[a[b]]"))))
+      (is (parser/failure? (parse "[[a[b]]"))))
     (testing "parse link with escaped opening bracket"
       (is (= [:link-format [:link [:link-int [:link-file-loc-string "\\["]]]]
              (parse "[[\\[]]"))))
@@ -793,6 +810,12 @@ is another section"))))))
     (testing "parse absolute file link"
       (is (= [:link-ext-file "/folder/file.txt"]
              (parse "/folder/file.txt"))))
+    (testing "parse drive-relative file link"
+      (is (= [:link-ext-file "C:folder/file.txt"]
+             (parse "C:folder/file.txt"))))
+    (testing "parse bare file link with colon in leading segment"
+      (is (= [:link-ext-file "dir:name/file.txt"]
+             (parse "dir:name/file.txt"))))
     (testing "parse file link with line number"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-lnum "15"]]
              (parse "./file.org::15"))))
@@ -808,12 +831,18 @@ is another section"))))))
              (parse "./file.org::*header1: test"))))
     (testing "parse file link with custom id"
       (is (= [:link-ext-file "./file.org" [:link-file-loc-customid "custom-id"]]
-             (parse "./file.org::#custom-id"))))))
+             (parse "./file.org::#custom-id"))))
+    (testing "reject non-file scheme"
+      (is (parser/failure? (parse "http:folder/file.txt"))))
+    (testing "reject bare non-file scheme"
+      (is (parser/failure? (parse "abcd:foo"))))
+    (testing "reject url-like non-file scheme"
+      (is (parser/failure? (parse "ssh://host/path"))))))
 
 (deftest links-external-other-url
   (let [parse #(parser/parse % :start :link-ext-other)]
     (testing "parse simple link that looks like an web address but is not valid"
-      (is (insta/failure? (parse "www.example.com"))))
+      (is (parser/failure? (parse "www.example.com"))))
     (testing "parse other http link"
       (is (= [:link-ext-other [:link-url-scheme "https"] [:link-url-rest "//example.com"]]
              (parse "https://example.com"))))
@@ -875,17 +904,17 @@ is another section"))))))
              (parse "+strike-through text+"))))
     ;; parse reluctant
     ;; (testing "parse text-styled alone is not reluctant"
-    ;;   (is (not (insta/failure? (parse "/italic/ italic/")))))
+    ;;   (is (not (parser/failure? (parse "/italic/ italic/")))))
     (testing "parse verbatim text reluctantly"
-      (is (insta/failure? (parse "=verbatim= text="))))
+      (is (parser/failure? (parse "=verbatim= text="))))
 
     ;; parse special cases
     (testing "not parse empty verbatim text"
-      (is (insta/failure? (parse "=="))))
+      (is (parser/failure? (parse "=="))))
     (testing "not parse verbatim text with space around"
-      (is (insta/failure? (parse "=verbatim ="))))
+      (is (parser/failure? (parse "=verbatim ="))))
     (testing "not parse verbatim text with space around"
-      (is (insta/failure? (parse "= verbatim="))))
+      (is (parser/failure? (parse "= verbatim="))))
     (testing "parse verbatim text"
       (is (= [[:text-sty-verbatim "verbatim = text"]]
              (parse "=verbatim = text="))))
@@ -917,13 +946,19 @@ is another section"))))))
       (is (= [:text [:text-normal "abc "]]
              (parse "abc "))))
     (testing "does not parse a string starting with newline"
-      (is (insta/failure? (parse "\nfoo"))))
+      (is (parser/failure? (parse "\nfoo"))))
     (testing "parse text that contains style delimiter"
-      (is (= [:text [:text-normal "a"] [:text-normal "/b"]]
+      (is (= [:text [:text-normal "a/b"]]
              (parse "a/b"))))
     (testing "parse text that contains style delimiter"
-      (is (= [:text [:text-normal "a "] [:text-normal "/b"]]
+      (is (= [:text [:text-normal "a /b"]]
              (parse "a /b"))))
+    (testing "parse text with unmatched angle bracket as plain text"
+      (is (= [:text [:text-normal "a<b"]]
+             (parse "a<b"))))
+    (testing "parse text with unmatched bracket as plain text"
+      (is (= [:text [:text-normal "foo[bar"]]
+             (parse "foo[bar"))))
     (testing "parse styled text alone"
       (is (= [:text [:text-sty-bold "bold text"]]
              (parse "*bold text*"))))
@@ -943,8 +978,7 @@ is another section"))))))
              (parse "normal text *bold text* more text"))))
     (testing "parse styled text reluctant"
       (is (= [:text [:text-sty-bold "bold text"]
-              [:text-normal " text"]
-              [:text-normal "*"]]
+              [:text-normal " text*"]]
              (parse "*bold text* text*"))))
     ;; TODO parse only when "surrounded" by delimiter
     ;; (testing "parse italic text"
@@ -1001,7 +1035,7 @@ is another section"))))))
       (is (= [:text [:text-normal "abc "] [:text-linebreak [:text-linebreak-after "  "]]]
              (parse "abc \\\\  "))))
     (testing "parse text followed by line break"
-      (is (= [:text [:text-normal "abc "] [:text-normal "\\"] [:text-normal "\\ xyz"]]
+      (is (= [:text [:text-normal "abc \\\\ xyz"]]
              (parse "abc \\\\ xyz"))))
 
     ;; macros
@@ -1063,13 +1097,13 @@ is another section"))))))
       (is (= [:text-target [:text-target-name "t"]]
              (parse "<<t>>"))))
     (testing "parse invalid target"
-      (is (insta/failure?
+      (is (parser/failure?
            (parse "<< t>>"))))
     (testing "parse invalid target"
-      (is (insta/failure?
+      (is (parser/failure?
            (parse "<<t >>"))))
     (testing "parse invalid target"
-      (is (insta/failure?
+      (is (parser/failure?
            (parse "<< >>"))))
     ))
 
@@ -1101,7 +1135,7 @@ is another section"))))))
       (is (= [:text-sub [:text-subsup-curly ".,-123abc!"]]
              (parse "_{.,-123abc!}"))))
     (testing "curly braces inside braced subscript are not allowed"
-      (is (insta/failure? (parse "text_{{}"))))
+      (is (parser/failure? (parse "text_{{}"))))
     ))
 
 (deftest tables
@@ -1152,7 +1186,7 @@ is another section"))))))
               [:clock-duration [:clock-dur-hh "0"] [:clock-dur-mm "20"]]]
              (parse " CLOCK: [2021-05-22 Sat 23:26-23:46] =>  0:20 "))))
     (testing "do not parse corrupted headlines"
-      (is (insta/failure? (parse "CLOCK: [not a timestamp Sat 23:26] =>  0:20 "))))
+      (is (parser/failure? (parse "CLOCK: [not a timestamp Sat 23:26] =>  0:20 "))))
     ))
 
 
@@ -1162,7 +1196,7 @@ is another section"))))))
       (is (= [:diary-sexp "nr()<n)-h"]
              (parse "%%(nr()<n)-h"))))
     (testing "do not parse if not starting at begin of line"
-      (is (insta/failure? (parse "  %%(x)"))))
+      (is (parser/failure? (parse "  %%(x)"))))
     ))
 
 
@@ -1194,83 +1228,39 @@ is another section"))))))
 
 (deftest whole-files
   (testing "headlines and tables"
-    (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")]
-      (is (= [:S
-              [:headline [:stars "*"] [:text [:text-normal "Headline 1"]]]
-              [:empty-line]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " first column 1 "]
-                  [:table-cell " first column 2 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " first value 1  "]
-                  [:table-cell " first value 2  "]]]]]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " second column 1 "]
-                  [:table-cell " second column 2 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " second value 1  "]
-                  [:table-cell " second value 2  "]]]]]
-              [:headline [:stars "*"] [:text [:text-normal "Headline 2"]]]
-              [:empty-line]
-              [:table
-               [:table-org
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " people     "]
-                  [:table-cell " age "]]]
-                [:table-row [:table-row-sep "|------------+-----|"]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " bob        "]
-                  [:table-cell "  38 "]]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " max        "]
-                  [:table-cell "  42 "]]]
-                [:table-row [:table-row-sep "|------------+-----|"]]
-                [:table-row
-                 [:table-row-cells
-                  [:table-cell " median age "]
-                  [:table-cell "  40 "]]]
-                [:table-formula "@4$2=vmean(@2..@-1)"]]]
-              [:headline [:stars "*"] [:text [:text-normal "table.el style table"]]]
-              [:empty-line]
-              [:content-line
-               [:text
-                [:text-normal
-                 "  The option to use org tables and table.el tables is documented in"]]]
-              [:content-line
-               [:text
-                ;; FIXME: URLs seem to get mangled. Ignoring it here,
-                ;; because this test is about org and table.el tables.
-                [:text-normal "  the spec: https:"]
-                [:text-normal "/"]
-                [:text-normal "/orgmode.org"]
-                [:text-normal "/worg"]
-                [:text-normal "/dev"]
-                [:text-normal "/org-syntax.html#Tables"]]]
-              [:empty-line]
-              [:content-line
-               [:text
-                [:text-normal "  Hence, "]
-                [:text-sty-verbatim "org-parser"]
-                [:text-normal " should and does parse it!"]]]
-              [:empty-line]
-              [:table
-               [:table-tableel
-                [:table-tableel-sep "+-----+-----+"]
-                [:table-tableel-line "| people | age |"]
-                [:table-tableel-sep "+-----+-----+"]
-                [:table-tableel-line "| bob | 38 |"]
-                [:table-tableel-sep "+-----+-----+"]
-                [:table-tableel-line "| max | 42 |"]
-                [:table-tableel-sep "+-----+-----+"]]]]
-             (parser/parse content))))))
+    (let [content (slurp "test/org_parser/fixtures/headlines_and_tables.org")
+          parsed (parser/parse content)
+          nodes (rest parsed)
+          tables (filter #(and (vector? %) (= :table (first %))) nodes)
+          has-node? (fn has-node? [ast pred]
+                      (cond
+                        (vector? ast) (or (pred ast)
+                                          (some #(has-node? % pred) (rest ast)))
+                        (sequential? ast) (some #(has-node? % pred) ast)
+                        :else false))]
+      (is (= :antlr (-> parsed meta :backend-used)))
+      (is (= :S (first parsed)))
+      (is (= 4 (count tables)))
+      (is (some #(= [:content-line
+                     [:text
+                      [:text-normal "  the spec: "]
+                      [:text-link
+                       [:text-link-plain
+                        [:link-url-scheme "https"]
+                        [:text-link-plain-path "//orgmode.org/worg/dev/org-syntax.html#Tables"]]]]]
+                    %)
+                nodes))
+      (is (some #(and (has-node? % (fn [n] (= n [:table-cell " first column 1 "])))
+                      (has-node? % (fn [n] (= n [:table-cell " first value 2  "]))))
+                tables))
+      (is (some #(and (has-node? % (fn [n] (= n [:table-cell " second column 1 "])))
+                      (has-node? % (fn [n] (= n [:table-cell " second value 2  "]))))
+                tables))
+      (is (some #(and (has-node? % (fn [n] (= n [:table-cell " people     "])))
+                      (has-node? % (fn [n] (= n [:table-cell " median age "])))
+                      (has-node? % (fn [n] (= n [:table-formula "@4$2=vmean(@2..@-1)"]))))
+                tables))
+      (is (some #(and (has-node? % (fn [n] (= n [:table-tableel-sep "+-----+-----+"])))
+                      (has-node? % (fn [n] (= n [:table-tableel-line "| people | age |"])))
+                      (has-node? % (fn [n] (= n [:table-tableel-line "| max | 42 |"]))))
+                tables)))))

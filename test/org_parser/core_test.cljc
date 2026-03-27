@@ -63,11 +63,20 @@
                                   :priority "B",
                                   :commented? false
                                   :tags []}}]}))
-  (is (= (core/read-str "* TODO [#B] foo bar")
-         {:headlines [{:headline {:level 1,
-                                  :title [[:text-normal "foo bar"]],
-                                  :planning [],
-                                  :keyword "TODO",
-                                  :priority "B",
-                                  :commented? false
-                                  :tags []}}]})))
+   (is (= (core/read-str "* TODO [#B] foo bar")
+          {:headlines [{:headline {:level 1,
+                                   :title [[:text-normal "foo bar"]],
+                                   :planning [],
+                                   :keyword "TODO",
+                                   :priority "B",
+                                   :commented? false
+                                   :tags []}}]})))
+
+(deftest read-str-accepts-indented-property-drawer
+  (is (= {:preamble {:section {:ast [[:drawer-begin-line [:drawer-name "PROPERTIES"]]
+                                     [:text [:text-normal "  :CUSTOM_ID: usage"]]
+                                     [:drawer-end-line]]
+                              :raw ["  :PROPERTIES:"
+                                    "  :CUSTOM_ID: usage"
+                                    "  :END:"]}}}
+         (core/read-str "  :PROPERTIES:\n  :CUSTOM_ID: usage\n  :END:\n"))))

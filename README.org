@@ -37,10 +37,12 @@ importantly each of them creates another island. Since they are just
 as programming language dependent as org-element.el, it is impossible
 to share logic between them.
 
-=org-parser= aims at alleviating both these issues. It documents the
-syntax in a standard and machine readable notation (EBNF). And the
-reference implementation is done in a way that it runs on the
-established virtual machines of Java and JavaScript. Hence,
+=org-parser= aims at alleviating both these issues. It specifies the
+syntax in ANTLR grammars, which remain close to EBNF-style notation
+while giving us a mature parser toolchain, robust error handling, and
+multi-runtime generation for JVM and JavaScript. The reference
+implementation is done in a way that it runs on the established
+virtual machines of Java and JavaScript. Hence,
 =org-parser= can be used from all programming languages running on
 those virtual machines. =org-parser= provides a higher-level data
 structure that is easy to consume for an application working with Org
@@ -60,11 +62,31 @@ the Org syntax itself.
 
 The code base of =org-parser= is split into four namespaces:
 
-- org-parser.core (top level api, i.e. =read-str=, =write-str=)
-- org-parser.parse (aka. deserializer, reader)
-- org-parser.parse.transform (transforms the result of the parser into
-  a more desirable structure)
-- org-parser.render (aka. serializer, writer)
+- org-parser.core (top level API, i.e. =read-str=, =write-str=)
+- org-parser.parser (parser API and parser contract wrappers)
+- org-parser.transform (transforms parser AST into a higher-level structure)
+- org-parser.render (serializer/writer)
+
+ANTLR currently parses document and line-level structure. Several
+inline constructs (for example parts of text, links, timestamps, and
+table normalization) are still handled by direct parser helpers after
+ANTLR returns a structural AST. This split is intentional for now.
+
+Current parser layering:
+
+- grammar layer: =resources/antlr/*.g4=
+- runtime adapters: =src/org_parser/antlr/parser.clj= and
+  =src/org_parser/antlr/parser.cljs=
+- normalization/post-processing: =src/org_parser/antlr/postprocess.cljc=
+- public parser contract: =src/org_parser/parser.cljc=
+- transform layer: =src/org_parser/transform.cljc=
+
+Current roadmap focus:
+
+- keep parser contract stable and tested across CLJ and CLJS
+- minimize runtime drift risks first
+- migrate high-value direct parsing paths into grammar where practical
+- validate parser and parse+transform performance on representative fixtures
 
 Thus =org-parser= has become a misnomer in the sense, that it now
 strives to be =clojure/data.org= (after the pattern of existing Clojure
@@ -79,7 +101,7 @@ because the structure of the AST (parse tree) can still change.
 
 The biggest milestones are:
 
-- [X] Finish [[http://xahlee.info/clojure/clojure_instaparse_grammar_syntax.html][EBNF parser]] to support most Org mode syntax
+- [X] Finish ANTLR grammar/parser coverage for most Org mode syntax
       - [X] Headlines
       - [X] Org mode =#+*= stuff
       - [X] Timestamps
@@ -91,12 +113,14 @@ The biggest milestones are:
       - [ ] Nested markup (see #12)
 - [X] Setup basic transformation from the parse tree to a higher-level structure.
 - [-] Transformations to higher-level structure: catch up with
-      features that are already supported by the EBNF parser.
+      features that are already supported by the parser.
 - [-] Render parsed org file with =write-str=
 
 *It can already be useful* for you:
-E.g. if your script needs to parse parts of Org mode features, our EBNF
-parser probably already supports that. Do not underestimate
+E.g. if your script needs to parse parts of Org mode features, our
+ANTLR grammar/parser probably already supports that. The grammar stays
+EBNF-like and readable, while ANTLR gives us strong tooling across CLJ
+and CLJS runtimes. Do not underestimate
 e.g. timestamps. Use our well-tested parser to disassemble it in its
 parts, instead of trying to write a poor and ugly regex that is only
 capable of a subset of Org mode's timestamps ;)
@@ -105,20 +129,65 @@ Don't hesitate to contribute!
 
 * Development
 
-=org-parser= uses [[https://github.com/Engelberg/instaparse/][instaparse]] which aims to be the simplest way to
-build parsers in Clojure. Apart from living up to this claim (and
-beyond the scope of just the one programming language), using
-instaparse is great for another reason: Instaparse works both on CLJ
-and CLJS. Therefore =org-parser= can be used from both ecosystems
-which, of course, include JavaScript and Java. Hence, it is possible
-to [[#usage][use it]] in various situations.
+=org-parser= uses ANTLR-generated parsers as the default backend on
+both CLJ and CLJS. This keeps grammar behavior aligned across JVM and
+JavaScript runtimes while preserving the existing public API and test
+suite expectations.
+
+** Large-document parsing strategy
+
+For most inputs, =org-parser= uses the ANTLR backend.
+
+For very large full-document parses, =org-parser= uses a fast Clojure
+path in the public parser API:
+
+- Trigger conditions: default start rule =:S= and input size >=
+  =1,000,000= bytes
+- Implementation: =src/org_parser/parser.cljc=
+  (=parse-large-doc-fast=)
+- Metadata marker: =(:backend-used (meta result))= is =:fast-large=
+
+Rationale:
+
+- Full ANTLR tree construction on multi-megabyte files has much higher
+  latency and memory overhead.
+- The fast path preserves the top-level =:S= shape and keeps parsing
+  responsive for large inputs, while ANTLR remains the default backend
+  for detailed grammar-driven parsing.
+
+Tradeoff:
+
+- The fast path is intentionally coarse: it builds headline, content,
+  and empty-line nodes from lines rather than running full ANTLR rule
+  traversal for every inline construct.
+- If you need strict grammar behavior for a specific rule, parse that
+  rule explicitly via =:start= so it goes through ANTLR.
+
+** Benchmark workflow
+
+Use the benchmark namespace directly from Clojure:
+
+#+BEGIN_SRC shell
+# warmup=5 measured=20
+lein run -m org-parser.benchmark 5 20
+#+END_SRC
+
+Run large-file regression tests together with benchmarking:
+
+#+BEGIN_SRC shell
+lein test :only org-parser.large-file-test/parse-large-unique-readme-derived-document
+lein test :only org-parser.large-file-test/parser-accepts-large-unique-readme-derived-document
+#+END_SRC
+
+For maintainers, parser layering and migration priorities are
+summarized in the Architecture section above.
 
 ** Prerequisites
 
-Please install [[https://clojure.org/guides/getting_started][Clojure]] and [[https://leiningen.org/][Leiningen]].
+Please install [[https://clojure.org/guides/getting_started][Clojure]], [[https://leiningen.org/][Leiningen]], and Node.js (with npm).
 
-There's no additional installation required. Leiningen will pull
-dependencies if required.
+Leiningen will pull JVM dependencies. For CLJS/node tests, install
+JavaScript dependencies with =npm install=.
 
 ** Testing
 
@@ -127,9 +196,61 @@ Running the tests:
 #+BEGIN_SRC shell
 # Clojure
 lein test
-# CLJS (starts a watcher)
-lein doo node
+# CLJS (single run)
+npm install
+./script/gen-antlr-js.sh
+lein doo node once
 #+END_SRC
+
+Parser API quick checks:
+
+#+BEGIN_SRC clojure
+(require '[org-parser.parser :as parser])
+
+;; discover supported parser start rules
+(parser/supported-start-rules)
+
+;; parse an entire document (default start rule :S)
+(parser/parse "* headline\nbody")
+
+;; parse specific start rule
+(parser/parse "#+TODO: TODO | DONE" :start :todo-line)
+#+END_SRC
+
+Generate ANTLR parser artifacts (required for ANTLR backend work):
+
+#+BEGIN_SRC shell
+./script/gen-antlr.sh
+./script/gen-antlr-js.sh
+#+END_SRC
+
+** Contributor Workflow
+
+For parser/grammar changes, use this sequence:
+
+#+BEGIN_SRC shell
+# 1) Install dependencies
+lein deps
+npm install
+
+# 2) Regenerate parser artifacts
+./script/gen-antlr.sh
+./script/gen-antlr-js.sh
+
+# 3) Run static checks and tests
+clj-kondo --lint src test --parallel
+lein test
+lein doo node once
+#+END_SRC
+
+Common troubleshooting:
+
+- If CLJ tests fail with missing generated classes, run
+  =./script/gen-antlr.sh=.
+- If CLJS tests fail with missing JS parser runtime modules, run
+  =npm install= and =./script/gen-antlr-js.sh=.
+- If parser behavior differs between runtimes, run both test commands
+  above and check parser parity tests first.
 
 If you're not familiar with Lisp or Clojure, here's a short video on
 how the tooling for Lisp (and hence Clojure) is great and enables fast

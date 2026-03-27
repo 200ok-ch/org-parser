@@ -5,8 +5,7 @@
 ;; See also export_org.js in https://github.com/200ok-ch/organice for inspirations
 
 
-;; FIXME: delete the next 2 functions because it's not the
-;; responsiblity of org-parser to render edn or json
+;; Convenience output helpers used by the CLI entrypoint.
 (defn edn [x]
   (prn-str x))
 
@@ -15,9 +14,8 @@
      :cljs (.stringify js/JSON (clj->js x))))
 
 
-;; TODO: This is a minimal implementation of rendering the
-;; deserialized org data structure back to an org string. This needs
-;; to be extenden to the full feature scope.
+;; This is currently a minimal implementation of rendering the
+;; deserialized org data structure back to org syntax.
 
 (defn- serialize-text-element [[tag text]]
   (case tag
@@ -32,8 +30,6 @@
 (defn- serialize-text [elements]
   (apply str (map serialize-text-element elements)))
 
-#_(serialize-text [[:text-normal "hello "] [:text-bold "world"] [:asdf "!"]])
-
 (defn- serialize-headline* [headline]
   (str/join " "
             [(apply str (repeat (:level headline) "*"))
@@ -47,13 +43,10 @@
             [(serialize-headline* headline)
              (serialize-section section)]))
 
-(defn render [{:keys [settings preamble headlines]}]
+(defn render [{:keys [preamble headlines]}]
   (str/join "\n"
             (remove nil?
                     (cons
-                     ;; TODO: serialize settings
+                     ;; settings serialization is not implemented yet
                      (serialize-section (:section preamble))
                      (map serialize-headline headlines)))))
-
-
-#_(render {:headlines [{:headline {:level 1 :title "foo"}}]})
