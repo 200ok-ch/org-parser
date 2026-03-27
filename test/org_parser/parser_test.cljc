@@ -343,7 +343,7 @@ is another section"))))))
   (let [parse #(parser/parse % :start :drawer-begin-line)]
     (testing "drawer-begin"
       (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
-             (parse ":SOMENAME:")))
+             (parse ":SOMENAME:"))))
     (testing "drawer-begin with indentation"
       (is (= [:drawer-begin-line [:drawer-name "SOMENAME"]]
              (parse "  :SOMENAME:"))))))
@@ -352,7 +352,7 @@ is another section"))))))
   (let [parse #(parser/parse % :start :drawer-end-line)]
     (testing "drawer-end"
       (is (= [:drawer-end-line]
-             (parse ":END:")))
+             (parse ":END:"))))
     (testing "drawer-end with indentation"
       (is (= [:drawer-end-line]
              (parse "  :END:"))))))
@@ -371,7 +371,7 @@ is another section"))))))
   (testing "indented property drawer in document"
     (is (= [:S
             [:drawer-begin-line [:drawer-name "PROPERTIES"]]
-            [:content-line [:text [:text-normal ":CUSTOM_ID: usage"]]]
+            [:content-line [:text [:text-normal "  :CUSTOM_ID: usage"]]]
             [:drawer-end-line]]
            (parser/parse "  :PROPERTIES:\n  :CUSTOM_ID: usage\n  :END:")))))
 

@@ -74,9 +74,7 @@
 
 (deftest read-str-accepts-indented-property-drawer
   (is (= {:preamble {:section {:ast [[:drawer-begin-line [:drawer-name "PROPERTIES"]]
-                                     [:text [:text-normal "  :CUSTOM"]
-                                      [:text-sub [:text-subsup-word "ID:"]]
-                                      [:text-normal " usage"]]
+                                     [:text [:text-normal "  :CUSTOM_ID: usage"]]
                                      [:drawer-end-line]]
                               :raw ["  :PROPERTIES:"
                                     "  :CUSTOM_ID: usage"
