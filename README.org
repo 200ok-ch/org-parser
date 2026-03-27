@@ -70,8 +70,23 @@ The code base of =org-parser= is split into four namespaces:
 ANTLR currently parses document and line-level structure. Several
 inline constructs (for example parts of text, links, timestamps, and
 table normalization) are still handled by direct parser helpers after
-ANTLR returns a structural AST. This split is intentional for now and
-is documented further in [[file:doc/parser-architecture.md][doc/parser-architecture.md]].
+ANTLR returns a structural AST. This split is intentional for now.
+
+Current parser layering:
+
+- grammar layer: =resources/antlr/*.g4=
+- runtime adapters: =src/org_parser/antlr/parser.clj= and
+  =src/org_parser/antlr/parser.cljs=
+- normalization/post-processing: =src/org_parser/antlr/postprocess.cljc=
+- public parser contract: =src/org_parser/parser.cljc=
+- transform layer: =src/org_parser/transform.cljc=
+
+Current roadmap focus:
+
+- keep parser contract stable and tested across CLJ and CLJS
+- minimize runtime drift risks first
+- migrate high-value direct parsing paths into grammar where practical
+- validate parser and parse+transform performance on representative fixtures
 
 Thus =org-parser= has become a misnomer in the sense, that it now
 strives to be =clojure/data.org= (after the pattern of existing Clojure
@@ -164,11 +179,8 @@ lein test :only org-parser.large-file-test/parse-large-unique-readme-derived-doc
 lein test :only org-parser.large-file-test/parser-accepts-large-unique-readme-derived-document
 #+END_SRC
 
-For maintainers: parser layering, runtime adapters, normalization,
-and transform boundaries are documented in
-[[file:doc/parser-architecture.md][doc/parser-architecture.md]].
-Grammar scope and future migration candidates are tracked in
-[[file:doc/grammar-roadmap.md][doc/grammar-roadmap.md]].
+For maintainers, parser layering and migration priorities are
+summarized in the Architecture section above.
 
 ** Prerequisites
 
